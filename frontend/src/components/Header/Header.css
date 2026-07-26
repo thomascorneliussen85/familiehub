@@ -1,0 +1,25 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  flex-shrink: 0;
+}
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-header-logo {
+  font-size: 30px;
+}
+.app-header-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}

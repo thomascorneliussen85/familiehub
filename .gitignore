@@ -1,0 +1,29 @@
+node_modules/
+.env
+*.local
+
+# Database
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+
+# Bilder til fotoramme (lokalt innhold, ikke del av repo)
+photos/*
+!photos/.gitkeep
+
+# Build
+frontend/dist/
+backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

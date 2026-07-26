@@ -1,0 +1,47 @@
+.note-add-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.note-add-form input {
+  flex: 1;
+}
+.note-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.sticky-note {
+  position: relative;
+  width: 150px;
+  min-height: 120px;
+  padding: 14px 12px;
+  border-radius: 4px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  color: #2b2b2b;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.sticky-note-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+}
+.sticky-note-author {
+  font-size: 11px;
+  align-self: flex-end;
+  opacity: 0.7;
+}
+.sticky-note-remove {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  min-height: auto;
+  padding: 4px;
+}

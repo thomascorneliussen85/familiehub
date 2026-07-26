@@ -1,0 +1,44 @@
+.plug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.plug-card {
+  position: relative;
+  background: var(--panel-bg-alt);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 88px;
+  text-align: left;
+}
+.plug-card-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.plug-card-offline {
+  opacity: 0.5;
+}
+.plug-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.plug-power {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.plug-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.plug-dot-on {
+  background: var(--success);
+}
