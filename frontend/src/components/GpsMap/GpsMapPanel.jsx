@@ -21,6 +21,15 @@ function Recenter({ lat, lon }) {
   return null;
 }
 
+function InvalidateOnResize({ trigger }) {
+  const map = useMap();
+  useEffect(() => {
+    const id = setTimeout(() => map.invalidateSize(), 160);
+    return () => clearTimeout(id);
+  }, [trigger, map]);
+  return null;
+}
+
 function timeAgo(dateStr) {
   // SQLite lagrer "YYYY-MM-DD HH:MM:SS" i UTC uten tidssone; Traccar sender ISO 8601 med tidssone.
   const iso = dateStr.includes('T') ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
@@ -31,7 +40,7 @@ function timeAgo(dateStr) {
   return then.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function GpsMapPanel() {
+export default function GpsMapPanel({ isExpanded }) {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(false);
   const [arrivedMsg, setArrivedMsg] = useState('');
@@ -95,6 +104,7 @@ export default function GpsMapPanel() {
               />
             )}
             <Recenter lat={position.lat} lon={position.lon} />
+            <InvalidateOnResize trigger={isExpanded} />
           </MapContainer>
         )}
       </div>
