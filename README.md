@@ -57,6 +57,27 @@ for en fullstendig, kommentert liste. De viktigste gruppene:
 - **Strømpris**: prisområde (standard NO5 / Bergen)
 - **Fotoramme**: mappe og inaktivitetstid
 
+## "Ut og leke" – dele lekestatus med vennefamilier
+
+Vennefamilier trenger **ikke** eget Render-/Fly.io-oppsett – de trenger bare
+sin egen FamilieHub-installasjon (samme steg som over). `RELAY_URL` i
+`.env.example` peker allerede på den delte relay-tjenesten
+(`https://familiehub.onrender.com`), så den er ferdig konfigurert med mindre
+den bevisst tømmes (da kjører "Ut og leke" kun lokalt, uten vennedeling).
+
+Det eneste vennefamilien MÅ endre er `FAMILY_NAME` i sin egen `.env` – dette
+er navnet som vises hos dere når dere deler status, og bør derfor være
+unikt per familie (ikke la det stå som "Vår familie").
+
+Når begge familier kjører FamilieHub med samme `RELAY_URL`:
+
+1. Åpne ⚙️ (foreldre-PIN, standard `1234`, endres i `.env` som `PARENT_PIN`) hos den ene familien → **Vennefamilier** → **Generer kode**.
+2. Den andre familien åpner samme sted → **Bruk kode**.
+3. Familien som genererte koden godkjenner forespørselen som dukker opp.
+
+Merk: siden relayen kjører på Render sin gratis-plan uten disk, kan par-listen
+nullstilles ved omstart av tjenesten – da må dere bare parre på nytt.
+
 ## Arkitektur i korte trekk
 
 - Backend eksponerer REST under `/api/*` og sender sanntidsoppdateringer
