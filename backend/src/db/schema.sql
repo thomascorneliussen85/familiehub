@@ -100,6 +100,50 @@ CREATE TABLE IF NOT EXISTS settings (
   value  TEXT
 );
 
+CREATE TABLE IF NOT EXISTS play_locations (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  label       TEXT NOT NULL UNIQUE,
+  emoji       TEXT NOT NULL DEFAULT '📍',
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS play_status (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id    INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  location    TEXT NOT NULL,
+  emoji       TEXT,
+  started_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at  TEXT NOT NULL,
+  ended_at    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS friend_families (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  name          TEXT NOT NULL,
+  pairing_code  TEXT,
+  paired_at     TEXT,
+  approved      INTEGER NOT NULL DEFAULT 0,
+  friend_hub_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS garmin_activities (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  garmin_activity_id  INTEGER NOT NULL UNIQUE,
+  name                TEXT NOT NULL,
+  activity_type       TEXT,
+  start_time          TEXT NOT NULL,
+  duration_seconds    REAL,
+  distance_m          REAL,
+  calories            REAL,
+  avg_hr              REAL,
+  max_hr              REAL,
+  elevation_gain_m    REAL,
+  synced_at           TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_at);
 CREATE INDEX IF NOT EXISTS idx_chore_completions_chore ON chore_completions(chore_id);
 CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_garmin_activities_start ON garmin_activities(start_time);
+CREATE INDEX IF NOT EXISTS idx_play_status_child ON play_status(child_id);
+CREATE INDEX IF NOT EXISTS idx_play_status_active ON play_status(ended_at, expires_at);

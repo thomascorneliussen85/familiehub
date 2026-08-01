@@ -16,8 +16,16 @@ import powerPriceRouter from './routes/powerPrice.js';
 import gpsRouter from './routes/gps.js';
 import messagesRouter from './routes/messages.js';
 import photosRouter from './routes/photos.js';
+import camerasRouter from './routes/cameras.js';
+import garminRouter from './routes/garmin.js';
+import playStatusRouter from './routes/playStatus.js';
+import playLocationsRouter from './routes/playLocations.js';
+import playAdminRouter from './routes/playAdmin.js';
+import relayRouter from './routes/relay.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
+import { cleanupOldPlayStatus } from './services/playStatusService.js';
+import { initRelayClient } from './services/relayClient.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -45,6 +53,12 @@ app.use('/api/power-price', powerPriceRouter);
 app.use('/api/gps', gpsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/photos', photosRouter);
+app.use('/api/cameras', camerasRouter);
+app.use('/api/garmin', garminRouter);
+app.use('/api/play-status', playStatusRouter);
+app.use('/api/play-locations', playLocationsRouter);
+app.use('/api/play-admin', playAdminRouter);
+app.use('/api/relay', relayRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ikke funnet' });
@@ -62,6 +76,10 @@ server.listen(config.port, () => {
   console.log(`🏠 FamilieHub-backend kjører på port ${config.port} (${config.nodeEnv})`);
   startPlugPolling(io);
   startTraccarPolling(io);
+
+  cleanupOldPlayStatus();
+  setInterval(cleanupOldPlayStatus, 24 * 60 * 60 * 1000);
+  initRelayClient(io);
 });
 
 process.on('SIGINT', () => {

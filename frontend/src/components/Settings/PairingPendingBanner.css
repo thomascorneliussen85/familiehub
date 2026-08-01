@@ -1,0 +1,19 @@
+.pairing-pending-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--warm);
+  color: #0d0f16;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: none;
+  box-shadow: var(--shadow-panel);
+  z-index: 1000;
+  max-width: 90vw;
+}
+.pairing-pending-banner:active {
+  transform: translateX(-50%) scale(0.97);
+}

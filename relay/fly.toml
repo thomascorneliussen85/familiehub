@@ -1,0 +1,24 @@
+app = "familiehub-relay"
+primary_region = "arn"
+
+[build]
+
+[env]
+  PORT = "8090"
+  DB_PATH = "/data/relay.db"
+
+[mounts]
+  source = "relay_data"
+  destination = "/data"
+
+[[services]]
+  internal_port = 8090
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]

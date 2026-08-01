@@ -1,24 +1,19 @@
 {
-  "name": "backend",
+  "name": "familiehub-relay",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "seed": "node src/db/seed.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "garmin-connect": "^1.6.2",
-    "multer": "^2.2.0",
-    "node-fetch": "^3.3.2",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.3"
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

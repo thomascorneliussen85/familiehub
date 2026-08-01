@@ -23,3 +23,15 @@
   align-items: center;
   gap: 20px;
 }
+.app-header-settings {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+.app-header-settings:active {
+  transform: scale(0.9);
+}
