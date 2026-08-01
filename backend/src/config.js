@@ -72,14 +72,6 @@ export const config = {
     password: process.env.GARMIN_PASSWORD || '',
   },
 
-  cameras: [1, 2]
-    .map((n) => ({
-      id: n,
-      name: process.env[`CAMERA_${n}_NAME`] || `Kamera ${n}`,
-      rtspUrl: process.env[`CAMERA_${n}_RTSP_URL`] || '',
-    }))
-    .filter((c) => c.rtspUrl),
-
   playStatus: {
     expiryHours: num(process.env.PLAY_STATUS_EXPIRY_HOURS, 2),
   },

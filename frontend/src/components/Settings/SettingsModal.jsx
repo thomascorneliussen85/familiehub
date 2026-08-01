@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createAdminApi } from '../../lib/adminApi';
 import FriendsTab from './FriendsTab';
 import PlaySettingsTab from './PlaySettingsTab';
+import DevicesTab from './DevicesTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -86,9 +87,16 @@ export default function SettingsModal({ onClose }) {
           >
             Ut og leke-innstillinger
           </button>
+          <button
+            className={`settings-tab ${tab === 'devices' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('devices')}
+          >
+            Enheter
+          </button>
         </div>
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
         {tab === 'settings' && <PlaySettingsTab adminApi={adminApi} />}
+        {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
       </div>
     </div>
   );

@@ -1,14 +1,22 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
+import { config } from '../config.js';
 import { setPlugRelay } from '../services/shellyPoller.js';
 
 const router = Router();
+
+function requirePin(req, res, next) {
+  if (req.headers['x-parent-pin'] !== config.parentPin) {
+    return res.status(403).json({ error: 'Feil PIN-kode' });
+  }
+  next();
+}
 
 router.get('/', (req, res) => {
   res.json(db.prepare('SELECT * FROM smart_plugs ORDER BY id').all());
 });
 
-router.post('/', (req, res) => {
+router.post('/', requirePin, (req, res) => {
   const { name, ip } = req.body;
   if (!name || !ip) return res.status(400).json({ error: 'Navn og IP er påkrevd' });
   const info = db.prepare('INSERT INTO smart_plugs (name, ip) VALUES (?, ?)').run(name, ip);
@@ -35,7 +43,7 @@ router.post('/:id/toggle', async (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePin, (req, res) => {
   db.prepare('DELETE FROM smart_plugs WHERE id = ?').run(req.params.id);
   res.status(204).end();
 });

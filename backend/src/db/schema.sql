@@ -126,6 +126,13 @@ CREATE TABLE IF NOT EXISTS friend_families (
   friend_hub_id TEXT
 );
 
+CREATE TABLE IF NOT EXISTS cameras (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  rtsp_url    TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS garmin_activities (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
   garmin_activity_id  INTEGER NOT NULL UNIQUE,
