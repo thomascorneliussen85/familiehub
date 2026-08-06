@@ -1,17 +1,17 @@
 .next-event-banner {
   display: flex;
   align-items: center;
-  gap: clamp(12px, 2vw, 24px);
+  gap: 10px;
   background: var(--accent-soft);
   border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  padding: clamp(10px, 1.6vw, 18px) clamp(16px, 2.4vw, 28px);
+  border-radius: var(--radius-md);
+  padding: 5px 12px;
   flex-shrink: 0;
 }
 
 .next-event-label {
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 8px;
   letter-spacing: 0.08em;
   font-weight: 700;
   color: var(--warm);
@@ -20,10 +20,10 @@
 
 .next-event-countdown {
   font-family: var(--serif);
-  font-size: clamp(28px, 4vw, 46px);
+  font-size: 18px;
   color: var(--warm);
   flex-shrink: 0;
-  min-width: 90px;
+  min-width: 40px;
 }
 
 .next-event-info {
@@ -32,22 +32,22 @@
   min-width: 0;
 }
 .next-event-title {
-  font-size: clamp(15px, 1.6vw, 19px);
+  font-size: 12px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .next-event-meta {
-  font-size: 13px;
+  font-size: 10px;
   color: var(--text-dim);
 }
 
 .next-event-banner-empty {
   justify-content: flex-start;
-  gap: 12px;
+  gap: 8px;
 }
 .next-event-empty-text {
-  font-size: 15px;
+  font-size: 11px;
   color: var(--text-dim);
 }

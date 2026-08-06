@@ -1,68 +1,69 @@
 .dinner-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 
 .dinner-today {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   background: var(--panel-bg-alt);
   border: none;
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
   text-align: left;
   flex-shrink: 0;
 }
 .dinner-today-label {
-  font-size: 11px;
+  font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
   flex-shrink: 0;
-  width: 52px;
+  width: 32px;
 }
 .dinner-today-emoji {
-  font-size: 26px;
+  font-size: 14px;
 }
 .dinner-today-title {
-  font-size: 16px;
+  font-size: 11px;
   font-weight: 600;
 }
 .dinner-today-empty {
   color: var(--text-faint);
-  font-size: 15px;
+  font-size: 10px;
 }
 
 .dinner-upcoming-label {
-  font-size: 11px;
+  font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
-  margin-top: 4px;
+  margin-top: 1px;
 }
 
 .dinner-upcoming-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   overflow-y: auto;
   min-height: 0;
 }
 .dinner-upcoming-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 6px;
+  gap: 6px;
+  padding: 3px 3px;
   border-bottom: 1px solid var(--panel-border);
-  font-size: 14px;
+  font-size: 10px;
 }
 .dinner-upcoming-day {
-  width: 60px;
+  width: 36px;
   flex-shrink: 0;
   color: var(--text-dim);
   font-weight: 600;
+  font-size: 9px;
 }
 .dinner-upcoming-title {
   flex: 1;
@@ -78,35 +79,46 @@
   background: none;
   border: none;
   color: var(--text-faint);
-  font-size: 14px;
-  min-width: 28px;
-  min-height: 28px;
+  font-size: 10px;
+  min-width: 18px;
+  min-height: 18px;
 }
 
 .dinner-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 .dinner-edit-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 11px;
 }
 .dinner-edit-row {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 .dinner-emoji-input {
-  width: 60px;
+  width: 36px;
   flex: 0 0 auto;
   text-align: center;
+  min-height: 22px;
+  font-size: 10px;
+  padding: 3px;
 }
 .dinner-edit-row input:not(.dinner-emoji-input) {
   flex: 1;
   min-width: 0;
+  min-height: 22px;
+  font-size: 10px;
+  padding: 3px 6px;
 }
 .dinner-edit-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
+}
+.dinner-edit-actions button {
+  min-height: 22px;
+  padding: 3px 8px;
+  font-size: 10px;
 }
