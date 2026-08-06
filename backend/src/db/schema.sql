@@ -133,6 +133,15 @@ CREATE TABLE IF NOT EXISTS cameras (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS dinner_plans (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  date        TEXT NOT NULL UNIQUE, -- YYYY-MM-DD
+  title       TEXT NOT NULL,
+  emoji       TEXT,
+  notes       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS garmin_activities (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
   garmin_activity_id  INTEGER NOT NULL UNIQUE,

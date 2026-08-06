@@ -1,6 +1,6 @@
 .shopping-count {
   background: var(--accent);
-  color: #0d0f16;
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 700;
   border-radius: 999px;

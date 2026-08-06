@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { socket } from '../../lib/socket';
 import CalendarPanel from '../Calendar/CalendarPanel';
 import ChoresPanel from '../Chores/ChoresPanel';
 import ShoppingPanel from '../Shopping/ShoppingPanel';
@@ -12,12 +11,13 @@ import TimerPanel from '../Timer/TimerPanel';
 import CameraPanel from '../Cameras/CameraPanel';
 import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
+import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
+import NextEventBanner from './NextEventBanner';
+import { useTimeOfDay } from '../../hooks/useTimeOfDay';
+import { socket } from '../../lib/socket';
 import './Dashboard.css';
 
-const PANELS = [
-  { key: 'calendar', icon: '📅', label: 'Kalender', Component: CalendarPanel },
-  { key: 'chores', icon: '✅', label: 'Gjøremål', Component: ChoresPanel },
-  { key: 'shopping', icon: '🛒', label: 'Handleliste', Component: ShoppingPanel },
+const SECONDARY_PANELS = [
   { key: 'weatherbus', icon: '🌦️', label: 'Vær & buss', Component: WeatherBusPanel },
   { key: 'smarthome', icon: '🔌', label: 'Smarthjem', Component: SmartHomePanel },
   { key: 'gps', icon: '📍', label: 'Kart', Component: GpsMapPanel },
@@ -29,12 +29,14 @@ const PANELS = [
   { key: 'play-outside', icon: '🛝', label: 'Ut og leke', Component: PlayOutsidePanel },
 ];
 
-const RADIUS_PERCENT = 43;
+const GREETING = { morgen: 'God morgen', dag: 'God dag', kveld: 'God kveld' };
+const PERIOD_LABEL = { morgen: 'MORGEN', dag: 'DAG', kveld: 'KVELD' };
 
 export default function Dashboard() {
   const [expandedKey, setExpandedKey] = useState(null);
   const [coverUrl, setCoverUrl] = useState(null);
   const fileInputRef = useRef(null);
+  const { period } = useTimeOfDay();
 
   useEffect(() => {
     fetch('/api/photos/cover')
@@ -62,66 +64,75 @@ export default function Dashboard() {
     }
   }
 
-  const expanded = PANELS.find((p) => p.key === expandedKey);
+  const expanded = SECONDARY_PANELS.find((p) => p.key === expandedKey);
 
-  if (expanded) {
-    const { Component } = expanded;
-    return (
-      <div className="dashboard-expanded">
-        <button className="panel-back-btn" onClick={() => setExpandedKey(null)}>
-          ← Tilbake
-        </button>
-        <div className="dashboard-expanded-content">
-          <Component />
-        </div>
-      </div>
-    );
-  }
+  const today = new Date().toLocaleDateString('nb-NO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   return (
-    <div className="dashboard-icons">
-      <div className="dashboard-ring">
-        <button
-          className="dashboard-center-photo"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Last opp familiebilde"
-        >
-          {coverUrl ? (
-            <img src={coverUrl} alt="Familiebilde" />
-          ) : (
-            <span className="dashboard-center-photo-placeholder">
-              📷
-              <br />
-              Last opp bilde
-            </span>
-          )}
-        </button>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          hidden
-        />
-
-        {PANELS.map(({ key, icon, label }, i) => {
-          const angle = (360 / PANELS.length) * i - 90;
-          const rad = (angle * Math.PI) / 180;
-          const x = 50 + RADIUS_PERCENT * Math.cos(rad);
-          const y = 50 + RADIUS_PERCENT * Math.sin(rad);
-          return (
-            <button
-              key={key}
-              className="dashboard-icon-tile"
-              style={{ left: `${x}%`, top: `${y}%` }}
-              onClick={() => setExpandedKey(key)}
-            >
-              <span className="dashboard-icon-tile-icon">{icon}</span>
-              <span className="dashboard-icon-tile-label">{label}</span>
-            </button>
-          );
-        })}
+    <div className="dashboard-root">
+      <div className="dashboard-icon-row">
+        {SECONDARY_PANELS.map(({ key, icon, label }) => (
+          <button
+            key={key}
+            className={`dashboard-icon-btn ${expandedKey === key ? 'dashboard-icon-btn-active' : ''}`}
+            onClick={() => setExpandedKey(key)}
+          >
+            <span className="dashboard-icon-btn-icon">{icon}</span>
+            <span className="dashboard-icon-btn-label">{label}</span>
+          </button>
+        ))}
       </div>
+
+      {expanded ? (
+        <div className="dashboard-expanded">
+          <button className="panel-back-btn" onClick={() => setExpandedKey(null)}>
+            ← Tilbake
+          </button>
+          <div className="dashboard-expanded-content">
+            <expanded.Component />
+          </div>
+        </div>
+      ) : (
+        <div className="dashboard-home">
+          <div className="dashboard-home-header">
+            <button
+              className="dashboard-home-photo"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Last opp familiebilde"
+            >
+              {coverUrl ? <img src={coverUrl} alt="Familiebilde" /> : <span>📷</span>}
+            </button>
+            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} hidden />
+            <div className="dashboard-home-greeting">
+              <span className="dashboard-home-greeting-label">{GREETING[period]}</span>
+              <span className="dashboard-home-date">{today}</span>
+            </div>
+            <div className="dashboard-home-period">
+              {['morgen', 'dag', 'kveld'].map((p) => (
+                <span
+                  key={p}
+                  className={`dashboard-period-pill ${period === p ? 'dashboard-period-pill-active' : ''}`}
+                >
+                  {PERIOD_LABEL[p]}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <NextEventBanner />
+
+          <div className="dashboard-home-grid">
+            <CalendarPanel />
+            <ChoresPanel />
+            <ShoppingPanel />
+            <DinnerPlanPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

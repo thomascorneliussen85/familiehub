@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #0d0f16;
+  color: var(--on-accent);
   font-weight: 700;
   box-shadow: var(--shadow-panel);
 }

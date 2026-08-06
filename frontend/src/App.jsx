@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FamilyMembersProvider } from './context/FamilyMembersContext';
 import { TimerProvider } from './context/TimerContext';
 import { PinnedCameraProvider } from './context/PinnedCameraContext';
 import { useIdleTimer } from './hooks/useIdleTimer';
+import { useTimeOfDay } from './hooks/useTimeOfDay';
 import Header from './components/Header/Header';
 import Dashboard from './components/Dashboard/Dashboard';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
@@ -17,6 +18,11 @@ const PHOTO_MODE_IDLE_MINUTES = 5;
 function AppShell() {
   const idle = useIdleTimer(PHOTO_MODE_IDLE_MINUTES);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { isDark } = useTimeOfDay();
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  }, [isDark]);
 
   if (idle) {
     return <PhotoFrame />;

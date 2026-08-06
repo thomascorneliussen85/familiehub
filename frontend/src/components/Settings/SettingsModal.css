@@ -102,7 +102,7 @@
 }
 .settings-tab-active {
   background: var(--accent);
-  color: #0d0f16;
+  color: var(--on-accent);
 }
 
 .settings-section {
