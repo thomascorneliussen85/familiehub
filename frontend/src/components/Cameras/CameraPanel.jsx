@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api';
+import { usePinnedCamera } from '../../context/PinnedCameraContext';
 import './CameraPanel.css';
 
 export default function CameraPanel() {
   const [cameras, setCameras] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const streamWrapRef = useRef(null);
+  const { pinnedCamera, pinCamera, unpinCamera } = usePinnedCamera();
 
   useEffect(() => {
     api
@@ -18,7 +22,32 @@ export default function CameraPanel() {
       .finally(() => setLoaded(true));
   }, []);
 
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(document.fullscreenElement === streamWrapRef.current);
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
   const active = cameras.find((c) => c.id === activeId);
+  const isPinned = active && pinnedCamera?.id === active.id;
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      streamWrapRef.current?.requestFullscreen();
+    }
+  }
+
+  function togglePin() {
+    if (isPinned) {
+      unpinCamera();
+    } else if (active) {
+      pinCamera({ id: active.id, name: active.name });
+    }
+  }
 
   return (
     <section className="panel panel-cameras">
@@ -26,11 +55,21 @@ export default function CameraPanel() {
         <div className="panel-title">
           <span className="panel-icon">📹</span> Kameraer
         </div>
+        {active && (
+          <div className="camera-header-actions">
+            <button className="btn btn-icon" onClick={togglePin} aria-label="Vis kamera flytende">
+              {isPinned ? '📌' : '📍'}
+            </button>
+            <button className="btn btn-icon" onClick={toggleFullscreen} aria-label="Fullskjerm">
+              {isFullscreen ? '⤡' : '⛶'}
+            </button>
+          </div>
+        )}
       </div>
       <div className="panel-body camera-body">
         {loaded && cameras.length === 0 && (
           <div className="empty-hint">
-            Ingen kameraer er satt opp ennå. Legg til RTSP-URL for kameraene i .env på serveren.
+            Ingen kameraer er satt opp ennå. Legg til kamera under ⚙️ → Enheter.
           </div>
         )}
         {cameras.length > 0 && (
@@ -46,7 +85,7 @@ export default function CameraPanel() {
                 </button>
               ))}
             </div>
-            <div className="camera-stream-wrap">
+            <div className="camera-stream-wrap" ref={streamWrapRef}>
               {active && (
                 <img
                   key={active.id}

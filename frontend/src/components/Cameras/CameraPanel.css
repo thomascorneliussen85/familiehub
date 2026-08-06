@@ -38,3 +38,12 @@
   height: 100%;
   object-fit: contain;
 }
+
+.camera-stream-wrap:fullscreen {
+  border-radius: 0;
+}
+
+.camera-header-actions {
+  display: flex;
+  gap: 6px;
+}
