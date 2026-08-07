@@ -4,6 +4,7 @@ import FriendsTab from './FriendsTab';
 import PlaySettingsTab from './PlaySettingsTab';
 import DevicesTab from './DevicesTab';
 import CalendarConnectionsTab from './CalendarConnectionsTab';
+import FamilyMembersTab from './FamilyMembersTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -13,7 +14,7 @@ export default function SettingsModal({ onClose }) {
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState(false);
   const [adminApi, setAdminApi] = useState(null);
-  const [tab, setTab] = useState('friends');
+  const [tab, setTab] = useState('family');
 
   async function submitPin(candidate) {
     const res = await fetch('/api/relay/verify-pin', {
@@ -77,6 +78,12 @@ export default function SettingsModal({ onClose }) {
         </button>
         <div className="settings-tabs">
           <button
+            className={`settings-tab ${tab === 'family' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('family')}
+          >
+            Familie
+          </button>
+          <button
             className={`settings-tab ${tab === 'friends' ? 'settings-tab-active' : ''}`}
             onClick={() => setTab('friends')}
           >
@@ -101,6 +108,7 @@ export default function SettingsModal({ onClose }) {
             Kalendere
           </button>
         </div>
+        {tab === 'family' && <FamilyMembersTab adminApi={adminApi} />}
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
         {tab === 'settings' && <PlaySettingsTab adminApi={adminApi} />}
         {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
