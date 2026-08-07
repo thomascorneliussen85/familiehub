@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FamilyMembersProvider } from './context/FamilyMembersContext';
 import { TimerProvider } from './context/TimerContext';
 import { PinnedCameraProvider } from './context/PinnedCameraContext';
+import { PanelNavigationProvider } from './context/PanelNavigationContext';
 import { useIdleTimer } from './hooks/useIdleTimer';
 import { useTimeOfDay } from './hooks/useTimeOfDay';
 import Header from './components/Header/Header';
@@ -61,7 +62,9 @@ export default function App() {
     <FamilyMembersProvider>
       <TimerProvider>
         <PinnedCameraProvider>
-          <AppShell />
+          <PanelNavigationProvider>
+            <AppShell />
+          </PanelNavigationProvider>
         </PinnedCameraProvider>
       </TimerProvider>
     </FamilyMembersProvider>

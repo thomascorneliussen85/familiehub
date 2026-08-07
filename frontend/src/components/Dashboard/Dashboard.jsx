@@ -17,6 +17,7 @@ import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
 import NextEventBanner from './NextEventBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
+import { usePanelNavigation } from '../../context/PanelNavigationContext';
 import { socket } from '../../lib/socket';
 import './Dashboard.css';
 
@@ -38,7 +39,7 @@ const GREETING = { morgen: 'God morgen', dag: 'God dag', kveld: 'God kveld' };
 const PERIOD_LABEL = { morgen: 'MORGEN', dag: 'DAG', kveld: 'KVELD' };
 
 export default function Dashboard() {
-  const [expandedKey, setExpandedKey] = useState(null);
+  const { expandedKey, openPanel, closePanel } = usePanelNavigation();
   const [coverUrl, setCoverUrl] = useState(null);
   const fileInputRef = useRef(null);
   const { period } = useTimeOfDay();
@@ -84,7 +85,7 @@ export default function Dashboard() {
           <button
             key={key}
             className={`dashboard-icon-btn ${expandedKey === key ? 'dashboard-icon-btn-active' : ''}`}
-            onClick={() => setExpandedKey(key)}
+            onClick={() => openPanel(key)}
           >
             <span className="dashboard-icon-btn-icon">{icon}</span>
             <span className="dashboard-icon-btn-label">{label}</span>
@@ -94,7 +95,7 @@ export default function Dashboard() {
 
       {expanded ? (
         <div className="dashboard-expanded">
-          <button className="panel-back-btn" onClick={() => setExpandedKey(null)}>
+          <button className="panel-back-btn" onClick={closePanel}>
             ← Tilbake
           </button>
           <div className="dashboard-expanded-content">

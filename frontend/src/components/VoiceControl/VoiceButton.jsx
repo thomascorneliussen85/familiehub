@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api';
 import { useTimer } from '../../context/TimerContext';
+import { usePanelNavigation } from '../../context/PanelNavigationContext';
 import './VoiceButton.css';
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -33,6 +34,7 @@ export default function VoiceButton() {
   const [feedback, setFeedback] = useState('');
   const recognitionRef = useRef(null);
   const timer = useTimer();
+  const { openPanel } = usePanelNavigation();
 
   useEffect(() => {
     if (!SpeechRecognitionImpl) return;
@@ -50,6 +52,8 @@ export default function VoiceButton() {
         for (const action of clientActions || []) {
           if (action.type === 'set_timer') {
             timer.start(action.minutes, action.label || '');
+          } else if (action.type === 'open_panel') {
+            openPanel(action.key);
           }
         }
         setFeedback(reply);

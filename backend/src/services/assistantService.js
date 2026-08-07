@@ -2,8 +2,26 @@ import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../db/index.js';
 import { config } from '../config.js';
 import { setPlugRelay } from './shellyPoller.js';
+import { getWeather } from './weatherService.js';
+import { getBusDepartures } from './enturService.js';
+import { getPowerPrices } from './powerPriceService.js';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Samme sidenøkler som SECONDARY_PANELS i frontend/src/components/Dashboard/Dashboard.jsx
+const PANELS = {
+  weatherbus: 'Vær og buss',
+  smarthome: 'Smarthjem (smarte plugger)',
+  gps: 'Kart (GPS-posisjon)',
+  powerprice: 'Strømpris',
+  messages: 'Beskjedtavle',
+  timer: 'Timer',
+  cameras: 'Kameraer',
+  garmin: 'Garmin / treningscoach',
+  'play-outside': 'Ut og leke',
+  telemedicine: 'DoktorNå (legetime-booking)',
+  rewards: 'Belønninger',
+};
 
 const TOOLS = [
   {
@@ -103,6 +121,49 @@ const TOOLS = [
     description:
       'Hent dagens kalenderavtaler og ugjorte gjøremål. Bruk denne for å svare på spørsmål om hva som skjer i dag.',
     input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_weather',
+    description: 'Hent gjeldende vær og dagens temperaturspenn. Bruk denne for spørsmål om vær.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_bus_departures',
+    description: 'Hent neste busstider fra det konfigurerte holdeplassen. Bruk denne for spørsmål om buss.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_power_price',
+    description:
+      'Hent strømprisen akkurat nå, samt billigste timer i dag. Bruk denne for spørsmål om strømpris.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_shopping_list',
+    description: 'Hent varene som står på handlelisten akkurat nå (ikke avkrysset).',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_star_balances',
+    description: 'Hent hvor mange stjerner hvert familiemedlem har opptjent/har til gode (belønningssaldo).',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_rewards',
+    description: 'Hent listen over tilgjengelige belønninger og hva de koster i stjerner.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'open_panel',
+    description:
+      'Åpne/vis en bestemt side i FamilieHub på skjermen. Bruk denne når brukeren ber om å åpne, vise eller gå til en side.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', enum: Object.keys(PANELS), description: Object.entries(PANELS).map(([k, v]) => `${k}=${v}`).join(', ') },
+      },
+      required: ['key'],
+    },
   },
 ];
 
@@ -269,6 +330,67 @@ export async function executeTool(name, input, io) {
       };
     }
 
+    case 'get_weather': {
+      const weather = await getWeather();
+      const current = weather.hourly?.[0];
+      if (!current) return { error: 'Fant ingen værdata akkurat nå' };
+      const today = weather.hourly.slice(0, 24);
+      const temps = today.map((h) => h.temperature);
+      return {
+        now: { temperature: current.temperature, symbol: current.symbolCode, wind: current.windSpeed, precipitation: current.precipitation },
+        today_min: Math.min(...temps),
+        today_max: Math.max(...temps),
+      };
+    }
+
+    case 'get_bus_departures': {
+      const bus = await getBusDepartures();
+      if (!bus.configured) return { error: 'Ingen busstoppested er konfigurert' };
+      return { stop: bus.stopName, departures: bus.departures.slice(0, 5) };
+    }
+
+    case 'get_power_price': {
+      const prices = await getPowerPrices();
+      const current = prices.today?.find((p) => new Date(p.time).getHours() === new Date().getHours());
+      return {
+        area: prices.area,
+        now_nok_per_kwh: current?.nokPerKwh ?? null,
+        cheapest_today: prices.cheapestToday,
+      };
+    }
+
+    case 'get_shopping_list': {
+      const items = db.prepare('SELECT name FROM shopping_items WHERE checked = 0 ORDER BY position').all();
+      return { items: items.map((i) => i.name) };
+    }
+
+    case 'get_star_balances': {
+      const members = db.prepare('SELECT id, name FROM family_members').all();
+      const totalStmt = db.prepare(
+        `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
+         FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
+         WHERE c.member_id = ?`
+      );
+      const spentStmt = db.prepare(`SELECT COALESCE(SUM(stars_spent), 0) AS total FROM reward_redemptions WHERE member_id = ?`);
+      return {
+        balances: members.map((m) => {
+          const total = totalStmt.get(m.id).total;
+          const spent = spentStmt.get(m.id).total;
+          return { member: m.name, stars_balance: total - spent };
+        }),
+      };
+    }
+
+    case 'list_rewards': {
+      const rewards = db.prepare('SELECT title, star_cost FROM rewards WHERE active = 1 ORDER BY sort_order, id').all();
+      return { rewards };
+    }
+
+    case 'open_panel': {
+      if (!PANELS[input.key]) return { error: `Ukjent side: ${input.key}` };
+      return { ok: true, clientAction: { type: 'open_panel', key: input.key } };
+    }
+
     default:
       return { error: `Ukjent verktøy: ${name}` };
   }
@@ -277,16 +399,22 @@ export async function executeTool(name, input, io) {
 function buildSystemPrompt() {
   const members = db.prepare('SELECT name FROM family_members').all().map((m) => m.name);
   const plugs = db.prepare('SELECT name FROM smart_plugs').all().map((p) => p.name);
+  const panelList = Object.entries(PANELS).map(([k, v]) => `${k} (${v})`).join(', ');
   return (
     'Du er en hjelpsom norsk taleassistent innebygd i FamilieHub, en delt familietavle på kjøkkenet. ' +
     'Du kan legge til avtaler i kalenderen, opprette gjøremål, opprette belønninger i belønningskatalogen, ' +
-    'legge varer på handlelisten, starte en nedtellingstimer, slå smarte plugger av/på, og svare på hva som ' +
-    'skjer i dag. Bruk alltid det aktuelle verktøyet når brukeren ber om en handling som passer – ikke bare ' +
-    'beskriv hva du ville gjort. Hvis noe er tvetydig, gjør et rimelig valg fremfor å spørre tilbake, siden ' +
-    'dette er en talesamtale uten mulighet for oppfølgingsspørsmål akkurat nå.\n\n' +
+    'legge varer på handlelisten, starte en nedtellingstimer, slå smarte plugger av/på, svare på hva som ' +
+    'skjer i dag, slå opp vær, busstider, strømpris, handleliste, stjernesaldo og belønningskatalog, samt ' +
+    'åpne/vise en side på skjermen (open_panel) når brukeren ber om å se eller åpne noe. ' +
+    'Bruk alltid det aktuelle verktøyet når brukeren ber om en handling eller opplysning som passer – ikke bare ' +
+    'beskriv hva du ville gjort eller si at du ikke kan. Hvis brukeren ber om å åpne/vise/gå til noe, bruk ' +
+    'open_panel med riktig nøkkel selv om du også svarer på et spørsmål samtidig. Hvis noe er tvetydig, gjør et ' +
+    'rimelig valg fremfor å spørre tilbake, siden dette er en talesamtale uten mulighet for oppfølgingsspørsmål ' +
+    'akkurat nå.\n\n' +
     `Dagens dato: ${todayStr()} (bruk denne til å regne ut "i morgen", "på tirsdag" osv.)\n` +
     `Familiemedlemmer: ${members.join(', ') || 'ingen registrert'}\n` +
-    `Smarte plugger: ${plugs.join(', ') || 'ingen registrert'}\n\n` +
+    `Smarte plugger: ${plugs.join(', ') || 'ingen registrert'}\n` +
+    `Sider som kan åpnes med open_panel: ${panelList}\n\n` +
     'Svar alltid kort og naturlig på norsk til slutt, egnet til å bli lest høyt av en talesyntese. Maks 2 setninger.'
   );
 }
