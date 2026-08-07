@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
+import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import './ChoresPanel.css';
 
 const RECURRENCE_LABELS = {
@@ -15,9 +16,38 @@ const RECURRENCE_LABELS = {
   'weekly:sun': 'Hver søndag',
 };
 
+const WEEKDAYS = [
+  ['mon', 'Man'],
+  ['tue', 'Tir'],
+  ['wed', 'Ons'],
+  ['thu', 'Tor'],
+  ['fri', 'Fre'],
+  ['sat', 'Lør'],
+  ['sun', 'Søn'],
+];
+
+function toDateInputValue(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+const emptyForm = {
+  title: '',
+  memberId: '',
+  type: 'anytime', // 'date' | 'weekly' | 'anytime'
+  date: toDateInputValue(new Date()),
+  weekday: 'mon',
+  stars: 1,
+};
+
 export default function ChoresPanel() {
+  const { members } = useFamilyMembers();
   const [chores, setChores] = useState([]);
   const [stars, setStars] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   function loadAll() {
     api.get('/chores').then(setChores).catch(() => {});
@@ -34,14 +64,135 @@ export default function ChoresPanel() {
     await api.post(`/chores/${id}/toggle`).catch(() => {});
   }
 
+  async function remove(id, e) {
+    e.stopPropagation();
+    await api.delete(`/chores/${id}`).catch(() => {});
+  }
+
+  function openAdd() {
+    setForm(emptyForm);
+    setShowAdd(true);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const title = form.title.trim();
+    if (!title) return;
+    const recurrence = form.type === 'weekly' ? `weekly:${form.weekday}` : 'once';
+    const due_date = form.type === 'date' ? form.date : null;
+    await api
+      .post('/chores', {
+        title,
+        member_id: form.memberId || null,
+        recurrence,
+        due_date,
+        stars: form.stars,
+      })
+      .catch(() => {});
+    setShowAdd(false);
+  }
+
   return (
     <section className="panel panel-chores">
       <div className="panel-header">
         <div className="panel-title">
           <span className="panel-icon">✅</span> Gjøremål
         </div>
+        <button
+          className="btn btn-icon"
+          onClick={() => (showAdd ? setShowAdd(false) : openAdd())}
+          aria-label="Legg til gjøremål"
+        >
+          {showAdd ? '✕' : '+'}
+        </button>
       </div>
       <div className="panel-body">
+        {showAdd && (
+          <form className="chore-add-form" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              placeholder="Tittel…"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              required
+              autoFocus
+            />
+            <select
+              value={form.memberId}
+              onChange={(e) => setForm((f) => ({ ...f, memberId: e.target.value }))}
+            >
+              <option value="">Ingen</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.avatar} {m.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="chore-type-row">
+              <button
+                type="button"
+                className={`chore-type-btn ${form.type === 'anytime' ? 'chore-type-btn-active' : ''}`}
+                onClick={() => setForm((f) => ({ ...f, type: 'anytime' }))}
+              >
+                ✅ Bare gjør
+              </button>
+              <button
+                type="button"
+                className={`chore-type-btn ${form.type === 'date' ? 'chore-type-btn-active' : ''}`}
+                onClick={() => setForm((f) => ({ ...f, type: 'date' }))}
+              >
+                📅 Bestemt dag
+              </button>
+              <button
+                type="button"
+                className={`chore-type-btn ${form.type === 'weekly' ? 'chore-type-btn-active' : ''}`}
+                onClick={() => setForm((f) => ({ ...f, type: 'weekly' }))}
+              >
+                🔁 Ukentlig
+              </button>
+            </div>
+
+            {form.type === 'date' && (
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                required
+              />
+            )}
+            {form.type === 'weekly' && (
+              <select
+                value={form.weekday}
+                onChange={(e) => setForm((f) => ({ ...f, weekday: e.target.value }))}
+              >
+                {WEEKDAYS.map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <div className="chore-stars-row">
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`chore-star-btn ${form.stars === n ? 'chore-star-btn-active' : ''}`}
+                  onClick={() => setForm((f) => ({ ...f, stars: n }))}
+                >
+                  {'⭐'.repeat(n)}
+                </button>
+              ))}
+            </div>
+
+            <button type="submit" className="btn btn-accent">
+              Legg til
+            </button>
+          </form>
+        )}
+
         {stars.length > 0 && (
           <div className="stars-row">
             {stars.map((m) => (
@@ -77,6 +228,9 @@ export default function ChoresPanel() {
               <span className="chore-stars">
                 {'⭐'.repeat(chore.stars)}
               </span>
+              <button className="chore-remove" onClick={(e) => remove(chore.id, e)} aria-label="Slett gjøremål">
+                🗑️
+              </button>
             </li>
           ))}
         </ul>

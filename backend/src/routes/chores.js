@@ -12,9 +12,11 @@ function todayStr(offsetDays = 0) {
 }
 
 // Returnerer datoen (YYYY-MM-DD) som representerer "inneværende periode"
-// for et gjøremål, basert på gjentakelsesregelen.
+// for et gjøremål, basert på gjentakelsesregelen. For et engangs-gjøremål
+// uten frist ("bare må gjøres") brukes en fast nøkkel, slik at avkrysning
+// ikke nullstilles neste dag.
 function currentPeriodKey(recurrence, dueDate) {
-  if (recurrence === 'once') return dueDate || todayStr();
+  if (recurrence === 'once') return dueDate || 'anytime';
   if (recurrence === 'daily') return todayStr();
   if (recurrence.startsWith('weekly:')) {
     const targetIdx = WEEKDAY_INDEX[recurrence.split(':')[1]] ?? 0;

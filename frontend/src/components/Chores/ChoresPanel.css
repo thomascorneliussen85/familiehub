@@ -1,3 +1,66 @@
+.chore-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.chore-add-form input[type='text'] {
+  flex: 1 1 100px;
+  min-height: 22px;
+  font-size: 10px;
+  padding: 3px 6px;
+}
+.chore-add-form input[type='date'],
+.chore-add-form select {
+  flex: 0 0 auto;
+  min-height: 22px;
+  font-size: 10px;
+  padding: 3px 4px;
+}
+.chore-add-form > button[type='submit'] {
+  min-height: 22px;
+  padding: 3px 8px;
+  font-size: 10px;
+}
+.chore-type-row {
+  display: flex;
+  gap: 3px;
+  flex: 1 0 100%;
+}
+.chore-type-btn {
+  flex: 1;
+  background: var(--panel-bg-alt);
+  border: 1.5px solid transparent;
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  padding: 3px 4px;
+  font-size: 9px;
+  min-height: 22px;
+}
+.chore-type-btn-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+.chore-stars-row {
+  display: flex;
+  gap: 3px;
+}
+.chore-star-btn {
+  background: var(--panel-bg-alt);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  font-size: 9px;
+  min-height: 22px;
+}
+.chore-star-btn-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .stars-row {
   display: flex;
   gap: 4px;
@@ -78,4 +141,16 @@
   font-size: 9px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.chore-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 9px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  min-height: 16px;
+}
+.chore-remove:active {
+  transform: scale(0.9);
 }
