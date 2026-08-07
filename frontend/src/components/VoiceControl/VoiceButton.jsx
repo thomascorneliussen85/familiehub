@@ -66,7 +66,11 @@ export default function VoiceButton() {
   const [wakeActive, setWakeActive] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [feedback, setFeedback] = useState('');
-  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem(WAKE_ENABLED_KEY) !== '0');
+  // Av som standard: kontinuerlig mikrofonlytting gjør at nettleseren/Android
+  // viser et vedvarende "mikrofonen er i bruk"-varsel (og kan gi en varsellyd
+  // hver gang gjenkjenningen restarter) – det kan bare unngås ved å ikke
+  // lytte kontinuerlig, så brukeren må selv slå det på med 👂-knappen.
+  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem(WAKE_ENABLED_KEY) === '1');
   const recognitionRef = useRef(null);
   // 'wake' | 'command' | 'suspended' | 'idle' – hva den aktive/planlagte gjenkjenningen er for.
   const modeRef = useRef('idle');
