@@ -138,8 +138,9 @@ export default function Dashboard() {
             <ChoresPanel />
             <ShoppingPanel />
             <DinnerPlanPanel />
-            <BabyCameraTile />
           </div>
+
+          <BabyCameraTile />
         </div>
       )}
     </div>
