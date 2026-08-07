@@ -25,6 +25,7 @@ import relayRouter from './routes/relay.js';
 import dinnerPlansRouter from './routes/dinnerPlans.js';
 import calendarConnectionsRouter from './routes/calendarConnections.js';
 import briefRouter from './routes/brief.js';
+import telemedicineRouter from './routes/telemedicine.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { cleanupOldPlayStatus } from './services/playStatusService.js';
@@ -66,6 +67,7 @@ app.use('/api/relay', relayRouter);
 app.use('/api/dinner-plans', dinnerPlansRouter);
 app.use('/api/calendar-connections', calendarConnectionsRouter);
 app.use('/api/brief', briefRouter);
+app.use('/api/telemedicine', telemedicineRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ikke funnet' });

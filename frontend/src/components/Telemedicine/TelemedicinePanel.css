@@ -1,0 +1,50 @@
+.telemedicine-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.telemedicine-demo-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+.telemedicine-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.telemedicine-booking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg-alt);
+}
+.telemedicine-booking-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.telemedicine-booking-info {
+  min-width: 0;
+  flex: 1;
+}
+.telemedicine-booking-doctor {
+  font-weight: 600;
+  font-size: 15px;
+}
+.telemedicine-booking-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: capitalize;
+}
+.telemedicine-booking-reason {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}

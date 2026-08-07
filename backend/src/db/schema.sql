@@ -252,6 +252,32 @@ CREATE TABLE IF NOT EXISTS bible_verses (
 
 CREATE INDEX IF NOT EXISTS idx_daily_briefs_member_date ON daily_briefs(member_id, brief_date);
 
+-- DoktorNå (fiktiv demo-legetjeneste – ingen ekte legetimer, kun en
+-- simulert booking-opplevelse siden familien ikke har valgt en reell
+-- leverandør ennå).
+CREATE TABLE IF NOT EXISTS telemedicine_doctors (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  specialty   TEXT NOT NULL,
+  avatar      TEXT NOT NULL DEFAULT '🩺',
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS telemedicine_bookings (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id         INTEGER REFERENCES family_members(id) ON DELETE SET NULL,
+  doctor_id         INTEGER NOT NULL REFERENCES telemedicine_doctors(id),
+  start_at          TEXT NOT NULL,
+  end_at            TEXT NOT NULL,
+  reason            TEXT,
+  status            TEXT NOT NULL DEFAULT 'booked', -- 'booked' | 'cancelled'
+  calendar_event_id INTEGER REFERENCES calendar_events(id) ON DELETE SET NULL,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_telemedicine_bookings_start ON telemedicine_bookings(start_at);
+CREATE INDEX IF NOT EXISTS idx_telemedicine_bookings_doctor ON telemedicine_bookings(doctor_id, start_at);
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_at);
 CREATE INDEX IF NOT EXISTS idx_chore_completions_chore ON chore_completions(chore_id);
 CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_at);

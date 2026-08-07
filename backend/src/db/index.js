@@ -60,6 +60,21 @@ const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)
   }
 });
 
+// DoktorNå: kuratert liste over fiktive leger til demo-legetjenesten.
+const { n: doctorCount } = db.prepare('SELECT COUNT(*) AS n FROM telemedicine_doctors').get();
+if (doctorCount === 0) {
+  const insertDoctor = db.prepare(
+    'INSERT INTO telemedicine_doctors (name, specialty, avatar, sort_order) VALUES (?, ?, ?, ?)'
+  );
+  [
+    ['Dr. Ingrid Fossheim', 'Allmennlege', '🩺'],
+    ['Dr. Kasper Lindqvist', 'Allmennlege', '🩺'],
+    ['Dr. Nora Bakke', 'Barnelege', '🧒'],
+    ['Dr. Amir Sæther', 'Hudlege', '🧴'],
+    ['Dr. Live Solheim', 'Psykolog', '🧠'],
+  ].forEach(([name, specialty, avatar], i) => insertDoctor.run(name, specialty, avatar, i + 1));
+}
+
 const { n: locationCount } = db.prepare('SELECT COUNT(*) AS n FROM play_locations').get();
 if (locationCount === 0) {
   const insertLocation = db.prepare(
