@@ -3,7 +3,7 @@ import { api } from '../../lib/api';
 import Clock from '../Clock/Clock';
 import './PhotoFrame.css';
 
-const SLIDE_MS = 12000;
+const SLIDE_MS = 10000;
 
 export default function PhotoFrame() {
   const [photos, setPhotos] = useState([]);
