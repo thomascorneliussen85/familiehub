@@ -102,7 +102,7 @@ router.put('/events/:id', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Avtale ikke funnet' });
   const merged = { ...existing, ...req.body };
   db.prepare(
-    `UPDATE calendar_events SET member_id = ?, title = ?, start_at = ?, end_at = ?, all_day = ?, location = ?, notes = ?
+    `UPDATE calendar_events SET member_id = ?, title = ?, start_at = ?, end_at = ?, all_day = ?, location = ?, notes = ?, recurrence = ?
      WHERE id = ?`
   ).run(
     merged.member_id,
@@ -112,6 +112,7 @@ router.put('/events/:id', (req, res) => {
     merged.all_day ? 1 : 0,
     merged.location,
     merged.notes,
+    merged.recurrence,
     req.params.id
   );
   const event = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(req.params.id);

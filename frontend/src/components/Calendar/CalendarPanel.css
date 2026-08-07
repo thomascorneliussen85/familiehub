@@ -88,6 +88,16 @@
   font-size: 8px;
   line-height: 1.2;
 }
+.calendar-event-clickable {
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.08s ease;
+}
+.calendar-event-clickable:hover {
+  background: rgba(128, 118, 96, 0.22);
+}
+.calendar-event-clickable:active {
+  transform: scale(0.97);
+}
 .calendar-event-time {
   font-size: 7px;
   color: var(--text-dim);

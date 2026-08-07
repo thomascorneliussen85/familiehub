@@ -20,13 +20,13 @@ function toDateInputValue(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+const emptyForm = { title: '', date: toDateInputValue(new Date()), time: '', repeatWeekly: false };
+
 export default function CalendarPanel() {
   const [events, setEvents] = useState([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDate, setNewDate] = useState(() => toDateInputValue(new Date()));
-  const [newTime, setNewTime] = useState('');
-  const [repeatWeekly, setRepeatWeekly] = useState(false);
+  // null = skjult, 'add' = nytt skjema, tallet = redigerer avtale med den ID-en
+  const [formMode, setFormMode] = useState(null);
+  const [form, setForm] = useState(emptyForm);
   const weekStart = useMemo(() => startOfWeek(new Date()), []);
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => {
@@ -50,16 +50,38 @@ export default function CalendarPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleAddSubmit(e) {
+  function openAdd() {
+    setForm(emptyForm);
+    setFormMode('add');
+  }
+
+  function openEdit(event) {
+    const start = new Date(event.start_at);
+    setForm({
+      title: event.title,
+      date: toDateInputValue(start),
+      time: event.all_day
+        ? ''
+        : `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
+      repeatWeekly: event.recurrence === 'weekly',
+    });
+    setFormMode(event.id);
+  }
+
+  function closeForm() {
+    setFormMode(null);
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    const title = newTitle.trim();
-    if (!title || !newDate) return;
-    const [y, m, d] = newDate.split('-').map(Number);
+    const title = form.title.trim();
+    if (!title || !form.date) return;
+    const [y, m, d] = form.date.split('-').map(Number);
     let start;
     let end;
     let allDay;
-    if (newTime) {
-      const [hh, mm] = newTime.split(':').map(Number);
+    if (form.time) {
+      const [hh, mm] = form.time.split(':').map(Number);
       start = new Date(y, m - 1, d, hh, mm, 0, 0);
       end = new Date(start);
       end.setHours(end.getHours() + 1);
@@ -70,19 +92,25 @@ export default function CalendarPanel() {
       end.setDate(end.getDate() + 1);
       allDay = true;
     }
-    await api
-      .post('/calendar/events', {
-        title,
-        start_at: start.toISOString(),
-        end_at: end.toISOString(),
-        all_day: allDay,
-        recurrence: repeatWeekly ? 'weekly' : 'once',
-      })
-      .catch(() => {});
-    setNewTitle('');
-    setNewTime('');
-    setRepeatWeekly(false);
-    setShowAddForm(false);
+    const payload = {
+      title,
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
+      all_day: allDay,
+      recurrence: form.repeatWeekly ? 'weekly' : 'once',
+    };
+    if (typeof formMode === 'number') {
+      await api.put(`/calendar/events/${formMode}`, payload).catch(() => {});
+    } else {
+      await api.post('/calendar/events', payload).catch(() => {});
+    }
+    closeForm();
+  }
+
+  async function handleDelete() {
+    if (typeof formMode !== 'number') return;
+    await api.delete(`/calendar/events/${formMode}`).catch(() => {});
+    closeForm();
   }
 
   const today = new Date();
@@ -96,43 +124,51 @@ export default function CalendarPanel() {
         </div>
         <button
           className="btn btn-icon"
-          onClick={() => setShowAddForm((v) => !v)}
+          onClick={() => (formMode === 'add' ? closeForm() : openAdd())}
           aria-label="Legg til avtale"
         >
-          {showAddForm ? '✕' : '+'}
+          {formMode === 'add' ? '✕' : '+'}
         </button>
       </div>
       <div className="panel-body calendar-body">
-        {showAddForm && (
-          <form className="calendar-add-form" onSubmit={handleAddSubmit}>
+        {formMode !== null && (
+          <form className="calendar-add-form" onSubmit={handleSubmit}>
             <input
               type="text"
               placeholder="Tittel…"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               required
             />
             <input
               type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
               required
             />
             <input
               type="time"
-              value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
+              value={form.time}
+              onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
             />
             <label className="calendar-repeat-toggle">
               <input
                 type="checkbox"
-                checked={repeatWeekly}
-                onChange={(e) => setRepeatWeekly(e.target.checked)}
+                checked={form.repeatWeekly}
+                onChange={(e) => setForm((f) => ({ ...f, repeatWeekly: e.target.checked }))}
               />
               🔁 Gjenta hver uke
             </label>
             <button type="submit" className="btn btn-accent">
-              Legg til
+              {typeof formMode === 'number' ? 'Lagre' : 'Legg til'}
+            </button>
+            {typeof formMode === 'number' && (
+              <button type="button" className="btn" onClick={handleDelete}>
+                🗑️ Slett
+              </button>
+            )}
+            <button type="button" className="btn" onClick={closeForm}>
+              Avbryt
             </button>
           </form>
         )}
@@ -158,9 +194,10 @@ export default function CalendarPanel() {
                   {dayEvents.map((e) => (
                     <div
                       key={e.id}
-                      className="calendar-event"
+                      className="calendar-event calendar-event-clickable"
                       style={{ borderLeftColor: e.member_color || '#7c9cff' }}
                       title={e.location || ''}
+                      onClick={() => openEdit(e)}
                     >
                       <span className="calendar-event-time">
                         {e.all_day
