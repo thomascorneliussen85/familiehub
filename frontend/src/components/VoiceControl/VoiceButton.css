@@ -19,6 +19,10 @@
   background: var(--danger);
   animation: pulse 1.2s infinite;
 }
+.voice-btn-thinking {
+  background: var(--accent);
+  animation: pulse 0.7s infinite;
+}
 .voice-feedback {
   position: absolute;
   right: 64px;

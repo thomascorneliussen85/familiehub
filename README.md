@@ -75,6 +75,18 @@ modulen fungerer helt uten AI-nøkkel. Legg inn en nøkkel fra
 [console.anthropic.com](https://console.anthropic.com) for ekte AI-genererte
 briefer (modell `claude-haiku-4-5`).
 
+## AI-taleassistent
+
+Mikrofonknappen (🎤) øverst er nå en ekte AI-assistent (Claude, `claude-opus-5`)
+i stedet for enkel nøkkelord-gjenkjenning. Den forstår naturlig norsk tale og
+kan selv utføre handlinger: legge til avtaler i kalenderen, opprette
+gjøremål, opprette belønninger, legge varer på handlelisten, starte en
+nedtellingstimer, slå smarte plugger av/på, og svare på hva som skjer i dag.
+Si f.eks. «legg til tannlegetime for Adelia på tirsdag klokka to» eller
+«lag en belønning: kinobesøk for ti stjerner». Krever `ANTHROPIC_API_KEY` i
+`.env` (samme nøkkel som Morgenbrief og treningscoachen) – uten den viser
+knappen en tydelig feilmelding i stedet for å late som den virker.
+
 ## Belønningssystem
 
 Stjerner opptjent fra gjøremål vises tydelig under 🏆 **Belønninger**, per
