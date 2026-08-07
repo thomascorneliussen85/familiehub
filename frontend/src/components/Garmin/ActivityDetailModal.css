@@ -1,0 +1,113 @@
+.activity-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 24px;
+}
+
+.activity-modal {
+  position: relative;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  width: min(560px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--panel-bg-alt);
+  border: none;
+  color: var(--text);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.activity-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 40px;
+}
+.activity-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+.activity-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 600;
+}
+.activity-date {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: capitalize;
+}
+
+.activity-loading {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.activity-error {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.activity-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+.activity-stat {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.activity-stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  font-family: var(--serif);
+}
+.activity-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.activity-coach {
+  background: var(--accent-soft);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.activity-coach-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.activity-coach-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+.activity-coach-text {
+  font-size: 15px;
+  line-height: 1.5;
+}

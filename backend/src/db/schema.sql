@@ -169,7 +169,40 @@ CREATE TABLE IF NOT EXISTS garmin_activities (
   avg_hr              REAL,
   max_hr              REAL,
   elevation_gain_m    REAL,
+  elapsed_seconds     REAL,
+  moving_seconds      REAL,
+  elevation_loss_m    REAL,
+  min_elevation_m     REAL,
+  avg_speed_mps       REAL,
+  max_speed_mps       REAL,
+  avg_cadence         REAL,
+  max_cadence         REAL,
+  vo2max              REAL,
+  aerobic_effect      REAL,
+  anaerobic_effect    REAL,
+  avg_stride_length_m REAL,
+  lap_count           INTEGER,
+  device_name         TEXT,
+  raw_json            TEXT, -- hele den rå Garmin-payloaden, for detaljsiden og AI-treningscoach
   synced_at           TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- AI-treningscoach: kommentar per treningsøkt (sammenligner med tidligere økter
+-- av samme type), cachet slik at den ikke regenereres ved hver visning.
+CREATE TABLE IF NOT EXISTS training_coach_notes (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  garmin_activity_id  INTEGER NOT NULL UNIQUE REFERENCES garmin_activities(garmin_activity_id) ON DELETE CASCADE,
+  commentary          TEXT NOT NULL,
+  generated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- AI-generert fremtidsrettet treningsplan basert på nylig treningshistorikk.
+-- Regenereres på forespørsel; nyeste rad er gjeldende plan.
+CREATE TABLE IF NOT EXISTS training_plans (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  content        TEXT NOT NULL,
+  activity_count INTEGER NOT NULL DEFAULT 0,
+  generated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Morgenbrief: hvilke moduler som er med i den personlige morgenrapporten,

@@ -34,6 +34,32 @@ if (!calendarEventsColumns.includes('connection_id')) {
   db.exec('ALTER TABLE calendar_events ADD COLUMN connection_id INTEGER REFERENCES calendar_connections(id) ON DELETE CASCADE');
 }
 
+// Migrering: garmin_activities kan finnes fra før, uten de nye detalj-kolonnene
+// for treningscoach-siden (lagt til senere).
+const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)').all().map((c) => c.name);
+[
+  'elapsed_seconds',
+  'moving_seconds',
+  'elevation_loss_m',
+  'min_elevation_m',
+  'avg_speed_mps',
+  'max_speed_mps',
+  'avg_cadence',
+  'max_cadence',
+  'vo2max',
+  'aerobic_effect',
+  'anaerobic_effect',
+  'avg_stride_length_m',
+  'lap_count',
+  'device_name',
+  'raw_json',
+].forEach((col) => {
+  if (!garminActivitiesColumns.includes(col)) {
+    const type = col === 'lap_count' ? 'INTEGER' : col === 'device_name' || col === 'raw_json' ? 'TEXT' : 'REAL';
+    db.exec(`ALTER TABLE garmin_activities ADD COLUMN ${col} ${type}`);
+  }
+});
+
 const { n: locationCount } = db.prepare('SELECT COUNT(*) AS n FROM play_locations').get();
 if (locationCount === 0) {
   const insertLocation = db.prepare(

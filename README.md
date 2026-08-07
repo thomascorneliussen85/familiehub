@@ -75,6 +75,17 @@ modulen fungerer helt uten AI-nøkkel. Legg inn en nøkkel fra
 [console.anthropic.com](https://console.anthropic.com) for ekte AI-genererte
 briefer (modell `claude-haiku-4-5`).
 
+## Treningscoach (Garmin)
+
+Under ⌚ **Garmin** kan du trykke på en treningsøkt for å se alle detaljer fra
+klokken (puls, fart/tempo, kadens, høydemeter, VO2max, treningseffekt osv.)
+pluss en AI-generert treningscoach-kommentar som sammenligner økten med dine
+siste økter av samme type. 🧭-knappen i panelhodet åpner en fremtidsrettet
+treningsplan basert på nylig treningshistorikk. Begge deler bruker samme
+`ANTHROPIC_API_KEY` som Morgenbrief (se over) – uten nøkkel vises en enkel
+demokommentar/-plan basert på de samme tallene. Krever at Garmin er
+synkronisert (`GARMIN_USERNAME`/`GARMIN_PASSWORD` i `.env`).
+
 ## "Ut og leke" – dele lekestatus med vennefamilier
 
 Vennefamilier trenger **ikke** eget Render-/Fly.io-oppsett – de trenger bare

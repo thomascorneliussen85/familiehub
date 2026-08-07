@@ -24,6 +24,16 @@
   border-radius: var(--radius-sm);
   background: var(--panel-bg-alt);
 }
+.garmin-activity-clickable {
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.08s ease;
+}
+.garmin-activity-clickable:hover {
+  background: var(--accent-soft);
+}
+.garmin-activity-clickable:active {
+  transform: scale(0.98);
+}
 .garmin-activity-icon {
   font-size: 24px;
   flex-shrink: 0;

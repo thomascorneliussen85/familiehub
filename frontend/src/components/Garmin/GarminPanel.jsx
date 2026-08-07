@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
+import ActivityDetailModal from './ActivityDetailModal';
+import TrainingPlanModal from './TrainingPlanModal';
 import './GarminPanel.css';
 
 const TYPE_ICONS = {
@@ -53,6 +55,8 @@ export default function GarminPanel() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [openActivityId, setOpenActivityId] = useState(null);
+  const [showPlan, setShowPlan] = useState(false);
 
   useEffect(() => {
     Promise.all([api.get('/garmin/status'), api.get('/garmin/activities')])
@@ -89,11 +93,16 @@ export default function GarminPanel() {
         <div className="panel-title">
           <span className="panel-icon">⌚</span> Garmin
         </div>
-        {configured && (
-          <button className="btn btn-icon" onClick={handleSync} disabled={syncing} aria-label="Synkroniser">
-            {syncing ? '⏳' : '🔄'}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="btn btn-icon" onClick={() => setShowPlan(true)} aria-label="Treningsplan">
+            🧭
           </button>
-        )}
+          {configured && (
+            <button className="btn btn-icon" onClick={handleSync} disabled={syncing} aria-label="Synkroniser">
+              {syncing ? '⏳' : '🔄'}
+            </button>
+          )}
+        </div>
       </div>
       <div className="panel-body garmin-body">
         {loaded && !configured && (
@@ -108,7 +117,11 @@ export default function GarminPanel() {
         )}
         <ul className="garmin-list">
           {activities.map((a) => (
-            <li key={a.garmin_activity_id} className="garmin-activity">
+            <li
+              key={a.garmin_activity_id}
+              className="garmin-activity garmin-activity-clickable"
+              onClick={() => setOpenActivityId(a.garmin_activity_id)}
+            >
               <span className="garmin-activity-icon">{activityIcon(a.activity_type)}</span>
               <div className="garmin-activity-info">
                 <div className="garmin-activity-name">{a.name}</div>
@@ -123,6 +136,10 @@ export default function GarminPanel() {
           ))}
         </ul>
       </div>
+      {openActivityId != null && (
+        <ActivityDetailModal activityId={openActivityId} onClose={() => setOpenActivityId(null)} />
+      )}
+      {showPlan && <TrainingPlanModal onClose={() => setShowPlan(false)} />}
     </section>
   );
 }
