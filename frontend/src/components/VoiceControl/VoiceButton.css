@@ -23,6 +23,24 @@
   background: var(--accent);
   animation: pulse 0.7s infinite;
 }
+.voice-btn-wake {
+  animation: wake-breathe 2.4s ease-in-out infinite;
+}
+.voice-mute-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+}
+.voice-mute-btn:active {
+  opacity: 1;
+}
 .voice-feedback {
   position: absolute;
   right: 64px;
@@ -41,4 +59,8 @@
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.5); }
   50% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+}
+@keyframes wake-breathe {
+  0%, 100% { box-shadow: 0 0 0 2px var(--accent-soft); }
+  50% { box-shadow: 0 0 0 6px var(--accent-soft); }
 }
