@@ -114,6 +114,12 @@ export function createBooking({ member_id, doctor_id, start_at, reason }) {
   };
 }
 
+// Markerer en booking som gjennomført (etter en simulert videosamtale).
+// Kalenderavtalen beholdes som historikk – kun den aktive booking-statusen endres.
+export function completeBooking(id) {
+  db.prepare(`UPDATE telemedicine_bookings SET status = 'completed' WHERE id = ? AND status = 'booked'`).run(id);
+}
+
 export function cancelBooking(id) {
   const booking = db.prepare('SELECT * FROM telemedicine_bookings WHERE id = ?').get(id);
   if (!booking) return;

@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import BookingModal from './BookingModal';
+import VideoCallModal from './VideoCallModal';
 import './TelemedicinePanel.css';
+
+const JOIN_WINDOW_BEFORE_MS = 10 * 60 * 1000;
 
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString('nb-NO', {
@@ -14,9 +17,17 @@ function formatDateTime(iso) {
   });
 }
 
+function canJoin(booking, now) {
+  const start = new Date(booking.start_at).getTime();
+  const end = new Date(booking.end_at).getTime();
+  return now >= start - JOIN_WINDOW_BEFORE_MS && now <= end;
+}
+
 export default function TelemedicinePanel() {
   const [bookings, setBookings] = useState([]);
   const [showBooking, setShowBooking] = useState(false);
+  const [activeCall, setActiveCall] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
 
   function load() {
     api.get('/telemedicine/bookings').then(setBookings).catch(() => {});
@@ -25,7 +36,11 @@ export default function TelemedicinePanel() {
   useEffect(() => {
     load();
     socket.on('telemedicine:update', load);
-    return () => socket.off('telemedicine:update', load);
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => {
+      socket.off('telemedicine:update', load);
+      clearInterval(id);
+    };
   }, []);
 
   async function cancel(id) {
@@ -61,14 +76,21 @@ export default function TelemedicinePanel() {
                 </div>
                 {b.reason && <div className="telemedicine-booking-reason">{b.reason}</div>}
               </div>
-              <button className="btn btn-icon" onClick={() => cancel(b.id)} aria-label="Avbestill">
-                ✕
-              </button>
+              {canJoin(b, now) ? (
+                <button className="btn btn-accent telemedicine-join-btn" onClick={() => setActiveCall(b)}>
+                  🎥 Bli med
+                </button>
+              ) : (
+                <button className="btn btn-icon" onClick={() => cancel(b.id)} aria-label="Avbestill">
+                  ✕
+                </button>
+              )}
             </li>
           ))}
         </ul>
       </div>
       {showBooking && <BookingModal onClose={() => setShowBooking(false)} />}
+      {activeCall && <VideoCallModal booking={activeCall} onEnd={() => setActiveCall(null)} />}
     </section>
   );
 }

@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { listDoctors, listBookings, getAvailableSlots, createBooking, cancelBooking } from '../services/telemedicineService.js';
+import {
+  listDoctors,
+  listBookings,
+  getAvailableSlots,
+  createBooking,
+  cancelBooking,
+  completeBooking,
+} from '../services/telemedicineService.js';
 
 const router = Router();
 
@@ -30,6 +37,12 @@ router.post('/bookings', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+router.post('/bookings/:id/complete', (req, res) => {
+  completeBooking(Number(req.params.id));
+  req.app.get('io').emit('telemedicine:update');
+  res.status(204).end();
 });
 
 router.delete('/bookings/:id', (req, res) => {
