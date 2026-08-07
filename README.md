@@ -32,6 +32,11 @@ Frontend kjører da på **http://localhost:5173** (Vite dev-server, proxyer
 
 Legg egne bilder i `/photos`-mappen for at fotoramme-modusen skal vise noe.
 
+For at 🎤-knappen (talegjenkjenning) skal fungere når appen åpnes fra et
+nettbrett via IP-adressen på hjemmenettverket, må Vite serveres over https –
+se [`certs/README.md`](certs/README.md) for oppsett (nødvendig kun for
+talegjenkjenning; resten av appen fungerer fint over vanlig http).
+
 ### Nyttige scripts
 
 | Kommando | Beskrivelse |
