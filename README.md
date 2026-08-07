@@ -131,6 +131,28 @@ for å spare batteri. Traccar (for andre GPS-klokker som støtter en egen
 server) kan kjøre side om side med Xplora, siden de skriver til samme tabell
 med hver sin `source`.
 
+## Google Photos til fotoramme
+
+Under ⚙️ → **Bilder** kan du koble til Google Photos og plukke bilder rett
+inn i fotoramme-mappen. Google fjernet i 2025 muligheten for tredjepartsapper
+å lese et album/en mappe løpende – det som er igjen er en engangs-"plukker":
+du trykker «Koble til Google Photos», velger bilder i vinduet som åpner seg
+(Googles eget grensesnitt, kan navigere inn i et album og velge flere), og
+FamilieHub laster dem ned. Gjenta når du vil legge til flere – det finnes
+ingen automatisk synkronisering, det tillater ikke Google lenger.
+
+Krever et engangsoppsett i [Google Cloud Console](https://console.cloud.google.com/):
+
+1. Opprett et prosjekt (eller bruk et eksisterende) og skru på **Google
+   Photos Picker API** under "APIs & Services" → "Library".
+2. Under "APIs & Services" → "Credentials", opprett (eller gjenbruk, hvis du
+   allerede har satt opp Google Kalender) en **OAuth Client ID** av typen
+   "Web application".
+3. Legg til `http://localhost:4000/api/photos/google/callback` i "Authorized
+   redirect URIs" (i tillegg til kalender sin URI, hvis den også er satt opp).
+4. Legg `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (samme som kalender bruker)
+   og `GOOGLE_PHOTOS_REDIRECT_URI` inn i `.env`.
+
 ## "Ut og leke" – dele lekestatus med vennefamilier
 
 Vennefamilier trenger **ikke** eget Render-/Fly.io-oppsett – de trenger bare

@@ -7,6 +7,7 @@ import CalendarConnectionsTab from './CalendarConnectionsTab';
 import FamilyMembersTab from './FamilyMembersTab';
 import BriefSettingsTab from './BriefSettingsTab';
 import RewardsSettingsTab from './RewardsSettingsTab';
+import PhotosSettingsTab from './PhotosSettingsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -121,6 +122,12 @@ export default function SettingsModal({ onClose }) {
           >
             Belønninger
           </button>
+          <button
+            className={`settings-tab ${tab === 'photos' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('photos')}
+          >
+            Bilder
+          </button>
         </div>
         {tab === 'family' && <FamilyMembersTab adminApi={adminApi} />}
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
@@ -129,6 +136,7 @@ export default function SettingsModal({ onClose }) {
         {tab === 'calendars' && <CalendarConnectionsTab adminApi={adminApi} />}
         {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
         {tab === 'rewards' && <RewardsSettingsTab adminApi={adminApi} />}
+        {tab === 'photos' && <PhotosSettingsTab adminApi={adminApi} />}
       </div>
     </div>
   );
