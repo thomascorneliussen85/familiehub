@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { config } from '../config.js';
 
 const router = Router();
 
@@ -124,32 +123,6 @@ router.delete('/events/:id', (req, res) => {
   db.prepare('DELETE FROM calendar_events WHERE id = ?').run(req.params.id);
   req.app.get('io').emit('calendar:update', { type: 'deleted', id: Number(req.params.id) });
   res.status(204).end();
-});
-
-// ---- Google Calendar-integrasjon (forberedt, krever GOOGLE_CLIENT_ID/SECRET i .env) ----
-router.get('/google/status', (req, res) => {
-  res.json({ configured: Boolean(config.google.clientId && config.google.clientSecret) });
-});
-
-router.get('/google/auth-url', (req, res) => {
-  if (!config.google.clientId) {
-    return res.status(400).json({ error: 'Google-integrasjon er ikke konfigurert i .env ennå' });
-  }
-  const params = new URLSearchParams({
-    client_id: config.google.clientId,
-    redirect_uri: config.google.redirectUri,
-    response_type: 'code',
-    access_type: 'offline',
-    prompt: 'consent',
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
-  });
-  res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
-});
-
-router.get('/google/callback', (req, res) => {
-  // TODO: bytt "code" mot access/refresh-token og lagre kryptert i settings-tabellen
-  // når Google-integrasjonen skal fullføres.
-  res.status(501).send('Google Calendar-integrasjon er forberedt, men ikke fullført ennå.');
 });
 
 export default router;

@@ -18,11 +18,26 @@ const PHOTO_MODE_IDLE_MINUTES = 5;
 function AppShell() {
   const idle = useIdleTimer(PHOTO_MODE_IDLE_MINUTES);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [calendarConnectMsg, setCalendarConnectMsg] = useState('');
   const { isDark } = useTimeOfDay();
 
   useEffect(() => {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
   }, [isDark]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get('calendar_connect');
+    if (result === 'ok') {
+      setCalendarConnectMsg('Kalender koblet til ✓');
+    } else if (result === 'error') {
+      setCalendarConnectMsg('Klarte ikke å koble til kalenderen. Prøv igjen fra ⚙️ → Kalendere.');
+    }
+    if (result) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => setCalendarConnectMsg(''), 6000);
+    }
+  }, []);
 
   if (idle) {
     return <PhotoFrame />;
@@ -31,6 +46,7 @@ function AppShell() {
   return (
     <div className="app-shell">
       <FriendPlayToast />
+      {calendarConnectMsg && <div className="calendar-connect-toast">{calendarConnectMsg}</div>}
       {!settingsOpen && <PairingPendingBanner onOpenSettings={() => setSettingsOpen(true)} />}
       <Header onOpenSettings={() => setSettingsOpen(true)} />
       <Dashboard />

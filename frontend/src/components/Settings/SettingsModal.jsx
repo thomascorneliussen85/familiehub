@@ -3,6 +3,7 @@ import { createAdminApi } from '../../lib/adminApi';
 import FriendsTab from './FriendsTab';
 import PlaySettingsTab from './PlaySettingsTab';
 import DevicesTab from './DevicesTab';
+import CalendarConnectionsTab from './CalendarConnectionsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -93,10 +94,17 @@ export default function SettingsModal({ onClose }) {
           >
             Enheter
           </button>
+          <button
+            className={`settings-tab ${tab === 'calendars' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('calendars')}
+          >
+            Kalendere
+          </button>
         </div>
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
         {tab === 'settings' && <PlaySettingsTab adminApi={adminApi} />}
         {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
+        {tab === 'calendars' && <CalendarConnectionsTab adminApi={adminApi} />}
       </div>
     </div>
   );
