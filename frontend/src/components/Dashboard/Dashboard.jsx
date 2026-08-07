@@ -13,6 +13,7 @@ import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
 import NextEventBanner from './NextEventBanner';
+import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
 import { socket } from '../../lib/socket';
 import './Dashboard.css';
@@ -123,6 +124,7 @@ export default function Dashboard() {
             </div>
           </div>
 
+          <GoodMorningCard />
           <NextEventBanner />
 
           <div className="dashboard-home-grid">

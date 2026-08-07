@@ -76,6 +76,26 @@ export default function VoiceButton() {
         }
         break;
       }
+      case 'PLAY_MORNING_BRIEF': {
+        // Foreløpig kobling mot eksisterende stemmemodul: siden appen ikke har
+        // et eget "valgt profil"-konsept for stemmestyring ennå, brukes
+        // familiemedlemmet som ikke har hørt briefen sin i dag (samme logikk
+        // som "God morgen"-kortet på dashbordet).
+        const status = await api.get('/brief/status');
+        const target = status.find((m) => !m.heard) || status[0];
+        if (!target) {
+          setFeedback('Fant ingen familiemedlemmer for morgenbrief');
+          speak('Jeg fant ingen familiemedlemmer.');
+          break;
+        }
+        setFeedback(`Henter morgenbrief for ${target.name}…`);
+        let brief = await api.get(`/brief/${target.id}/today`);
+        if (!brief) brief = await api.post(`/brief/generate/${target.id}`);
+        setFeedback(`Morgenbrief for ${target.name}: ${brief.content}`);
+        speak(brief.content);
+        await api.post(`/brief/${target.id}/heard`).catch(() => {});
+        break;
+      }
       default: {
         setFeedback(`Skjønte ikke: «${intent.raw}»`);
         speak('Beklager, jeg skjønte ikke det.');

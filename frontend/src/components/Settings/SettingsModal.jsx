@@ -5,6 +5,7 @@ import PlaySettingsTab from './PlaySettingsTab';
 import DevicesTab from './DevicesTab';
 import CalendarConnectionsTab from './CalendarConnectionsTab';
 import FamilyMembersTab from './FamilyMembersTab';
+import BriefSettingsTab from './BriefSettingsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -107,12 +108,19 @@ export default function SettingsModal({ onClose }) {
           >
             Kalendere
           </button>
+          <button
+            className={`settings-tab ${tab === 'brief' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('brief')}
+          >
+            Morgenbrief
+          </button>
         </div>
         {tab === 'family' && <FamilyMembersTab adminApi={adminApi} />}
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
         {tab === 'settings' && <PlaySettingsTab adminApi={adminApi} />}
         {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
         {tab === 'calendars' && <CalendarConnectionsTab adminApi={adminApi} />}
+        {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
       </div>
     </div>
   );

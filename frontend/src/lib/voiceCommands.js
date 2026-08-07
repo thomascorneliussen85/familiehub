@@ -11,6 +11,7 @@
 //   { type: 'TOGGLE_PLUG', name: string, on: boolean }
 //   { type: 'TODAY_SUMMARY' }
 //   { type: 'ADD_CALENDAR_EVENT', title: string, start_at: string, end_at: string, all_day: boolean }
+//   { type: 'PLAY_MORNING_BRIEF' }
 //   { type: 'UNKNOWN', raw: string }
 
 const WEEKDAYS_NB = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
@@ -80,6 +81,11 @@ const PATTERNS = [
   {
     type: 'TODAY_SUMMARY',
     regex: /hva skjer i dag/i,
+    build: () => ({}),
+  },
+  {
+    type: 'PLAY_MORNING_BRIEF',
+    regex: /god morgen/i,
     build: () => ({}),
   },
 ];

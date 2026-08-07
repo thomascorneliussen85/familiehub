@@ -172,6 +172,53 @@ CREATE TABLE IF NOT EXISTS garmin_activities (
   synced_at           TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Morgenbrief: hvilke moduler som er med i den personlige morgenrapporten,
+-- per familiemedlem. Rad opprettes med standardverdier når medlemmet først
+-- åpner innstillingene, eller ved seeding.
+CREATE TABLE IF NOT EXISTS brief_settings (
+  member_id       INTEGER PRIMARY KEY REFERENCES family_members(id) ON DELETE CASCADE,
+  module_calendar INTEGER NOT NULL DEFAULT 1,
+  module_weather  INTEGER NOT NULL DEFAULT 1,
+  module_power    INTEGER NOT NULL DEFAULT 0,
+  module_chores   INTEGER NOT NULL DEFAULT 1,
+  module_news     INTEGER NOT NULL DEFAULT 0,
+  module_market   INTEGER NOT NULL DEFAULT 0,
+  module_verse    INTEGER NOT NULL DEFAULT 0,
+  module_quote    INTEGER NOT NULL DEFAULT 0,
+  module_fact     INTEGER NOT NULL DEFAULT 0, -- kun barneprofil: én morsom fakta
+  tickers         TEXT NOT NULL DEFAULT '[]', -- JSON-array, f.eks. ["EQNR.OL","^GSPC"]
+  rss_feed_urls   TEXT NOT NULL DEFAULT '[]', -- JSON-array; tom = standard NRK-feed
+  preferred_time  TEXT NOT NULL DEFAULT '07:00',
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Ferdig generert (eller demo-) brief, cachet per person per dag.
+CREATE TABLE IF NOT EXISTS daily_briefs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id   INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  brief_date  TEXT NOT NULL, -- YYYY-MM-DD
+  content     TEXT NOT NULL,
+  modules     TEXT NOT NULL DEFAULT '[]', -- JSON-array over moduler brukt (for ikonvisning)
+  is_demo     INTEGER NOT NULL DEFAULT 0,
+  heard       INTEGER NOT NULL DEFAULT 0,
+  heard_at    TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(member_id, brief_date)
+);
+
+-- Kuratert liste over bibelvers til "dagens vers"-modulen. fallback_text_no
+-- brukes som demo-/offline-fallback siden bible-api.com ikke tilbyr norsk
+-- oversettelse (den engelske teksten hentes live og oversettes av AI-en når
+-- briefen settes sammen).
+CREATE TABLE IF NOT EXISTS bible_verses (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  reference         TEXT NOT NULL UNIQUE, -- f.eks. "Salme 23:1"
+  fallback_text_no  TEXT,
+  sort_order        INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_briefs_member_date ON daily_briefs(member_id, brief_date);
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_at);
 CREATE INDEX IF NOT EXISTS idx_chore_completions_chore ON chore_completions(chore_id);
 CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_at);

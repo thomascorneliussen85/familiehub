@@ -82,4 +82,13 @@ export const config = {
   },
 
   parentPin: process.env.PARENT_PIN || '1234',
+
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+
+  brief: {
+    defaultRssFeeds: (process.env.BRIEF_RSS_FEEDS || 'https://www.nrk.no/toppsaker.rss')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  },
 };

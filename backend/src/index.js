@@ -24,10 +24,12 @@ import playAdminRouter from './routes/playAdmin.js';
 import relayRouter from './routes/relay.js';
 import dinnerPlansRouter from './routes/dinnerPlans.js';
 import calendarConnectionsRouter from './routes/calendarConnections.js';
+import briefRouter from './routes/brief.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { cleanupOldPlayStatus } from './services/playStatusService.js';
 import { initRelayClient } from './services/relayClient.js';
+import { startBriefScheduler } from './services/briefScheduler.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +65,7 @@ app.use('/api/play-admin', playAdminRouter);
 app.use('/api/relay', relayRouter);
 app.use('/api/dinner-plans', dinnerPlansRouter);
 app.use('/api/calendar-connections', calendarConnectionsRouter);
+app.use('/api/brief', briefRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ikke funnet' });
@@ -84,6 +87,7 @@ server.listen(config.port, () => {
   cleanupOldPlayStatus();
   setInterval(cleanupOldPlayStatus, 24 * 60 * 60 * 1000);
   initRelayClient(io);
+  startBriefScheduler(io);
 });
 
 process.on('SIGINT', () => {

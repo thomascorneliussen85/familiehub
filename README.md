@@ -56,6 +56,24 @@ for en fullstendig, kommentert liste. De viktigste gruppene:
 - **Buss**: Entur stoppested-ID
 - **Strømpris**: prisområde (standard NO5 / Bergen)
 - **Fotoramme**: mappe og inaktivitetstid
+- **Morgenbrief**: `ANTHROPIC_API_KEY` (valgfri – uten den vises en
+  ferdiggenerert demobrief) og `BRIEF_RSS_FEEDS` (standard-nyhetsstrøm)
+
+## "Morgenbrief" – personlig opplest morgenrapport
+
+Hvert familiemedlem kan sette sammen sin egen morgenbrief under
+⚙️ → **Morgenbrief**: kalender, vær/buss, strømpris, gjøremål, nyheter,
+marked (kun kurser/prosent, aldri anbefalinger), dagens bibelvers og dagens
+sitat. Barneprofiler får en forenklet brief (kalender, vær, gjøremål og én
+morsom fakta) og har aldri tilgang til nyheter eller marked.
+
+Mellom kl. 05–10 viser dashbordet et «God morgen»-kort med profilknapper for
+alle som ikke har hørt briefen sin ennå. Trykk på en profil for å se og høre
+briefen (Web Speech API, norsk stemme). Uten `ANTHROPIC_API_KEY` i `.env`
+brukes en ferdiggenerert demobrief basert på de samme dataene, slik at
+modulen fungerer helt uten AI-nøkkel. Legg inn en nøkkel fra
+[console.anthropic.com](https://console.anthropic.com) for ekte AI-genererte
+briefer (modell `claude-haiku-4-5`).
 
 ## "Ut og leke" – dele lekestatus med vennefamilier
 
