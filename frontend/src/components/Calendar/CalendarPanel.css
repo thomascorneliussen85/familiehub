@@ -25,6 +25,18 @@
   padding: 3px 8px;
   font-size: 10px;
 }
+.calendar-repeat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+.calendar-repeat-toggle input {
+  width: 11px;
+  height: 11px;
+}
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

@@ -26,6 +26,7 @@ export default function CalendarPanel() {
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState(() => toDateInputValue(new Date()));
   const [newTime, setNewTime] = useState('');
+  const [repeatWeekly, setRepeatWeekly] = useState(false);
   const weekStart = useMemo(() => startOfWeek(new Date()), []);
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => {
@@ -75,10 +76,12 @@ export default function CalendarPanel() {
         start_at: start.toISOString(),
         end_at: end.toISOString(),
         all_day: allDay,
+        recurrence: repeatWeekly ? 'weekly' : 'once',
       })
       .catch(() => {});
     setNewTitle('');
     setNewTime('');
+    setRepeatWeekly(false);
     setShowAddForm(false);
   }
 
@@ -120,6 +123,14 @@ export default function CalendarPanel() {
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
             />
+            <label className="calendar-repeat-toggle">
+              <input
+                type="checkbox"
+                checked={repeatWeekly}
+                onChange={(e) => setRepeatWeekly(e.target.checked)}
+              />
+              🔁 Gjenta hver uke
+            </label>
             <button type="submit" className="btn btn-accent">
               Legg til
             </button>
@@ -159,7 +170,10 @@ export default function CalendarPanel() {
                               minute: '2-digit',
                             })}
                       </span>
-                      <span className="calendar-event-title">{e.title}</span>
+                      <span className="calendar-event-title">
+                        {e.recurrence === 'weekly' && '🔁 '}
+                        {e.title}
+                      </span>
                       {e.member_name && (
                         <span className="calendar-event-member">{e.member_name}</span>
                       )}

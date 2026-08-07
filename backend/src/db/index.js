@@ -22,6 +22,12 @@ if (!friendFamiliesColumns.includes('friend_hub_id')) {
 }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_friend_families_hub ON friend_families(friend_hub_id)');
 
+// Migrering: calendar_events kan finnes fra før, uten recurrence-kolonnen.
+const calendarEventsColumns = db.prepare('PRAGMA table_info(calendar_events)').all().map((c) => c.name);
+if (!calendarEventsColumns.includes('recurrence')) {
+  db.exec("ALTER TABLE calendar_events ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'once'");
+}
+
 const { n: locationCount } = db.prepare('SELECT COUNT(*) AS n FROM play_locations').get();
 if (locationCount === 0) {
   const insertLocation = db.prepare(

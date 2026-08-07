@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   notes           TEXT,
   source          TEXT NOT NULL DEFAULT 'local', -- 'local' | 'google'
   google_event_id TEXT,
+  recurrence      TEXT NOT NULL DEFAULT 'once', -- 'once' | 'weekly'
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
