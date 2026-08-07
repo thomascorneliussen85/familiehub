@@ -56,6 +56,7 @@ for en fullstendig, kommentert liste. De viktigste gruppene:
 - **Google Calendar**: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (forberedt,
   kalenderen bruker lokal lagring helt til dette fylles inn)
 - **Traccar** (GPS-klokke): URL, brukernavn, passord, enhets-ID, polling-intervall
+- **Xplora** (GPS-klokke, alternativ til Traccar): telefonnummer/e-post + passord (samme innlogging som Xplora-appen)
 - **Geofence**: koordinater + radius for "hjemme"-varsel
 - **Vær**: koordinater (standard Frekhaug) + påkrevd User-Agent til api.met.no
 - **Buss**: Entur stoppested-ID
@@ -114,6 +115,21 @@ treningsplan basert på nylig treningshistorikk. Begge deler bruker samme
 `ANTHROPIC_API_KEY` som Morgenbrief (se over) – uten nøkkel vises en enkel
 demokommentar/-plan basert på de samme tallene. Krever at Garmin er
 synkronisert (`GARMIN_USERNAME`/`GARMIN_PASSWORD` i `.env`).
+
+## GPS-klokke (Xplora)
+
+Under 📍 **Kart** vises barnets siste kjente posisjon på et kart, med et
+"hjemme"-varsel når geofencen i `.env` (`GEOFENCE_HOME_*`) treffes. Xplora
+har ingen offentlig/dokumentert API, så integrasjonen bruker samme
+innlogging som Xplora-appen (telefonnummer + landkode, eller e-post, pluss
+passord) – legg dette inn som `XPLORA_PHONE`/`XPLORA_COUNTRY_CODE` eller
+`XPLORA_EMAIL`, samt `XPLORA_PASSWORD`, i `.env`. `XPLORA_WARD_NAME` velger
+riktig barn hvis kontoen har flere. Backend poller siste kjente posisjon
+hvert 3. minutt (samme intervall som Traccar, konfigurerbart med
+`XPLORA_POLL_INTERVAL_MS`) – klokken spørres ikke aktivt om en fersk posisjon
+for å spare batteri. Traccar (for andre GPS-klokker som støtter en egen
+server) kan kjøre side om side med Xplora, siden de skriver til samme tabell
+med hver sin `source`.
 
 ## "Ut og leke" – dele lekestatus med vennefamilier
 

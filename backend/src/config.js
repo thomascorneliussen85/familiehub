@@ -38,6 +38,18 @@ export const config = {
     pollIntervalMs: num(process.env.TRACCAR_POLL_INTERVAL_MS, 180000),
   },
 
+  xplora: {
+    countryPhoneNumber: process.env.XPLORA_COUNTRY_CODE || '+47',
+    phoneNumber: process.env.XPLORA_PHONE || '',
+    email: process.env.XPLORA_EMAIL || '',
+    password: process.env.XPLORA_PASSWORD || '',
+    // Navnet på barnet (ward) klokken tilhører i Xplora-appen din – brukes til
+    // å velge riktig barn hvis kontoen har flere. Faller tilbake til det
+    // eneste barnet på kontoen hvis dette ikke er satt eller ikke matcher.
+    wardName: process.env.XPLORA_WARD_NAME || 'Adelia',
+    pollIntervalMs: num(process.env.XPLORA_POLL_INTERVAL_MS, 180000),
+  },
+
   geofenceHome: {
     lat: num(process.env.GEOFENCE_HOME_LAT, 60.51),
     lon: num(process.env.GEOFENCE_HOME_LON, 5.24),

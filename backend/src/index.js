@@ -30,6 +30,7 @@ import rewardsRouter from './routes/rewards.js';
 import assistantRouter from './routes/assistant.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
+import { startXploraPolling } from './services/xploraPoller.js';
 import { cleanupOldPlayStatus } from './services/playStatusService.js';
 import { initRelayClient } from './services/relayClient.js';
 import { startBriefScheduler } from './services/briefScheduler.js';
@@ -90,6 +91,7 @@ server.listen(config.port, () => {
   console.log(`🏠 FamilieHub-backend kjører på port ${config.port} (${config.nodeEnv})`);
   startPlugPolling(io);
   startTraccarPolling(io);
+  startXploraPolling(io);
 
   cleanupOldPlayStatus();
   setInterval(cleanupOldPlayStatus, 24 * 60 * 60 * 1000);

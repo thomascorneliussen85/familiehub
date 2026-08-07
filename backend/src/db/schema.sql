@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS gps_positions (
   battery      REAL,
   accuracy     REAL,
   recorded_at  TEXT NOT NULL,
-  source       TEXT NOT NULL DEFAULT 'traccar', -- 'traccar' | 'fallback'
+  source       TEXT NOT NULL DEFAULT 'traccar', -- 'traccar' | 'xplora' | 'fallback'
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
