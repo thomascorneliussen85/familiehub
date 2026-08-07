@@ -14,6 +14,7 @@ import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
 import RewardsPanel from '../Rewards/RewardsPanel';
 import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
+import BabyCameraTile from './BabyCameraTile';
 import NextEventBanner from './NextEventBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
@@ -137,6 +138,7 @@ export default function Dashboard() {
             <ChoresPanel />
             <ShoppingPanel />
             <DinnerPlanPanel />
+            <BabyCameraTile />
           </div>
         </div>
       )}
