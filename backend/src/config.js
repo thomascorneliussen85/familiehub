@@ -85,6 +85,8 @@ export const config = {
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
 
+  rewardsImagesDir: path.resolve(backendRoot, 'data/reward-images'),
+
   brief: {
     defaultRssFeeds: (process.env.BRIEF_RSS_FEEDS || 'https://www.nrk.no/toppsaker.rss')
       .split(',')

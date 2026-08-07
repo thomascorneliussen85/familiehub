@@ -12,6 +12,9 @@ backend/data/*.db-shm
 photos/*
 !photos/.gitkeep
 
+# Opplastede belønningsbilder (lokalt innhold, ikke del av repo)
+backend/data/reward-images/
+
 # Build
 frontend/dist/
 backend/dist/

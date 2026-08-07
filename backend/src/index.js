@@ -26,6 +26,7 @@ import dinnerPlansRouter from './routes/dinnerPlans.js';
 import calendarConnectionsRouter from './routes/calendarConnections.js';
 import briefRouter from './routes/brief.js';
 import telemedicineRouter from './routes/telemedicine.js';
+import rewardsRouter from './routes/rewards.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { cleanupOldPlayStatus } from './services/playStatusService.js';
@@ -42,6 +43,7 @@ app.set('io', io);
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 app.use('/photos', express.static(config.photos.dir));
+app.use('/reward-images', express.static(config.rewardsImagesDir));
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
@@ -68,6 +70,7 @@ app.use('/api/dinner-plans', dinnerPlansRouter);
 app.use('/api/calendar-connections', calendarConnectionsRouter);
 app.use('/api/brief', briefRouter);
 app.use('/api/telemedicine', telemedicineRouter);
+app.use('/api/rewards', rewardsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ikke funnet' });

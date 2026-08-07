@@ -75,6 +75,18 @@ modulen fungerer helt uten AI-nøkkel. Legg inn en nøkkel fra
 [console.anthropic.com](https://console.anthropic.com) for ekte AI-genererte
 briefer (modell `claude-haiku-4-5`).
 
+## Belønningssystem
+
+Stjerner opptjent fra gjøremål vises tydelig under 🏆 **Belønninger**, per
+familiemedlem: total opptjent, denne uken, og gjeldende saldo (opptjent minus
+brukt). Under ⚙️ → **Belønninger** kan foreldre legge til belønninger med
+tittel, beskrivelse, stjernekostnad og valgfritt bilde. På hovedsiden velger
+familiemedlemmet seg selv, trykker "Løs inn" på en belønning de har nok
+stjerner til, og saldoen oppdateres med det samme (med en liten
+feiringsanimasjon). Historikk over nylige innløsninger vises nederst, og en
+feiltrykt innløsning kan angres (refunderer stjernene) fra samme sted i
+innstillingene.
+
 ## Treningscoach (Garmin)
 
 Under ⌚ **Garmin** kan du trykke på en treningsøkt for å se alle detaljer fra

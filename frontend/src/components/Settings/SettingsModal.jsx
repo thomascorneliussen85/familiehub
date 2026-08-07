@@ -6,6 +6,7 @@ import DevicesTab from './DevicesTab';
 import CalendarConnectionsTab from './CalendarConnectionsTab';
 import FamilyMembersTab from './FamilyMembersTab';
 import BriefSettingsTab from './BriefSettingsTab';
+import RewardsSettingsTab from './RewardsSettingsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -114,6 +115,12 @@ export default function SettingsModal({ onClose }) {
           >
             Morgenbrief
           </button>
+          <button
+            className={`settings-tab ${tab === 'rewards' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('rewards')}
+          >
+            Belønninger
+          </button>
         </div>
         {tab === 'family' && <FamilyMembersTab adminApi={adminApi} />}
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
@@ -121,6 +128,7 @@ export default function SettingsModal({ onClose }) {
         {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
         {tab === 'calendars' && <CalendarConnectionsTab adminApi={adminApi} />}
         {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
+        {tab === 'rewards' && <RewardsSettingsTab adminApi={adminApi} />}
       </div>
     </div>
   );

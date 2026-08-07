@@ -12,6 +12,7 @@ import CameraPanel from '../Cameras/CameraPanel';
 import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
+import RewardsPanel from '../Rewards/RewardsPanel';
 import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
 import NextEventBanner from './NextEventBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
@@ -30,6 +31,7 @@ const SECONDARY_PANELS = [
   { key: 'garmin', icon: '⌚', label: 'Garmin', Component: GarminPanel },
   { key: 'play-outside', icon: '🛝', label: 'Ut og leke', Component: PlayOutsidePanel },
   { key: 'telemedicine', icon: '🩺', label: 'DoktorNå', Component: TelemedicinePanel },
+  { key: 'rewards', icon: '🏆', label: 'Belønninger', Component: RewardsPanel },
 ];
 
 const GREETING = { morgen: 'God morgen', dag: 'God dag', kveld: 'God kveld' };

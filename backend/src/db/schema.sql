@@ -278,6 +278,32 @@ CREATE TABLE IF NOT EXISTS telemedicine_bookings (
 CREATE INDEX IF NOT EXISTS idx_telemedicine_bookings_start ON telemedicine_bookings(start_at);
 CREATE INDEX IF NOT EXISTS idx_telemedicine_bookings_doctor ON telemedicine_bookings(doctor_id, start_at);
 
+-- Belønningssystem: foreldre setter opp belønninger (med bilde) som
+-- familiemedlemmer kan løse inn stjerner de har opptjent fra gjøremål mot.
+CREATE TABLE IF NOT EXISTS rewards (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  title       TEXT NOT NULL,
+  description TEXT,
+  star_cost   INTEGER NOT NULL,
+  image       TEXT, -- filnavn i reward-images/, NULL = ikke satt
+  active      INTEGER NOT NULL DEFAULT 1,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- reward_title lagres som et øyeblikksbilde ved innløsning, slik at
+-- historikken forblir meningsfull selv om belønningen senere endres/slettes.
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id    INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  reward_id    INTEGER REFERENCES rewards(id) ON DELETE SET NULL,
+  reward_title TEXT NOT NULL,
+  stars_spent  INTEGER NOT NULL,
+  redeemed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_member ON reward_redemptions(member_id);
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_at);
 CREATE INDEX IF NOT EXISTS idx_chore_completions_chore ON chore_completions(chore_id);
 CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_at);
