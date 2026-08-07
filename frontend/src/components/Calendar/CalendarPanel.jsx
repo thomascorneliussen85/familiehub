@@ -22,12 +22,29 @@ function toDateInputValue(d) {
 
 const emptyForm = { title: '', date: toDateInputValue(new Date()), time: '', repeatWeekly: false };
 
+function weekLabel(offset, weekStart) {
+  if (offset === 0) return 'Kalender – denne uken';
+  if (offset === 1) return 'Neste uke';
+  if (offset === -1) return 'Forrige uke';
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${fmt(weekStart)}–${fmt(end)}`;
+}
+
 export default function CalendarPanel() {
   const [events, setEvents] = useState([]);
   // null = skjult, 'add' = nytt skjema, tallet = redigerer avtale med den ID-en
   const [formMode, setFormMode] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const weekStart = useMemo(() => startOfWeek(new Date()), []);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const thisWeekStart = useMemo(() => startOfWeek(new Date()), []);
+  const weekStart = useMemo(() => {
+    const d = new Date(thisWeekStart);
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thisWeekStart, weekOffset]);
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
@@ -37,18 +54,16 @@ export default function CalendarPanel() {
     [weekStart]
   );
 
-  function loadEvents() {
-    const from = weekStart.toISOString();
-    const to = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7)).toISOString();
-    api.get(`/calendar/events?from=${from}&to=${to}`).then(setEvents).catch(() => {});
-  }
-
   useEffect(() => {
+    function loadEvents() {
+      const from = weekStart.toISOString();
+      const to = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7)).toISOString();
+      api.get(`/calendar/events?from=${from}&to=${to}`).then(setEvents).catch(() => {});
+    }
     loadEvents();
     socket.on('calendar:update', loadEvents);
     return () => socket.off('calendar:update', loadEvents);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [weekStart]);
 
   function openAdd() {
     setForm(emptyForm);
@@ -119,8 +134,28 @@ export default function CalendarPanel() {
   return (
     <section className="panel panel-calendar">
       <div className="panel-header">
-        <div className="panel-title">
-          <span className="panel-icon">📅</span> Kalender – denne uken
+        <div className="panel-title calendar-title">
+          <span className="panel-icon">📅</span>
+          <button
+            className="calendar-nav-btn"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            aria-label="Forrige uke"
+          >
+            ‹
+          </button>
+          <span className="calendar-title-label">{weekLabel(weekOffset, weekStart)}</span>
+          <button
+            className="calendar-nav-btn"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            aria-label="Neste uke"
+          >
+            ›
+          </button>
+          {weekOffset !== 0 && (
+            <button className="calendar-nav-today" onClick={() => setWeekOffset(0)}>
+              I dag
+            </button>
+          )}
         </div>
         <button
           className="btn btn-icon"
