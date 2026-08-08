@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { db } from '../db/index.js';
 import { signSession, cookieOptions, SESSION_COOKIE, requireAuth } from '../middleware/requireAuth.js';
 import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
+import { getOwnerFamilyId } from '../services/ownerFamily.js';
 
 const router = Router();
 
@@ -45,7 +46,11 @@ router.post('/signup', async (req, res) => {
   const user = createFamily();
   const token = signSession(user);
   res.cookie(SESSION_COOKIE, token, cookieOptions());
-  res.status(201).json({ email: normalizedEmail, familyName: familyName.trim() });
+  res.status(201).json({
+    email: normalizedEmail,
+    familyName: familyName.trim(),
+    isOwnerFamily: user.family_id === getOwnerFamilyId(),
+  });
 });
 
 router.post('/login', async (req, res) => {
@@ -65,7 +70,11 @@ router.post('/login', async (req, res) => {
   const token = signSession(user);
   res.cookie(SESSION_COOKIE, token, cookieOptions());
   const family = db.prepare('SELECT name FROM families WHERE id = ?').get(user.family_id);
-  res.json({ email: user.email, familyName: family?.name || '' });
+  res.json({
+    email: user.email,
+    familyName: family?.name || '',
+    isOwnerFamily: user.family_id === getOwnerFamilyId(),
+  });
 });
 
 router.post('/logout', (req, res) => {
@@ -77,7 +86,11 @@ router.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT email FROM users WHERE id = ?').get(req.userId);
   const family = db.prepare('SELECT name FROM families WHERE id = ?').get(req.familyId);
   if (!user || !family) return res.status(401).json({ error: 'Ikke innlogget' });
-  res.json({ email: user.email, familyName: family.name });
+  res.json({
+    email: user.email,
+    familyName: family.name,
+    isOwnerFamily: req.familyId === getOwnerFamilyId(),
+  });
 });
 
 // Bytt foreldre-PIN for familien (standard '1234' til den byttes) – krever

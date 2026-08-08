@@ -1,0 +1,85 @@
+.feedback-trigger {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+.feedback-trigger:active {
+  transform: scale(0.9);
+}
+
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 500;
+}
+.feedback-modal {
+  position: relative;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  width: min(420px, 100%);
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.feedback-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+}
+.feedback-title {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+  padding-right: 20px;
+}
+.feedback-subtitle {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-top: -6px;
+}
+.feedback-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 90px;
+  font-family: var(--sans);
+  font-size: 15px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg-alt);
+  color: var(--text);
+}
+.feedback-error {
+  color: var(--danger);
+  font-size: 14px;
+}
+.feedback-submit {
+  min-height: 48px;
+  font-size: 15px;
+}
+.feedback-sent {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 16px;
+  color: var(--success);
+  font-weight: 600;
+}

@@ -1,5 +1,6 @@
 import Clock from '../Clock/Clock';
 import VoiceButton from '../VoiceControl/VoiceButton';
+import FeedbackButton from '../Feedback/FeedbackButton';
 import './Header.css';
 
 export default function Header({ onOpenSettings }) {
@@ -11,6 +12,7 @@ export default function Header({ onOpenSettings }) {
       </div>
       <div className="app-header-right">
         <VoiceButton />
+        <FeedbackButton />
         <Clock />
         <button className="app-header-settings" onClick={onOpenSettings} aria-label="Innstillinger">
           ⚙️

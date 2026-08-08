@@ -35,6 +35,7 @@ import briefRouter from './routes/brief.js';
 import telemedicineRouter from './routes/telemedicine.js';
 import rewardsRouter from './routes/rewards.js';
 import assistantRouter from './routes/assistant.js';
+import feedbackRouter from './routes/feedback.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { startXploraPolling } from './services/xploraPoller.js';
@@ -110,6 +111,7 @@ app.use('/api/brief', briefRouter);
 app.use('/api/telemedicine', telemedicineRouter);
 app.use('/api/rewards', rewardsRouter);
 app.use('/api/assistant', assistantRouter);
+app.use('/api/feedback', feedbackRouter);
 
 // Servér det bygde frontend-bygget (frontend/dist) på samme origin som API-et,
 // hvis det finnes – dette er hva som kreves for produksjonshosting (se

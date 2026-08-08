@@ -9,6 +9,7 @@ import FamilyMembersTab from './FamilyMembersTab';
 import BriefSettingsTab from './BriefSettingsTab';
 import RewardsSettingsTab from './RewardsSettingsTab';
 import PhotosSettingsTab from './PhotosSettingsTab';
+import FeedbackTab from './FeedbackTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -135,6 +136,14 @@ export default function SettingsModal({ onClose }) {
           >
             Bilder
           </button>
+          {user?.isOwnerFamily && (
+            <button
+              className={`settings-tab ${tab === 'feedback' ? 'settings-tab-active' : ''}`}
+              onClick={() => setTab('feedback')}
+            >
+              Tilbakemeldinger
+            </button>
+          )}
         </div>
         {tab === 'family' && <FamilyMembersTab adminApi={adminApi} />}
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
@@ -144,6 +153,7 @@ export default function SettingsModal({ onClose }) {
         {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
         {tab === 'rewards' && <RewardsSettingsTab adminApi={adminApi} />}
         {tab === 'photos' && <PhotosSettingsTab adminApi={adminApi} />}
+        {tab === 'feedback' && user?.isOwnerFamily && <FeedbackTab adminApi={adminApi} />}
       </div>
     </div>
   );

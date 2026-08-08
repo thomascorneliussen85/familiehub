@@ -368,6 +368,22 @@ CREATE INDEX IF NOT EXISTS idx_garmin_activities_start ON garmin_activities(star
 CREATE INDEX IF NOT EXISTS idx_play_status_child ON play_status(child_id);
 CREATE INDEX IF NOT EXISTS idx_play_status_active ON play_status(ended_at, expires_at);
 
+-- Tilbakemelding fra familier (typisk vennefamilier som tester appen), slik at
+-- installasjonens eier kan se og følge opp feil/ønsker. Alle innloggede kan
+-- sende inn; kun eierfamilien kan lese listen (samme owner-family-mønster som
+-- garmin.js/relay.js).
+CREATE TABLE IF NOT EXISTS feedback (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  message     TEXT NOT NULL,
+  page        TEXT,
+  resolved    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+
 -- Merk: indekser på family_id-kolonner (family_members, calendar_events, chores,
 -- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
 -- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som
