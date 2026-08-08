@@ -1,10 +1,26 @@
 const BASE = '/api';
 
+// Ny innlogget familie som ikke lenger har en gyldig økt (utløpt/tømt
+// cookie) skal sendes til /login i stedet for å se kryptiske feilmeldinger
+// overalt i appen – satt av AuthContext ved oppstart.
+let onUnauthorized = () => {};
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+export function triggerUnauthorized() {
+  onUnauthorized();
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
+  if (res.status === 401) {
+    onUnauthorized();
+    throw new Error('Ikke innlogget');
+  }
   if (!res.ok) {
     let detail = '';
     try {

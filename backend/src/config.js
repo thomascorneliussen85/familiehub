@@ -94,11 +94,14 @@ export const config = {
     familyName: process.env.FAMILY_NAME || 'Vår familie',
   },
 
-  parentPin: process.env.PARENT_PIN || '1234',
+  // Signerer JWT-økt-cookien for innlogging (families/users). MÅ settes til en
+  // ekte hemmelighet i .env før dette hostes for andre familier – med
+  // standardverdien kan hvem som helst forfalske en innloggingsøkt.
+  jwtSecret: process.env.JWT_SECRET || 'INSECURE_DEV_SECRET_CHANGE_ME',
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
 
-  rewardsImagesDir: path.resolve(backendRoot, 'data/reward-images'),
+  rewardsImagesDir: path.resolve(backendRoot, process.env.REWARDS_IMAGES_DIR || 'data/reward-images'),
 
   brief: {
     defaultRssFeeds: (process.env.BRIEF_RSS_FEEDS || 'https://www.nrk.no/toppsaker.rss')

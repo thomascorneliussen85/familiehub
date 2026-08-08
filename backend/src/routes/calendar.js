@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
+router.use(requireAuth);
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -41,9 +43,10 @@ router.get('/events', (req, res) => {
         `SELECT e.*, m.name AS member_name, m.color AS member_color
          FROM calendar_events e
          LEFT JOIN family_members m ON m.id = e.member_id
+         WHERE e.family_id = ?
          ORDER BY e.start_at`
       )
-      .all();
+      .all(req.familyId);
     return res.json(rows);
   }
 
@@ -52,19 +55,19 @@ router.get('/events', (req, res) => {
       `SELECT e.*, m.name AS member_name, m.color AS member_color
        FROM calendar_events e
        LEFT JOIN family_members m ON m.id = e.member_id
-       WHERE e.recurrence = 'once' AND e.start_at < ? AND e.end_at > ?
+       WHERE e.family_id = ? AND e.recurrence = 'once' AND e.start_at < ? AND e.end_at > ?
        ORDER BY e.start_at`
     )
-    .all(to, from);
+    .all(req.familyId, to, from);
 
   const weeklyBases = db
     .prepare(
       `SELECT e.*, m.name AS member_name, m.color AS member_color
        FROM calendar_events e
        LEFT JOIN family_members m ON m.id = e.member_id
-       WHERE e.recurrence = 'weekly'`
+       WHERE e.family_id = ? AND e.recurrence = 'weekly'`
     )
-    .all();
+    .all(req.familyId);
 
   const rows = [...onceRows, ...expandWeeklyOccurrences(weeklyBases, from, to)].sort(
     (a, b) => new Date(a.start_at) - new Date(b.start_at)
@@ -88,22 +91,26 @@ router.post('/events', (req, res) => {
   }
   const info = db
     .prepare(
-      `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?)`
+      `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'local', ?)`
     )
-    .run(member_id, title, start_at, end_at, all_day ? 1 : 0, location, notes, recurrence);
-  const event = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(info.lastInsertRowid);
-  req.app.get('io').emit('calendar:update', { type: 'created', event });
+    .run(req.familyId, member_id, title, start_at, end_at, all_day ? 1 : 0, location, notes, recurrence);
+  const event = db
+    .prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?')
+    .get(info.lastInsertRowid, req.familyId);
+  req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'created', event });
   res.status(201).json(event);
 });
 
 router.put('/events/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(req.params.id);
+  const existing = db
+    .prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?')
+    .get(req.params.id, req.familyId);
   if (!existing) return res.status(404).json({ error: 'Avtale ikke funnet' });
   const merged = { ...existing, ...req.body };
   db.prepare(
     `UPDATE calendar_events SET member_id = ?, title = ?, start_at = ?, end_at = ?, all_day = ?, location = ?, notes = ?, recurrence = ?
-     WHERE id = ?`
+     WHERE id = ? AND family_id = ?`
   ).run(
     merged.member_id,
     merged.title,
@@ -113,16 +120,17 @@ router.put('/events/:id', (req, res) => {
     merged.location,
     merged.notes,
     merged.recurrence,
-    req.params.id
+    req.params.id,
+    req.familyId
   );
-  const event = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(req.params.id);
-  req.app.get('io').emit('calendar:update', { type: 'updated', event });
+  const event = db.prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId);
+  req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'updated', event });
   res.json(event);
 });
 
 router.delete('/events/:id', (req, res) => {
-  db.prepare('DELETE FROM calendar_events WHERE id = ?').run(req.params.id);
-  req.app.get('io').emit('calendar:update', { type: 'deleted', id: Number(req.params.id) });
+  db.prepare('DELETE FROM calendar_events WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'deleted', id: Number(req.params.id) });
   res.status(204).end();
 });
 

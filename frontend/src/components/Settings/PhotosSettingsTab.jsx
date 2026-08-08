@@ -11,7 +11,7 @@ export default function PhotosSettingsTab({ adminApi }) {
   const pollRef = useRef(null);
 
   function loadPhotos() {
-    fetch('/api/photos')
+    fetch('/api/photos', { credentials: 'include' })
       .then((r) => r.json())
       .then(setPhotos)
       .catch(() => {});

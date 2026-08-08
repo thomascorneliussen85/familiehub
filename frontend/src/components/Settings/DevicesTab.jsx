@@ -12,8 +12,8 @@ export default function DevicesTab({ adminApi }) {
   const [plugError, setPlugError] = useState('');
 
   useEffect(() => {
-    fetch('/api/cameras').then((r) => r.json()).then(setCameras).catch(() => {});
-    fetch('/api/smart-plugs').then((r) => r.json()).then(setPlugs).catch(() => {});
+    fetch('/api/cameras', { credentials: 'include' }).then((r) => r.json()).then(setCameras).catch(() => {});
+    fetch('/api/smart-plugs', { credentials: 'include' }).then((r) => r.json()).then(setPlugs).catch(() => {});
   }, []);
 
   async function addCamera() {

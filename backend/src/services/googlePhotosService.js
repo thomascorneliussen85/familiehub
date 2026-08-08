@@ -12,7 +12,10 @@ import { config } from '../config.js';
 // synkronisert"-modus – kun "plukk bilder nå".
 const PICKER_API = 'https://photospicker.googleapis.com/v1';
 
-let activeSession = null; // { accessToken, sessionId, pickerUri } – kun én økt om gangen
+// { accessToken, sessionId, pickerUri } per familie – kartlagt på familyId
+// slik at to familier som plukker bilder samtidig på samme installasjon ikke
+// overskriver hverandres økt.
+const activeSessions = new Map();
 
 function createOAuthClient() {
   return new google.auth.OAuth2(config.google.clientId, config.google.clientSecret, config.google.photosRedirectUri);
@@ -26,7 +29,7 @@ export function getPhotosAuthUrl() {
   });
 }
 
-export async function handlePhotosCallback(code) {
+export async function handlePhotosCallback(familyId, code) {
   const oauth2Client = createOAuthClient();
   const { tokens } = await oauth2Client.getToken(code);
   if (!tokens.access_token) throw new Error('Fikk ingen tilgangsnøkkel fra Google');
@@ -39,17 +42,19 @@ export async function handlePhotosCallback(code) {
   if (!res.ok) throw new Error(`Klarte ikke å starte Google Photos-økt (status ${res.status})`);
   const session = await res.json();
 
-  activeSession = { accessToken: tokens.access_token, sessionId: session.id, pickerUri: session.pickerUri };
+  const activeSession = { accessToken: tokens.access_token, sessionId: session.id, pickerUri: session.pickerUri };
+  activeSessions.set(familyId, activeSession);
   return activeSession;
 }
 
-export async function getSessionStatus() {
+export async function getSessionStatus(familyId) {
+  const activeSession = activeSessions.get(familyId);
   if (!activeSession) return { active: false, mediaItemsSet: false };
   const res = await fetch(`${PICKER_API}/sessions/${activeSession.sessionId}`, {
     headers: { Authorization: `Bearer ${activeSession.accessToken}` },
   });
   if (!res.ok) {
-    activeSession = null;
+    activeSessions.delete(familyId);
     throw new Error(`Klarte ikke å sjekke status på Google Photos-økten (status ${res.status})`);
   }
   const session = await res.json();
@@ -72,12 +77,14 @@ async function listPickedItems(sessionId, accessToken) {
   return items;
 }
 
-export async function importPickedPhotos() {
+export async function importPickedPhotos(familyId) {
+  const activeSession = activeSessions.get(familyId);
   if (!activeSession) throw new Error('Ingen aktiv Google Photos-økt – trykk «Koble til Google Photos» først');
   const { accessToken, sessionId } = activeSession;
 
   const items = await listPickedItems(sessionId, accessToken);
-  fs.mkdirSync(config.photos.dir, { recursive: true });
+  const dir = path.join(config.photos.dir, String(familyId));
+  fs.mkdirSync(dir, { recursive: true });
 
   let imported = 0;
   for (const item of items) {
@@ -90,7 +97,7 @@ export async function importPickedPhotos() {
       if (!imgRes.ok) continue;
       const buffer = Buffer.from(await imgRes.arrayBuffer());
       const ext = (file.mimeType?.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
-      fs.writeFileSync(path.join(config.photos.dir, `google-${item.id}.${ext}`), buffer);
+      fs.writeFileSync(path.join(dir, `google-${item.id}.${ext}`), buffer);
       imported += 1;
     } catch {
       // hopp over enkeltbilder som feiler, resten av importen fortsetter
@@ -101,7 +108,7 @@ export async function importPickedPhotos() {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   }).catch(() => {});
-  activeSession = null;
+  activeSessions.delete(familyId);
 
   return imported;
 }

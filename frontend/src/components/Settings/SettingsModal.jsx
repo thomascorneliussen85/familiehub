@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createAdminApi } from '../../lib/adminApi';
+import { useAuth } from '../../context/AuthContext';
 import FriendsTab from './FriendsTab';
 import PlaySettingsTab from './PlaySettingsTab';
 import DevicesTab from './DevicesTab';
@@ -14,6 +15,7 @@ const PIN_LENGTH = 4;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'tøm', '0', '⌫'];
 
 export default function SettingsModal({ onClose }) {
+  const { user, logout } = useAuth();
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState(false);
   const [adminApi, setAdminApi] = useState(null);
@@ -22,6 +24,7 @@ export default function SettingsModal({ onClose }) {
   async function submitPin(candidate) {
     const res = await fetch('/api/relay/verify-pin', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: candidate }),
     })
@@ -79,6 +82,10 @@ export default function SettingsModal({ onClose }) {
         <button className="settings-close" onClick={onClose} aria-label="Lukk">
           ✕
         </button>
+        <div className="settings-account-row">
+          <span className="settings-account-email">{user?.familyName} · {user?.email}</span>
+          <button className="btn btn-icon" onClick={logout}>Logg ut</button>
+        </div>
         <div className="settings-tabs">
           <button
             className={`settings-tab ${tab === 'family' ? 'settings-tab-active' : ''}`}

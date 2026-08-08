@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
+router.use(requireAuth);
 
 const WEEKDAY_INDEX = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
 
@@ -38,15 +40,15 @@ function mondayOfThisWeek() {
   return d.toISOString().slice(0, 10);
 }
 
-function listChores() {
+function listChores(familyId) {
   const chores = db
     .prepare(
       `SELECT c.*, m.name AS member_name, m.color AS member_color, m.avatar AS member_avatar
        FROM chores c LEFT JOIN family_members m ON m.id = c.member_id
-       WHERE c.active = 1
+       WHERE c.family_id = ? AND c.active = 1
        ORDER BY c.member_id, c.id`
     )
-    .all();
+    .all(familyId);
   const completionStmt = db.prepare(
     'SELECT 1 FROM chore_completions WHERE chore_id = ? AND completed_on = ?'
   );
@@ -58,7 +60,7 @@ function listChores() {
 }
 
 router.get('/', (req, res) => {
-  res.json(listChores());
+  res.json(listChores(req.familyId));
 });
 
 router.post('/', (req, res) => {
@@ -66,16 +68,16 @@ router.post('/', (req, res) => {
   if (!title) return res.status(400).json({ error: 'Tittel er påkrevd' });
   const info = db
     .prepare(
-      'INSERT INTO chores (member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO chores (family_id, member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    .run(member_id, title, recurrence, due_date, stars);
-  req.app.get('io').emit('chores:update');
+    .run(req.familyId, member_id, title, recurrence, due_date, stars);
+  req.app.get('io').to(`family:${req.familyId}`).emit('chores:update');
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
 // Kryss av / fjern avkrysning for gjeldende periode (i dag / denne uken)
 router.post('/:id/toggle', (req, res) => {
-  const chore = db.prepare('SELECT * FROM chores WHERE id = ?').get(req.params.id);
+  const chore = db.prepare('SELECT * FROM chores WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId);
   if (!chore) return res.status(404).json({ error: 'Gjøremål ikke funnet' });
   const periodKey = currentPeriodKey(chore.recurrence, chore.due_date);
   const existing = db
@@ -90,35 +92,35 @@ router.post('/:id/toggle', (req, res) => {
     ).run(chore.id, periodKey, chore.stars);
   }
   const io = req.app.get('io');
-  io.emit('chores:update');
+  io.to(`family:${req.familyId}`).emit('chores:update');
   res.json({ done: !existing });
 });
 
 router.delete('/:id', (req, res) => {
-  db.prepare('UPDATE chores SET active = 0 WHERE id = ?').run(req.params.id);
-  req.app.get('io').emit('chores:update');
+  db.prepare('UPDATE chores SET active = 0 WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  req.app.get('io').to(`family:${req.familyId}`).emit('chores:update');
   res.status(204).end();
 });
 
 // Stjerneoversikt per familiemedlem (totalt og denne uken)
 router.get('/stars', (req, res) => {
-  const members = db.prepare('SELECT id, name, avatar, color FROM family_members').all();
+  const members = db.prepare('SELECT id, name, avatar, color FROM family_members WHERE family_id = ?').all(req.familyId);
   const weekStart = mondayOfThisWeek();
   const totalStmt = db.prepare(
     `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
      FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ?`
+     WHERE c.member_id = ? AND c.family_id = ?`
   );
   const weekStmt = db.prepare(
     `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
      FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ? AND cc.completed_on >= ?`
+     WHERE c.member_id = ? AND c.family_id = ? AND cc.completed_on >= ?`
   );
   res.json(
     members.map((m) => ({
       ...m,
-      stars_total: totalStmt.get(m.id).total,
-      stars_this_week: weekStmt.get(m.id).total,
+      stars_total: totalStmt.get(m.id, req.familyId).total,
+      stars_this_week: weekStmt.get(m.id, req.familyId, weekStart).total,
     }))
   );
 });

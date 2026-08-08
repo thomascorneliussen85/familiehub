@@ -1,7 +1,26 @@
 -- FamilieHub database-skjema (SQLite)
 
+-- Én rad per familie ("tenant") – all data i appen hører til nøyaktig én
+-- familie, og hver forespørsel skopes til innlogget brukers family_id.
+CREATE TABLE IF NOT EXISTS families (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Innlogging (foreldre/voksne). Barn har ingen egen konto – de er fortsatt
+-- bare profiler i family_members, valgt direkte på den delte skjermen.
+CREATE TABLE IF NOT EXISTS users (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  email          TEXT NOT NULL UNIQUE,
+  password_hash  TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS family_members (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'voksen', -- 'voksen' | 'barn'
   color       TEXT NOT NULL DEFAULT '#7c9cff',
@@ -11,7 +30,8 @@ CREATE TABLE IF NOT EXISTS family_members (
 );
 
 -- Personlig kalendertilkobling (Google/iCloud) per familiemedlem. Kun manuell
--- synkronisering – ingen automatisk polling i bakgrunnen.
+-- synkronisering – ingen automatisk polling i bakgrunnen. Skopes transitivt
+-- via member_id -> family_members, trenger ikke egen family_id-kolonne.
 CREATE TABLE IF NOT EXISTS calendar_connections (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id       INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
@@ -22,8 +42,11 @@ CREATE TABLE IF NOT EXISTS calendar_connections (
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- family_id er direkte her (ikke bare via member_id) fordi member_id kan være
+-- NULL for familie-felles avtaler uten ett bestemt medlem.
 CREATE TABLE IF NOT EXISTS calendar_events (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id       INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   member_id       INTEGER REFERENCES family_members(id) ON DELETE CASCADE,
   title           TEXT NOT NULL,
   start_at        TEXT NOT NULL, -- ISO datetime
@@ -39,8 +62,10 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Samme begrunnelse som calendar_events: member_id kan være NULL.
 CREATE TABLE IF NOT EXISTS chores (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   member_id    INTEGER REFERENCES family_members(id) ON DELETE CASCADE,
   title        TEXT NOT NULL,
   recurrence   TEXT NOT NULL DEFAULT 'once', -- 'once' | 'daily' | 'weekly:mon' | 'weekly:tue' ...
@@ -50,7 +75,8 @@ CREATE TABLE IF NOT EXISTS chores (
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Registrerer hver fullførte forekomst av et gjøremål (håndterer gjentakelse)
+-- Registrerer hver fullførte forekomst av et gjøremål (håndterer gjentakelse).
+-- Skopes transitivt via chore_id -> chores.
 CREATE TABLE IF NOT EXISTS chore_completions (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   chore_id       INTEGER NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
@@ -62,6 +88,7 @@ CREATE TABLE IF NOT EXISTS chore_completions (
 
 CREATE TABLE IF NOT EXISTS shopping_items (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   checked     INTEGER NOT NULL DEFAULT 0,
   checked_at  TEXT,
@@ -70,13 +97,16 @@ CREATE TABLE IF NOT EXISTS shopping_items (
 );
 
 CREATE TABLE IF NOT EXISTS quick_items (
-  id     INTEGER PRIMARY KEY AUTOINCREMENT,
-  name   TEXT NOT NULL UNIQUE,
-  icon   TEXT
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  icon       TEXT,
+  UNIQUE(family_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS smart_plugs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name         TEXT NOT NULL,
   ip           TEXT NOT NULL,
   is_on        INTEGER NOT NULL DEFAULT 0,
@@ -88,6 +118,7 @@ CREATE TABLE IF NOT EXISTS smart_plugs (
 
 CREATE TABLE IF NOT EXISTS gps_positions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   device_name  TEXT NOT NULL DEFAULT 'Adelia',
   lat          REAL NOT NULL,
   lon          REAL NOT NULL,
@@ -101,6 +132,7 @@ CREATE TABLE IF NOT EXISTS gps_positions (
 
 CREATE TABLE IF NOT EXISTS messages (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   author      TEXT,
   text        TEXT NOT NULL,
   color       TEXT NOT NULL DEFAULT '#fff59d',
@@ -110,18 +142,26 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Nøkkel-verdi-innstillinger per familie (bl.a. forsidebilde, geofence,
+-- vær-/buss-/strømpris-lokasjon, relay-hub-identitet). PK er sammensatt siden
+-- samme nøkkel (f.eks. "dashboard_cover_photo") finnes én gang per familie.
 CREATE TABLE IF NOT EXISTS settings (
-  key    TEXT PRIMARY KEY,
-  value  TEXT
+  family_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  key        TEXT NOT NULL,
+  value      TEXT,
+  PRIMARY KEY (family_id, key)
 );
 
 CREATE TABLE IF NOT EXISTS play_locations (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  label       TEXT NOT NULL UNIQUE,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
   emoji       TEXT NOT NULL DEFAULT '📍',
-  sort_order  INTEGER NOT NULL DEFAULT 0
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(family_id, label)
 );
 
+-- Skopes transitivt via child_id -> family_members.
 CREATE TABLE IF NOT EXISTS play_status (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   child_id    INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
@@ -132,8 +172,13 @@ CREATE TABLE IF NOT EXISTS play_status (
   ended_at    TEXT
 );
 
+-- Andre (eksterne) familier denne familien er paret med via relay-tjenesten.
+-- Hver familie i denne installasjonen har sin egen liste og sin egen
+-- relay-hub-identitet (lagret i settings), slik at paring skjer per familie,
+-- ikke per hele installasjonen.
 CREATE TABLE IF NOT EXISTS friend_families (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name          TEXT NOT NULL,
   pairing_code  TEXT,
   paired_at     TEXT,
@@ -143,6 +188,7 @@ CREATE TABLE IF NOT EXISTS friend_families (
 
 CREATE TABLE IF NOT EXISTS cameras (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   rtsp_url    TEXT NOT NULL,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -150,13 +196,18 @@ CREATE TABLE IF NOT EXISTS cameras (
 
 CREATE TABLE IF NOT EXISTS dinner_plans (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  date        TEXT NOT NULL UNIQUE, -- YYYY-MM-DD
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  date        TEXT NOT NULL, -- YYYY-MM-DD
   title       TEXT NOT NULL,
   emoji       TEXT,
   notes       TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(family_id, date)
 );
 
+-- Garmin er foreløpig én delt konto for hele installasjonen (satt opp via
+-- .env av installasjonens eier), ikke per-familie – se README. Ingen
+-- family_id her ennå; egen kreditiv-lagring per familie er en senere jobb.
 CREATE TABLE IF NOT EXISTS garmin_activities (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
   garmin_activity_id  INTEGER NOT NULL UNIQUE,
@@ -207,7 +258,7 @@ CREATE TABLE IF NOT EXISTS training_plans (
 
 -- Morgenbrief: hvilke moduler som er med i den personlige morgenrapporten,
 -- per familiemedlem. Rad opprettes med standardverdier når medlemmet først
--- åpner innstillingene, eller ved seeding.
+-- åpner innstillingene, eller ved seeding. Skopes transitivt via member_id.
 CREATE TABLE IF NOT EXISTS brief_settings (
   member_id       INTEGER PRIMARY KEY REFERENCES family_members(id) ON DELETE CASCADE,
   module_calendar INTEGER NOT NULL DEFAULT 1,
@@ -225,7 +276,8 @@ CREATE TABLE IF NOT EXISTS brief_settings (
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Ferdig generert (eller demo-) brief, cachet per person per dag.
+-- Ferdig generert (eller demo-) brief, cachet per person per dag. Skopes
+-- transitivt via member_id.
 CREATE TABLE IF NOT EXISTS daily_briefs (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id   INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
@@ -239,10 +291,10 @@ CREATE TABLE IF NOT EXISTS daily_briefs (
   UNIQUE(member_id, brief_date)
 );
 
--- Kuratert liste over bibelvers til "dagens vers"-modulen. fallback_text_no
--- brukes som demo-/offline-fallback siden bible-api.com ikke tilbyr norsk
--- oversettelse (den engelske teksten hentes live og oversettes av AI-en når
--- briefen settes sammen).
+-- Kuratert liste over bibelvers til "dagens vers"-modulen. Delt/global
+-- referansedata, ikke per-familie. fallback_text_no brukes som demo-
+-- /offline-fallback siden bible-api.com ikke tilbyr norsk oversettelse (den
+-- engelske teksten hentes live og oversettes av AI-en når briefen settes sammen).
 CREATE TABLE IF NOT EXISTS bible_verses (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   reference         TEXT NOT NULL UNIQUE, -- f.eks. "Salme 23:1"
@@ -254,7 +306,7 @@ CREATE INDEX IF NOT EXISTS idx_daily_briefs_member_date ON daily_briefs(member_i
 
 -- DoktorNå (fiktiv demo-legetjeneste – ingen ekte legetimer, kun en
 -- simulert booking-opplevelse siden familien ikke har valgt en reell
--- leverandør ennå).
+-- leverandør ennå). Legelisten er delt/global referansedata.
 CREATE TABLE IF NOT EXISTS telemedicine_doctors (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   name        TEXT NOT NULL,
@@ -263,8 +315,11 @@ CREATE TABLE IF NOT EXISTS telemedicine_doctors (
   sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- family_id er direkte her av samme grunn som calendar_events/chores:
+-- member_id kan være NULL.
 CREATE TABLE IF NOT EXISTS telemedicine_bookings (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id         INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   member_id         INTEGER REFERENCES family_members(id) ON DELETE SET NULL,
   doctor_id         INTEGER NOT NULL REFERENCES telemedicine_doctors(id),
   start_at          TEXT NOT NULL,
@@ -282,10 +337,11 @@ CREATE INDEX IF NOT EXISTS idx_telemedicine_bookings_doctor ON telemedicine_book
 -- familiemedlemmer kan løse inn stjerner de har opptjent fra gjøremål mot.
 CREATE TABLE IF NOT EXISTS rewards (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,
   description TEXT,
   star_cost   INTEGER NOT NULL,
-  image       TEXT, -- filnavn i reward-images/, NULL = ikke satt
+  image       TEXT, -- filnavn i reward-images/<family_id>/, NULL = ikke satt
   active      INTEGER NOT NULL DEFAULT 1,
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -293,6 +349,7 @@ CREATE TABLE IF NOT EXISTS rewards (
 
 -- reward_title lagres som et øyeblikksbilde ved innløsning, slik at
 -- historikken forblir meningsfull selv om belønningen senere endres/slettes.
+-- Skopes transitivt via member_id.
 CREATE TABLE IF NOT EXISTS reward_redemptions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id    INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
@@ -310,3 +367,8 @@ CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_
 CREATE INDEX IF NOT EXISTS idx_garmin_activities_start ON garmin_activities(start_time);
 CREATE INDEX IF NOT EXISTS idx_play_status_child ON play_status(child_id);
 CREATE INDEX IF NOT EXISTS idx_play_status_active ON play_status(ended_at, expires_at);
+
+-- Merk: indekser på family_id-kolonner (family_members, calendar_events, chores,
+-- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
+-- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som
+-- migreres fra før flerfamilie-støtten fantes.

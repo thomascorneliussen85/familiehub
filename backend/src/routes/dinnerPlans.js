@@ -1,17 +1,19 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
+router.use(requireAuth);
 
 router.get('/', (req, res) => {
   const { from, to } = req.query;
   let rows;
   if (from && to) {
     rows = db
-      .prepare('SELECT * FROM dinner_plans WHERE date >= ? AND date <= ? ORDER BY date')
-      .all(from, to);
+      .prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date >= ? AND date <= ? ORDER BY date')
+      .all(req.familyId, from, to);
   } else {
-    rows = db.prepare('SELECT * FROM dinner_plans ORDER BY date').all();
+    rows = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? ORDER BY date').all(req.familyId);
   }
   res.json(rows);
 });
@@ -22,18 +24,18 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Dato og tittel er påkrevd' });
   }
   db.prepare(
-    `INSERT INTO dinner_plans (date, title, emoji, notes) VALUES (?, ?, ?, ?)
-     ON CONFLICT(date) DO UPDATE SET title = excluded.title, emoji = excluded.emoji, notes = excluded.notes`
-  ).run(date, title, emoji || null, notes || null);
+    `INSERT INTO dinner_plans (family_id, date, title, emoji, notes) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(family_id, date) DO UPDATE SET title = excluded.title, emoji = excluded.emoji, notes = excluded.notes`
+  ).run(req.familyId, date, title, emoji || null, notes || null);
 
-  const plan = db.prepare('SELECT * FROM dinner_plans WHERE date = ?').get(date);
-  req.app.get('io').emit('dinner-plans:update', plan);
+  const plan = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').get(req.familyId, date);
+  req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', plan);
   res.status(201).json(plan);
 });
 
 router.delete('/:date', (req, res) => {
-  db.prepare('DELETE FROM dinner_plans WHERE date = ?').run(req.params.date);
-  req.app.get('io').emit('dinner-plans:update', { date: req.params.date, deleted: true });
+  db.prepare('DELETE FROM dinner_plans WHERE family_id = ? AND date = ?').run(req.familyId, req.params.date);
+  req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', { date: req.params.date, deleted: true });
   res.status(204).end();
 });
 

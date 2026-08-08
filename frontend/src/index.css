@@ -163,7 +163,7 @@ button, [role="button"], input[type="checkbox"] {
   padding: 12px;
 }
 
-input[type="text"], input[type="number"], input[type="password"] {
+input[type="text"], input[type="number"], input[type="password"], input[type="email"] {
   background: var(--panel-bg-alt);
   border: 1px solid var(--panel-border);
   color: var(--text);

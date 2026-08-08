@@ -8,8 +8,23 @@ import {
   generateTrainingPlan,
   getLatestTrainingPlan,
 } from '../services/trainingCoachService.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { getOwnerFamilyId } from '../services/ownerFamily.js';
 
 const router = Router();
+// Garmin er foreløpig én delt konto for hele installasjonen (satt opp av
+// installasjonens eier via .env), ikke per-familie – se README. garmin_activities
+// har derfor ingen family_id i det hele tatt; for å unngå at treningsdataen
+// lekker til andre familier på samme installasjon er hele modulen reservert
+// hovedfamilien (den første som ble opprettet) helt til per-familie
+// kreditiv-lagring er bygget.
+router.use(requireAuth);
+router.use((req, res, next) => {
+  if (req.familyId !== getOwnerFamilyId()) {
+    return res.status(403).json({ error: 'Garmin er foreløpig kun tilgjengelig for hovedfamilien på denne installasjonen' });
+  }
+  next();
+});
 
 function listActivities() {
   return db.prepare('SELECT * FROM garmin_activities ORDER BY start_time DESC LIMIT 50').all();
@@ -34,7 +49,7 @@ router.post('/sync', async (req, res) => {
   try {
     const count = await syncGarminActivities(20);
     const activities = listActivities();
-    req.app.get('io').emit('garmin:update', activities);
+    req.app.get('io').to(`family:${req.familyId}`).emit('garmin:update', activities);
     res.json({ synced: count, activities });
   } catch (err) {
     console.error('Garmin-synk feilet:', err.message);

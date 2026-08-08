@@ -9,7 +9,7 @@ export function listDoctors() {
   return db.prepare('SELECT * FROM telemedicine_doctors ORDER BY sort_order, id').all();
 }
 
-export function listBookings() {
+export function listBookings(familyId) {
   return db
     .prepare(
       `SELECT b.*, d.name AS doctor_name, d.specialty AS doctor_specialty, d.avatar AS doctor_avatar,
@@ -17,10 +17,10 @@ export function listBookings() {
        FROM telemedicine_bookings b
        JOIN telemedicine_doctors d ON d.id = b.doctor_id
        LEFT JOIN family_members m ON m.id = b.member_id
-       WHERE b.status = 'booked'
+       WHERE b.status = 'booked' AND b.family_id = ?
        ORDER BY b.start_at`
     )
-    .all();
+    .all(familyId);
 }
 
 // Genererer ledige timer på virkedager kl. 08–16 (30 min per time) de neste
@@ -59,7 +59,7 @@ export function getAvailableSlots(doctorId) {
   return slots;
 }
 
-export function createBooking({ member_id, doctor_id, start_at, reason }) {
+export function createBooking({ familyId, member_id, doctor_id, start_at, reason }) {
   const doctor = db.prepare('SELECT * FROM telemedicine_doctors WHERE id = ?').get(doctor_id);
   if (!doctor) throw new Error('Fant ikke legen');
 
@@ -75,15 +75,17 @@ export function createBooking({ member_id, doctor_id, start_at, reason }) {
   const end = new Date(start);
   end.setMinutes(end.getMinutes() + SLOT_MINUTES);
 
-  const member = member_id ? db.prepare('SELECT * FROM family_members WHERE id = ?').get(member_id) : null;
+  const member = member_id ? db.prepare('SELECT * FROM family_members WHERE id = ? AND family_id = ?').get(member_id, familyId) : null;
+  if (member_id && !member) throw new Error('Fant ikke familiemedlemmet');
 
   const insertBooking = db.transaction(() => {
     const calendarInfo = db
       .prepare(
-        `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
-         VALUES (?, ?, ?, ?, 0, ?, ?, 'local', 'once')`
+        `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
+         VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'local', 'once')`
       )
       .run(
+        familyId,
         member_id || null,
         `🩺 DoktorNå: ${doctor.name} (${doctor.specialty})`,
         start.toISOString(),
@@ -94,10 +96,10 @@ export function createBooking({ member_id, doctor_id, start_at, reason }) {
 
     const bookingInfo = db
       .prepare(
-        `INSERT INTO telemedicine_bookings (member_id, doctor_id, start_at, end_at, reason, calendar_event_id)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO telemedicine_bookings (family_id, member_id, doctor_id, start_at, end_at, reason, calendar_event_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(member_id || null, doctor_id, start.toISOString(), end.toISOString(), reason || null, calendarInfo.lastInsertRowid);
+      .run(familyId, member_id || null, doctor_id, start.toISOString(), end.toISOString(), reason || null, calendarInfo.lastInsertRowid);
 
     return bookingInfo.lastInsertRowid;
   });
@@ -116,12 +118,12 @@ export function createBooking({ member_id, doctor_id, start_at, reason }) {
 
 // Markerer en booking som gjennomført (etter en simulert videosamtale).
 // Kalenderavtalen beholdes som historikk – kun den aktive booking-statusen endres.
-export function completeBooking(id) {
-  db.prepare(`UPDATE telemedicine_bookings SET status = 'completed' WHERE id = ? AND status = 'booked'`).run(id);
+export function completeBooking(id, familyId) {
+  db.prepare(`UPDATE telemedicine_bookings SET status = 'completed' WHERE id = ? AND family_id = ? AND status = 'booked'`).run(id, familyId);
 }
 
-export function cancelBooking(id) {
-  const booking = db.prepare('SELECT * FROM telemedicine_bookings WHERE id = ?').get(id);
+export function cancelBooking(id, familyId) {
+  const booking = db.prepare('SELECT * FROM telemedicine_bookings WHERE id = ? AND family_id = ?').get(id, familyId);
   if (!booking) return;
   db.transaction(() => {
     db.prepare(`UPDATE telemedicine_bookings SET status = 'cancelled' WHERE id = ?`).run(id);

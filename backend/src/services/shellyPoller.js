@@ -22,7 +22,7 @@ export async function setPlugRelay(ip, turnOn) {
 
 async function pollOnce(io) {
   const plugs = db.prepare('SELECT * FROM smart_plugs').all();
-  let changed = false;
+  const changedFamilies = new Set();
 
   await Promise.all(
     plugs.map(async (plug) => {
@@ -35,18 +35,18 @@ async function pollOnce(io) {
         db.prepare(
           `UPDATE smart_plugs SET is_on = ?, last_watt = ?, online = 1, last_seen_at = datetime('now') WHERE id = ?`
         ).run(isOn ? 1 : 0, watt, plug.id);
-        changed = true;
+        changedFamilies.add(plug.family_id);
       } catch {
         if (plug.online) {
           db.prepare('UPDATE smart_plugs SET online = 0 WHERE id = ?').run(plug.id);
-          changed = true;
+          changedFamilies.add(plug.family_id);
         }
       }
     })
   );
 
-  if (changed) {
-    io.emit('plugs:update', db.prepare('SELECT * FROM smart_plugs ORDER BY id').all());
+  for (const familyId of changedFamilies) {
+    io.to(`family:${familyId}`).emit('plugs:update', db.prepare('SELECT * FROM smart_plugs WHERE family_id = ? ORDER BY id').all(familyId));
   }
 }
 

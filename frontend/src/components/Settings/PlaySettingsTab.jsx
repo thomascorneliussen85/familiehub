@@ -8,7 +8,7 @@ export default function PlaySettingsTab({ adminApi }) {
   const [savedMsg, setSavedMsg] = useState('');
 
   useEffect(() => {
-    fetch('/api/play-locations')
+    fetch('/api/play-locations', { credentials: 'include' })
       .then((r) => r.json())
       .then(setLocations)
       .catch(() => {});

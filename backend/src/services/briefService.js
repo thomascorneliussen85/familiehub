@@ -73,31 +73,31 @@ function expandWeeklyForToday(events, dayStartMs, dayEndMs) {
   return result;
 }
 
-function getTodaysEvents(memberId, dayStart, dayEnd) {
+function getTodaysEvents(memberId, familyId, dayStart, dayEnd) {
   const dayStartIso = dayStart.toISOString();
   const dayEndIso = dayEnd.toISOString();
   const onceRows = db
     .prepare(
       `SELECT * FROM calendar_events
-       WHERE (member_id = ? OR member_id IS NULL) AND recurrence = 'once'
+       WHERE family_id = ? AND (member_id = ? OR member_id IS NULL) AND recurrence = 'once'
          AND start_at < ? AND end_at > ?
        ORDER BY start_at`
     )
-    .all(memberId, dayEndIso, dayStartIso);
+    .all(familyId, memberId, dayEndIso, dayStartIso);
   const weeklyBases = db
     .prepare(
       `SELECT * FROM calendar_events
-       WHERE (member_id = ? OR member_id IS NULL) AND recurrence = 'weekly'`
+       WHERE family_id = ? AND (member_id = ? OR member_id IS NULL) AND recurrence = 'weekly'`
     )
-    .all(memberId);
+    .all(familyId, memberId);
   const expanded = expandWeeklyForToday(weeklyBases, dayStart.getTime(), dayEnd.getTime());
   return [...onceRows, ...expanded].sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
 }
 
-function getTodaysChores(memberId) {
+function getTodaysChores(memberId, familyId) {
   const chores = db
-    .prepare(`SELECT * FROM chores WHERE member_id = ? AND active = 1`)
-    .all(memberId);
+    .prepare(`SELECT * FROM chores WHERE member_id = ? AND family_id = ? AND active = 1`)
+    .all(memberId, familyId);
   const today = todayStr();
   const completionStmt = db.prepare(
     'SELECT 1 FROM chore_completions WHERE chore_id = ? AND completed_on = ?'
@@ -121,7 +121,7 @@ async function gatherModuleData(member, settings, dateStr) {
   const usedModules = [];
 
   if (settings.module_calendar) {
-    data.calendar = getTodaysEvents(member.id, dayStart, dayEnd);
+    data.calendar = getTodaysEvents(member.id, member.family_id, dayStart, dayEnd);
     usedModules.push('calendar');
   }
   if (settings.module_weather) {
@@ -135,7 +135,7 @@ async function gatherModuleData(member, settings, dateStr) {
     usedModules.push('power');
   }
   if (settings.module_chores) {
-    data.chores = getTodaysChores(member.id);
+    data.chores = getTodaysChores(member.id, member.family_id);
     usedModules.push('chores');
   }
   if (settings.module_news && !isChild) {

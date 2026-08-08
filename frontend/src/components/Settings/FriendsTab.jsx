@@ -10,7 +10,7 @@ export default function FriendsTab({ adminApi }) {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/relay/status')
+    fetch('/api/relay/status', { credentials: 'include' })
       .then((r) => r.json())
       .then(setStatus)
       .catch(() => {});

@@ -188,6 +188,65 @@ nullstilles ved omstart av tjenesten – da må dere bare parre på nytt.
   tekst-til-intent-funksjon slik at den senere kan byttes ut med et AI-API-kall
   uten at resten av appen må endres.
 
+## Flerfamilie-støtte – dele FamilieHub med en vennefamilie
+
+FamilieHub støtter nå ekte innlogging: flere familier kan bruke samme
+installasjon, med full adskillelse av data (kalender, gjøremål, GPS,
+kameraer, bilder osv. – hver familie ser kun sitt eget). Dette er noe annet
+enn Raspberry Pi-planen under, som fortsatt er riktig for **din egen**
+kjøkkenskjerm – flerfamilie-støtten er for å *i tillegg* dele en internett-
+tilgjengelig installasjon med f.eks. en vennefamilie som vil prøve appen uten
+å sette opp noe selv.
+
+### Hva er fortsatt delt (Fase 1-begrensning)
+
+Noen integrasjoner er ikke bygget om til per-familie ennå, og er derfor
+reservert **hovedfamilien** (den første kontoen som ble opprettet på
+installasjonen – typisk deg): Garmin-treningscoach, Xplora/Traccar
+GPS-klokke, og "Ut og leke"-venneparing. Andre familier ser rett og slett
+ikke disse panelene/funksjonene ennå. Alt annet (kalender, gjøremål,
+handleliste, belønninger, meldingstavle, smarte plugger, kameraer,
+DoktorNå, Morgenbrief, AI-assistenten, bilder) er fullt adskilt per familie.
+
+### Sette opp innlogging
+
+1. Legg en ekte, tilfeldig `JWT_SECRET` i `.env` (f.eks. `openssl rand -hex 32`)
+   – **må** gjøres før dette hostes for andre enn deg selv.
+2. Har du allerede en database fra før flerfamilie-støtten fantes? Legg også
+   inn `INITIAL_ADMIN_EMAIL`/`INITIAL_ADMIN_PASSWORD` (og valgfritt
+   `INITIAL_ADMIN_FAMILY_NAME`) – dette kjører automatisk én gang neste gang
+   backend starter, og knytter all eksisterende data til denne innloggingen.
+   En helt fersk installasjon trenger ikke dette – bare bruk "Opprett konto"
+   i appen.
+3. Foreldre-PIN-en (samme funksjon som før, gjelder admin-handlinger som å
+   legge til familiemedlemmer, kameraer osv.) er nå per familie i stedet for
+   global, standard `1234` for hver ny familie – byttes via
+   `PATCH /api/auth/pin` (egen innstillingsknapp kommer).
+
+### Deploy til Render (gratis, samme mønster som `relay/`)
+
+1. Opprett en ny "Web Service" på [render.com](https://render.com) fra dette
+   repoet (rot-mappen, ikke `/relay`).
+2. Build command: `npm install && npm run build`
+3. Start command: `npm start`
+4. Legg til en persistent disk montert på `/data`, og sett i miljøvariablene:
+   - `DB_PATH=/data/familiehub.db`
+   - `PHOTOS_DIR=/data/photos`
+   - `REWARDS_IMAGES_DIR=/data/reward-images`
+5. Legg inn resten av `.env`-variablene du vil ha med (minst `JWT_SECRET`;
+   `CORS_ORIGIN` kan settes til Render-URL-en din, selv om den ikke er
+   strengt nødvendig når frontend og backend serveres fra samme origin slik
+   produksjonsoppsettet gjør).
+6. Vil du ta med din eksisterende lokale familie til Render (i stedet for å
+   starte helt ferskt der)? Last opp `backend/data/familiehub.db` til
+   `/data/familiehub.db` på den nye disken (Render sitt shell/SFTP) før
+   første oppstart – ellers starter Render-installasjonen med en tom database
+   og du oppretter en ny konto der i stedet.
+
+Når tjenesten er oppe: du (og vennefamilien) går til Render-URL-en, trykker
+"Opprett konto" og fyller inn familienavn, e-post og passord – ferdig, ingen
+lokalt oppsett trengs på deres side.
+
 ## Plan for deploy til Raspberry Pi
 
 Målet er en Raspberry Pi (4 eller nyere anbefalt) som kjører backend som en

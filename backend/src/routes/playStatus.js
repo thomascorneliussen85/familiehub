@@ -3,22 +3,28 @@ import { db } from '../db/index.js';
 import { config } from '../config.js';
 import { getPlayStatusSnapshot } from '../services/playStatusService.js';
 import { getSetting } from '../services/settingsStore.js';
-import { broadcastLocalStatus } from '../services/relayClient.js';
+import { broadcastLocalStatus, getOwnerFamilyId } from '../services/relayClient.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
+router.use(requireAuth);
 
-function expiryHours() {
-  const stored = getSetting('play_status_expiry_hours');
+function expiryHours(familyId) {
+  const stored = getSetting(familyId, 'play_status_expiry_hours');
   const parsed = Number(stored);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : config.playStatus.expiryHours;
 }
 
-function broadcastLocal(io) {
-  io.emit('play-status:update', getPlayStatusSnapshot());
+function broadcastLocal(io, familyId) {
+  // Vennestatuser (relay) er foreløpig kun koblet til for hovedfamilien –
+  // se relayClient.js.
+  const includeFriends = familyId === getOwnerFamilyId();
+  io.to(`family:${familyId}`).emit('play-status:update', getPlayStatusSnapshot(familyId, { includeFriends }));
 }
 
 router.get('/', (req, res) => {
-  res.json(getPlayStatusSnapshot());
+  const includeFriends = req.familyId === getOwnerFamilyId();
+  res.json(getPlayStatusSnapshot(req.familyId, { includeFriends }));
 });
 
 router.post('/', (req, res) => {
@@ -26,7 +32,9 @@ router.post('/', (req, res) => {
   if (!childId || !location) {
     return res.status(400).json({ error: 'Barn og sted er påkrevd' });
   }
-  const child = db.prepare(`SELECT * FROM family_members WHERE id = ? AND role = 'barn'`).get(childId);
+  const child = db
+    .prepare(`SELECT * FROM family_members WHERE id = ? AND family_id = ? AND role = 'barn'`)
+    .get(childId, req.familyId);
   if (!child) {
     return res.status(404).json({ error: 'Fant ikke barnet' });
   }
@@ -36,21 +44,23 @@ router.post('/', (req, res) => {
   );
 
   const startedAt = new Date();
-  const expiresAt = new Date(startedAt.getTime() + expiryHours() * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(startedAt.getTime() + expiryHours(req.familyId) * 60 * 60 * 1000).toISOString();
   const info = db
     .prepare('INSERT INTO play_status (child_id, location, emoji, expires_at) VALUES (?, ?, ?, ?)')
     .run(childId, location, emoji || null, expiresAt);
 
-  broadcastLocal(req.app.get('io'));
-  broadcastLocalStatus({
-    statusId: info.lastInsertRowid,
-    childName: child.name,
-    location,
-    emoji: emoji || null,
-    startedAt: startedAt.toISOString(),
-    expiresAt,
-    ended: false,
-  });
+  broadcastLocal(req.app.get('io'), req.familyId);
+  if (req.familyId === getOwnerFamilyId()) {
+    broadcastLocalStatus({
+      statusId: info.lastInsertRowid,
+      childName: child.name,
+      location,
+      emoji: emoji || null,
+      startedAt: startedAt.toISOString(),
+      expiresAt,
+      ended: false,
+    });
+  }
 
   const status = db
     .prepare(
@@ -62,23 +72,30 @@ router.post('/', (req, res) => {
 });
 
 router.post('/:id/end', (req, res) => {
-  const existing = db.prepare('SELECT * FROM play_status WHERE id = ?').get(req.params.id);
+  const existing = db
+    .prepare(
+      `SELECT ps.* FROM play_status ps JOIN family_members m ON m.id = ps.child_id
+       WHERE ps.id = ? AND m.family_id = ?`
+    )
+    .get(req.params.id, req.familyId);
   if (!existing) {
     return res.status(404).json({ error: 'Fant ikke status' });
   }
   db.prepare(`UPDATE play_status SET ended_at = datetime('now') WHERE id = ?`).run(req.params.id);
-  broadcastLocal(req.app.get('io'));
+  broadcastLocal(req.app.get('io'), req.familyId);
 
-  const child = db.prepare('SELECT * FROM family_members WHERE id = ?').get(existing.child_id);
-  broadcastLocalStatus({
-    statusId: existing.id,
-    childName: child?.name,
-    location: existing.location,
-    emoji: existing.emoji,
-    startedAt: existing.started_at,
-    expiresAt: existing.expires_at,
-    ended: true,
-  });
+  if (req.familyId === getOwnerFamilyId()) {
+    const child = db.prepare('SELECT * FROM family_members WHERE id = ?').get(existing.child_id);
+    broadcastLocalStatus({
+      statusId: existing.id,
+      childName: child?.name,
+      location: existing.location,
+      emoji: existing.emoji,
+      startedAt: existing.started_at,
+      expiresAt: existing.expires_at,
+      ended: true,
+    });
+  }
 
   res.status(204).end();
 });

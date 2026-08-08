@@ -15,20 +15,22 @@ export function setFriendStatuses(list) {
   friendStatuses = list;
 }
 
-export function getActiveOwnStatuses() {
+export function getActiveOwnStatuses(familyId) {
   return db
     .prepare(
       `SELECT ps.*, m.name AS child_name, m.color AS child_color, m.avatar AS child_avatar
        FROM play_status ps
        JOIN family_members m ON m.id = ps.child_id
-       WHERE ps.ended_at IS NULL AND ps.expires_at > datetime('now')
+       WHERE m.family_id = ? AND ps.ended_at IS NULL AND ps.expires_at > datetime('now')
        ORDER BY ps.started_at DESC`
     )
-    .all();
+    .all(familyId);
 }
 
-export function getPlayStatusSnapshot() {
-  return { own: getActiveOwnStatuses(), friends: getFriendStatuses() };
+// Vennestatuser (fra relay) er i Fase 1 kun tilgjengelig for hovedfamilien
+// (se relayClient.js) – andre familier ser derfor en tom "friends"-liste.
+export function getPlayStatusSnapshot(familyId, { includeFriends = false } = {}) {
+  return { own: getActiveOwnStatuses(familyId), friends: includeFriends ? getFriendStatuses() : [] };
 }
 
 // Personvernkrav: statuser slettes lokalt etter 7 dager.

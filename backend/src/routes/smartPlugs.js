@@ -1,31 +1,26 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { config } from '../config.js';
 import { setPlugRelay } from '../services/shellyPoller.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
 
 const router = Router();
-
-function requirePin(req, res, next) {
-  if (req.headers['x-parent-pin'] !== config.parentPin) {
-    return res.status(403).json({ error: 'Feil PIN-kode' });
-  }
-  next();
-}
+router.use(requireAuth);
 
 router.get('/', (req, res) => {
-  res.json(db.prepare('SELECT * FROM smart_plugs ORDER BY id').all());
+  res.json(db.prepare('SELECT * FROM smart_plugs WHERE family_id = ? ORDER BY id').all(req.familyId));
 });
 
-router.post('/', requirePin, (req, res) => {
+router.post('/', requireFamilyPin, (req, res) => {
   const { name, ip } = req.body;
   if (!name || !ip) return res.status(400).json({ error: 'Navn og IP er påkrevd' });
-  const info = db.prepare('INSERT INTO smart_plugs (name, ip) VALUES (?, ?)').run(name, ip);
-  const plug = db.prepare('SELECT * FROM smart_plugs WHERE id = ?').get(info.lastInsertRowid);
+  const info = db.prepare('INSERT INTO smart_plugs (family_id, name, ip) VALUES (?, ?, ?)').run(req.familyId, name, ip);
+  const plug = db.prepare('SELECT * FROM smart_plugs WHERE id = ? AND family_id = ?').get(info.lastInsertRowid, req.familyId);
   res.status(201).json(plug);
 });
 
 router.post('/:id/toggle', async (req, res) => {
-  const plug = db.prepare('SELECT * FROM smart_plugs WHERE id = ?').get(req.params.id);
+  const plug = db.prepare('SELECT * FROM smart_plugs WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId);
   if (!plug) return res.status(404).json({ error: 'Plugg ikke funnet' });
   const turnOn = req.body.on ?? !plug.is_on;
   try {
@@ -39,12 +34,12 @@ router.post('/:id/toggle', async (req, res) => {
     return res.status(502).json({ error: `Fikk ikke kontakt med ${plug.name} på ${plug.ip}` });
   }
   const updated = db.prepare('SELECT * FROM smart_plugs WHERE id = ?').get(plug.id);
-  req.app.get('io').emit('plugs:update', db.prepare('SELECT * FROM smart_plugs ORDER BY id').all());
+  req.app.get('io').to(`family:${req.familyId}`).emit('plugs:update', db.prepare('SELECT * FROM smart_plugs WHERE family_id = ? ORDER BY id').all(req.familyId));
   res.json(updated);
 });
 
-router.delete('/:id', requirePin, (req, res) => {
-  db.prepare('DELETE FROM smart_plugs WHERE id = ?').run(req.params.id);
+router.delete('/:id', requireFamilyPin, (req, res) => {
+  db.prepare('DELETE FROM smart_plugs WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
   res.status(204).end();
 });
 

@@ -43,7 +43,7 @@ export default function Dashboard() {
   const { period } = useTimeOfDay();
 
   useEffect(() => {
-    fetch('/api/photos/cover')
+    fetch('/api/photos/cover', { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setCoverUrl(data.url))
       .catch(() => {});
@@ -61,7 +61,7 @@ export default function Dashboard() {
     if (!file) return;
     const formData = new FormData();
     formData.append('photo', file);
-    const res = await fetch('/api/photos/cover', { method: 'POST', body: formData }).catch(() => null);
+    const res = await fetch('/api/photos/cover', { method: 'POST', credentials: 'include', body: formData }).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       setCoverUrl(`${data.url}?t=${Date.now()}`);

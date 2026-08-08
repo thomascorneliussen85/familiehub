@@ -171,15 +171,15 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function findMemberByName(name) {
+function findMemberByName(familyId, name) {
   if (!name) return null;
-  const members = db.prepare('SELECT * FROM family_members').all();
+  const members = db.prepare('SELECT * FROM family_members WHERE family_id = ?').all(familyId);
   const lower = name.toLowerCase();
   return members.find((m) => m.name.toLowerCase().includes(lower) || lower.includes(m.name.toLowerCase())) || null;
 }
 
-function findPlugByName(name) {
-  const plugs = db.prepare('SELECT * FROM smart_plugs').all();
+function findPlugByName(familyId, name) {
+  const plugs = db.prepare('SELECT * FROM smart_plugs WHERE family_id = ?').all(familyId);
   const lower = (name || '').toLowerCase();
   return plugs.find((p) => p.name.toLowerCase().includes(lower) || lower.includes(p.name.toLowerCase())) || null;
 }
@@ -200,10 +200,10 @@ function expandWeeklyForToday(events, dayStartMs, dayEndMs) {
   return result;
 }
 
-export async function executeTool(name, input, io) {
+export async function executeTool(name, input, io, familyId) {
   switch (name) {
     case 'create_calendar_event': {
-      const member = findMemberByName(input.member_name);
+      const member = findMemberByName(familyId, input.member_name);
       const [y, m, d] = input.date.split('-').map(Number);
       let start;
       let end;
@@ -222,44 +222,46 @@ export async function executeTool(name, input, io) {
       }
       const recurrence = input.recurrence === 'weekly' ? 'weekly' : 'once';
       db.prepare(
-        `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, source, recurrence)
-         VALUES (?, ?, ?, ?, ?, 'local', ?)`
-      ).run(member?.id ?? null, input.title, start.toISOString(), end.toISOString(), allDay ? 1 : 0, recurrence);
-      io.emit('calendar:update', { type: 'created' });
+        `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, source, recurrence)
+         VALUES (?, ?, ?, ?, ?, ?, 'local', ?)`
+      ).run(familyId, member?.id ?? null, input.title, start.toISOString(), end.toISOString(), allDay ? 1 : 0, recurrence);
+      io.to(`family:${familyId}`).emit('calendar:update', { type: 'created' });
       return { ok: true, title: input.title, member: member?.name ?? null };
     }
 
     case 'create_chore': {
-      const member = findMemberByName(input.member_name);
+      const member = findMemberByName(familyId, input.member_name);
       const recurrence = input.schedule === 'weekly' ? `weekly:${input.weekday || 'mon'}` : 'once';
       const due_date = input.schedule === 'date' ? input.date : null;
       const stars = Number(input.stars) >= 1 && Number(input.stars) <= 3 ? Number(input.stars) : 1;
-      db.prepare('INSERT INTO chores (member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO chores (family_id, member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?, ?)').run(
+        familyId,
         member?.id ?? null,
         input.title,
         recurrence,
         due_date,
         stars
       );
-      io.emit('chores:update');
+      io.to(`family:${familyId}`).emit('chores:update');
       return { ok: true, title: input.title, member: member?.name ?? null };
     }
 
     case 'create_reward': {
       const star_cost = Math.max(1, Number(input.star_cost) || 1);
-      db.prepare('INSERT INTO rewards (title, description, star_cost) VALUES (?, ?, ?)').run(
+      db.prepare('INSERT INTO rewards (family_id, title, description, star_cost) VALUES (?, ?, ?, ?)').run(
+        familyId,
         input.title,
         input.description || null,
         star_cost
       );
-      io.emit('rewards:update');
+      io.to(`family:${familyId}`).emit('rewards:update');
       return { ok: true, title: input.title, star_cost };
     }
 
     case 'add_shopping_item': {
-      const maxPos = db.prepare('SELECT COALESCE(MAX(position), 0) AS m FROM shopping_items').get().m;
-      db.prepare('INSERT INTO shopping_items (name, position) VALUES (?, ?)').run(input.name.trim(), maxPos + 1);
-      io.emit('shopping:update', db.prepare('SELECT * FROM shopping_items ORDER BY checked, position').all());
+      const maxPos = db.prepare('SELECT COALESCE(MAX(position), 0) AS m FROM shopping_items WHERE family_id = ?').get(familyId).m;
+      db.prepare('INSERT INTO shopping_items (family_id, name, position) VALUES (?, ?, ?)').run(familyId, input.name.trim(), maxPos + 1);
+      io.to(`family:${familyId}`).emit('shopping:update', db.prepare('SELECT * FROM shopping_items WHERE family_id = ? ORDER BY checked, position').all(familyId));
       return { ok: true, name: input.name };
     }
 
@@ -270,7 +272,7 @@ export async function executeTool(name, input, io) {
     }
 
     case 'toggle_smart_plug': {
-      const plug = findPlugByName(input.name);
+      const plug = findPlugByName(familyId, input.name);
       if (!plug) return { error: `Fant ingen plugg som heter «${input.name}»` };
       try {
         await setPlugRelay(plug.ip, input.on);
@@ -281,7 +283,7 @@ export async function executeTool(name, input, io) {
         db.prepare('UPDATE smart_plugs SET online = 0 WHERE id = ?').run(plug.id);
         return { error: `Fikk ikke kontakt med ${plug.name} på ${plug.ip}` };
       }
-      io.emit('plugs:update', db.prepare('SELECT * FROM smart_plugs ORDER BY id').all());
+      io.to(`family:${familyId}`).emit('plugs:update', db.prepare('SELECT * FROM smart_plugs WHERE family_id = ? ORDER BY id').all(familyId));
       return { ok: true, name: plug.name, on: input.on };
     }
 
@@ -294,16 +296,16 @@ export async function executeTool(name, input, io) {
         .prepare(
           `SELECT e.*, m.name AS member_name FROM calendar_events e
            LEFT JOIN family_members m ON m.id = e.member_id
-           WHERE e.recurrence = 'once' AND e.start_at < ? AND e.end_at > ?`
+           WHERE e.family_id = ? AND e.recurrence = 'once' AND e.start_at < ? AND e.end_at > ?`
         )
-        .all(dayEnd.toISOString(), dayStart.toISOString());
+        .all(familyId, dayEnd.toISOString(), dayStart.toISOString());
       const weeklyBases = db
         .prepare(
           `SELECT e.*, m.name AS member_name FROM calendar_events e
            LEFT JOIN family_members m ON m.id = e.member_id
-           WHERE e.recurrence = 'weekly'`
+           WHERE e.family_id = ? AND e.recurrence = 'weekly'`
         )
-        .all();
+        .all(familyId);
       const events = [...onceRows, ...expandWeeklyForToday(weeklyBases, dayStart.getTime(), dayEnd.getTime())].sort(
         (a, b) => new Date(a.start_at) - new Date(b.start_at)
       );
@@ -313,9 +315,9 @@ export async function executeTool(name, input, io) {
         .prepare(
           `SELECT c.*, m.name AS member_name FROM chores c
            LEFT JOIN family_members m ON m.id = c.member_id
-           WHERE c.active = 1`
+           WHERE c.family_id = ? AND c.active = 1`
         )
-        .all()
+        .all(familyId)
         .filter((c) => c.recurrence === 'daily' || c.due_date === today || c.recurrence.startsWith('weekly:'));
       const doneStmt = db.prepare('SELECT 1 FROM chore_completions WHERE chore_id = ? AND completed_on = ?');
       const undoneChores = chores.filter((c) => !doneStmt.get(c.id, today));
@@ -360,21 +362,21 @@ export async function executeTool(name, input, io) {
     }
 
     case 'get_shopping_list': {
-      const items = db.prepare('SELECT name FROM shopping_items WHERE checked = 0 ORDER BY position').all();
+      const items = db.prepare('SELECT name FROM shopping_items WHERE family_id = ? AND checked = 0 ORDER BY position').all(familyId);
       return { items: items.map((i) => i.name) };
     }
 
     case 'get_star_balances': {
-      const members = db.prepare('SELECT id, name FROM family_members').all();
+      const members = db.prepare('SELECT id, name FROM family_members WHERE family_id = ?').all(familyId);
       const totalStmt = db.prepare(
         `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
          FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-         WHERE c.member_id = ?`
+         WHERE c.member_id = ? AND c.family_id = ?`
       );
       const spentStmt = db.prepare(`SELECT COALESCE(SUM(stars_spent), 0) AS total FROM reward_redemptions WHERE member_id = ?`);
       return {
         balances: members.map((m) => {
-          const total = totalStmt.get(m.id).total;
+          const total = totalStmt.get(m.id, familyId).total;
           const spent = spentStmt.get(m.id).total;
           return { member: m.name, stars_balance: total - spent };
         }),
@@ -382,7 +384,7 @@ export async function executeTool(name, input, io) {
     }
 
     case 'list_rewards': {
-      const rewards = db.prepare('SELECT title, star_cost FROM rewards WHERE active = 1 ORDER BY sort_order, id').all();
+      const rewards = db.prepare('SELECT title, star_cost FROM rewards WHERE family_id = ? AND active = 1 ORDER BY sort_order, id').all(familyId);
       return { rewards };
     }
 
@@ -396,9 +398,9 @@ export async function executeTool(name, input, io) {
   }
 }
 
-function buildSystemPrompt() {
-  const members = db.prepare('SELECT name FROM family_members').all().map((m) => m.name);
-  const plugs = db.prepare('SELECT name FROM smart_plugs').all().map((p) => p.name);
+function buildSystemPrompt(familyId) {
+  const members = db.prepare('SELECT name FROM family_members WHERE family_id = ?').all(familyId).map((m) => m.name);
+  const plugs = db.prepare('SELECT name FROM smart_plugs WHERE family_id = ?').all(familyId).map((p) => p.name);
   const panelList = Object.entries(PANELS).map(([k, v]) => `${k} (${v})`).join(', ');
   return (
     'Du er en hjelpsom norsk taleassistent innebygd i FamilieHub, en delt familietavle på kjøkkenet. ' +
@@ -422,13 +424,13 @@ function buildSystemPrompt() {
 // Kjører én taleforespørsel gjennom Claude med verktøy, utfører de verktøyene
 // Claude velger, og returnerer et naturlig norsk svar pluss ev. handlinger
 // frontend selv må utføre (kun nedtellingstimer, som er ren klienttilstand).
-export async function runAssistantCommand(text, io) {
+export async function runAssistantCommand(text, io, familyId) {
   if (!config.anthropicApiKey) {
     throw new Error('AI-assistenten krever en Claude API-nøkkel i .env (ANTHROPIC_API_KEY)');
   }
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
-  const system = buildSystemPrompt();
+  const system = buildSystemPrompt(familyId);
   let messages = [{ role: 'user', content: text }];
   const clientActions = [];
 
@@ -451,7 +453,7 @@ export async function runAssistantCommand(text, io) {
     const toolResults = [];
     for (const block of response.content) {
       if (block.type !== 'tool_use') continue;
-      const result = await executeTool(block.name, block.input, io);
+      const result = await executeTool(block.name, block.input, io, familyId);
       if (result?.clientAction) clientActions.push(result.clientAction);
       toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(result) });
     }

@@ -3,23 +3,31 @@ import { db } from '../db/index.js';
 import { config } from '../config.js';
 import { getSetting, setSetting } from './settingsStore.js';
 import { getFriendStatuses, setFriendStatuses, getPlayStatusSnapshot } from './playStatusService.js';
+import { getOwnerFamilyId } from './ownerFamily.js';
+
+export { getOwnerFamilyId };
 
 let relaySocket = null;
 let localIo = null;
 let connected = false;
 let pendingIncoming = []; // [{ pairingId, familyName }] – venter på foreldregodkjenning
 
+function ownerRoom() {
+  return `family:${getOwnerFamilyId()}`;
+}
+
 function localBroadcastFriendFamilies() {
-  const rows = db.prepare('SELECT * FROM friend_families ORDER BY paired_at DESC').all();
-  localIo?.emit('relay:friend-families-update', rows);
+  const ownerFamilyId = getOwnerFamilyId();
+  const rows = db.prepare('SELECT * FROM friend_families WHERE family_id = ? ORDER BY paired_at DESC').all(ownerFamilyId);
+  localIo?.to(ownerRoom()).emit('relay:friend-families-update', rows);
 }
 
 function localBroadcastPending() {
-  localIo?.emit('relay:pending-update', pendingIncoming);
+  localIo?.to(ownerRoom()).emit('relay:pending-update', pendingIncoming);
 }
 
 function localBroadcastStatus() {
-  localIo?.emit('play-status:update', getPlayStatusSnapshot());
+  localIo?.to(ownerRoom()).emit('play-status:update', getPlayStatusSnapshot(getOwnerFamilyId(), { includeFriends: true }));
 }
 
 function clearFriendStatusesForFamily(familyName) {
@@ -49,8 +57,9 @@ function mergeIncomingFriendStatus(payload) {
 }
 
 async function ensureHubIdentity() {
-  const hubId = getSetting('relay_hub_id');
-  const apiKey = getSetting('relay_api_key');
+  const ownerFamilyId = getOwnerFamilyId();
+  const hubId = getSetting(ownerFamilyId, 'relay_hub_id');
+  const apiKey = getSetting(ownerFamilyId, 'relay_api_key');
   if (hubId && apiKey) return { hubId, apiKey };
 
   const res = await fetch(`${config.relay.url}/hubs/register`, {
@@ -62,8 +71,8 @@ async function ensureHubIdentity() {
     throw new Error(`Klarte ikke å registrere hos relay (${res.status})`);
   }
   const data = await res.json();
-  setSetting('relay_hub_id', data.hubId);
-  setSetting('relay_api_key', data.apiKey);
+  setSetting(ownerFamilyId, 'relay_hub_id', data.hubId);
+  setSetting(ownerFamilyId, 'relay_api_key', data.apiKey);
   return { hubId: data.hubId, apiKey: data.apiKey };
 }
 
@@ -100,10 +109,10 @@ export async function initRelayClient(io) {
       pendingIncoming = pendingIncoming.filter((p) => p.pairingId !== pairingId);
       localBroadcastPending();
       db.prepare(
-        `INSERT INTO friend_families (name, paired_at, approved, friend_hub_id)
-         VALUES (?, datetime('now'), 1, ?)
+        `INSERT INTO friend_families (family_id, name, paired_at, approved, friend_hub_id)
+         VALUES (?, ?, datetime('now'), 1, ?)
          ON CONFLICT(friend_hub_id) DO UPDATE SET name = excluded.name, approved = 1`
-      ).run(familyName, friendHubId);
+      ).run(getOwnerFamilyId(), familyName, friendHubId);
       localBroadcastFriendFamilies();
     });
 
@@ -134,7 +143,7 @@ export function getPendingIncoming() {
 }
 
 export function listFriendFamilies() {
-  return db.prepare('SELECT * FROM friend_families ORDER BY paired_at DESC').all();
+  return db.prepare('SELECT * FROM friend_families WHERE family_id = ? ORDER BY paired_at DESC').all(getOwnerFamilyId());
 }
 
 function requireConnected() {

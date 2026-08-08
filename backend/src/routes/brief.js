@@ -1,27 +1,26 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { config } from '../config.js';
 import { generateBrief, getMemberBriefSettings, getTodaysBrief } from '../services/briefService.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
 
 const router = Router();
-
-function requirePin(req, res, next) {
-  if (req.headers['x-parent-pin'] !== config.parentPin) {
-    return res.status(403).json({ error: 'Feil PIN-kode' });
-  }
-  next();
-}
+router.use(requireAuth);
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function memberBelongsToFamily(memberId, familyId) {
+  return Boolean(db.prepare('SELECT 1 FROM family_members WHERE id = ? AND family_id = ?').get(memberId, familyId));
 }
 
 // GET /api/brief/status – oversikt for "God morgen"-kortet: hvem har (ikke)
 // hørt sin brief i dag ennå.
 router.get('/status', (req, res) => {
   const members = db
-    .prepare('SELECT id, name, avatar, color, role FROM family_members ORDER BY sort_order, id')
-    .all();
+    .prepare('SELECT id, name, avatar, color, role FROM family_members WHERE family_id = ? ORDER BY sort_order, id')
+    .all(req.familyId);
   const date = todayStr();
   const briefStmt = db.prepare('SELECT heard FROM daily_briefs WHERE member_id = ? AND brief_date = ?');
   res.json(
@@ -33,12 +32,14 @@ router.get('/status', (req, res) => {
 });
 
 router.get('/settings/:memberId', (req, res) => {
-  const settings = getMemberBriefSettings(Number(req.params.memberId));
-  res.json(settings);
+  const memberId = Number(req.params.memberId);
+  if (!memberBelongsToFamily(memberId, req.familyId)) return res.status(404).json({ error: 'Familiemedlem ikke funnet' });
+  res.json(getMemberBriefSettings(memberId));
 });
 
-router.patch('/settings/:memberId', requirePin, (req, res) => {
+router.patch('/settings/:memberId', requireFamilyPin, (req, res) => {
   const memberId = Number(req.params.memberId);
+  if (!memberBelongsToFamily(memberId, req.familyId)) return res.status(404).json({ error: 'Familiemedlem ikke funnet' });
   getMemberBriefSettings(memberId); // sikrer at raden finnes
   const b = req.body;
   db.prepare(
@@ -66,14 +67,18 @@ router.patch('/settings/:memberId', requirePin, (req, res) => {
 });
 
 router.get('/:memberId/today', (req, res) => {
-  const brief = getTodaysBrief(Number(req.params.memberId));
+  const memberId = Number(req.params.memberId);
+  if (!memberBelongsToFamily(memberId, req.familyId)) return res.status(404).json({ error: 'Familiemedlem ikke funnet' });
+  const brief = getTodaysBrief(memberId);
   res.json(brief || null);
 });
 
 router.post('/generate/:memberId', async (req, res) => {
+  const memberId = Number(req.params.memberId);
+  if (!memberBelongsToFamily(memberId, req.familyId)) return res.status(404).json({ error: 'Familiemedlem ikke funnet' });
   try {
-    const brief = await generateBrief(Number(req.params.memberId));
-    req.app.get('io').emit('brief:update', { memberId: Number(req.params.memberId) });
+    const brief = await generateBrief(memberId);
+    req.app.get('io').to(`family:${req.familyId}`).emit('brief:update', { memberId });
     res.json(brief);
   } catch (err) {
     res.status(502).json({ error: 'Klarte ikke å lage morgenbrief', detail: err.message });
@@ -82,11 +87,12 @@ router.post('/generate/:memberId', async (req, res) => {
 
 router.post('/:memberId/heard', (req, res) => {
   const memberId = Number(req.params.memberId);
+  if (!memberBelongsToFamily(memberId, req.familyId)) return res.status(404).json({ error: 'Familiemedlem ikke funnet' });
   db.prepare(
     `UPDATE daily_briefs SET heard = 1, heard_at = datetime('now')
      WHERE member_id = ? AND brief_date = ?`
   ).run(memberId, todayStr());
-  req.app.get('io').emit('brief:update', { memberId });
+  req.app.get('io').to(`family:${req.familyId}`).emit('brief:update', { memberId });
   res.status(204).end();
 });
 

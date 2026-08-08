@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import LoginPage from './components/Auth/LoginPage';
+import SignupPage from './components/Auth/SignupPage';
 import { FamilyMembersProvider } from './context/FamilyMembersContext';
 import { TimerProvider } from './context/TimerContext';
 import { PinnedCameraProvider } from './context/PinnedCameraContext';
@@ -57,7 +61,7 @@ function AppShell() {
   );
 }
 
-export default function App() {
+function MainApp() {
   return (
     <FamilyMembersProvider>
       <TimerProvider>
@@ -68,5 +72,27 @@ export default function App() {
         </PinnedCameraProvider>
       </TimerProvider>
     </FamilyMembersProvider>
+  );
+}
+
+function Routed() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignupPage />} />
+      <Route path="*" element={user ? <MainApp /> : <Navigate to="/login" replace />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routed />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

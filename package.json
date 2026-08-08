@@ -17,5 +17,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
   }
 }

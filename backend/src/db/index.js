@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +16,140 @@ db.pragma('foreign_keys = ON');
 
 const schema = fs.readFileSync(path.join(dirname, 'schema.sql'), 'utf-8');
 db.exec(schema);
+
+// Henter ut den nøyaktige "CREATE TABLE IF NOT EXISTS <table> (...);"-blokken
+// for én tabell fra schema.sql, ved å telle parenteser (ikke en enkel regex,
+// siden kolonnedefinisjoner selv inneholder parenteser). Brukes til å bygge
+// tabellen på nytt i riktig (ny) form under migrering under.
+function getCreateTableSql(table) {
+  const marker = `CREATE TABLE IF NOT EXISTS ${table} (`;
+  const start = schema.indexOf(marker);
+  if (start === -1) throw new Error(`Fant ikke CREATE TABLE for ${table} i schema.sql`);
+  let depth = 0;
+  let end = start + marker.length - 1;
+  for (let i = end; i < schema.length; i += 1) {
+    if (schema[i] === '(') depth += 1;
+    else if (schema[i] === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        end = schema.indexOf(';', i) + 1;
+        break;
+      }
+    }
+  }
+  return schema.slice(start, end);
+}
+
+// ====== Migrering: flerfamilie-støtte (families/users + family_id) ======
+//
+// "families"/"users" er helt nye tabeller og opprettes alltid friskt av
+// db.exec(schema) over. Men på en database som fantes FØR flerfamilie-støtten
+// er alle andre tabeller fortsatt i sin gamle, family_id-løse form (CREATE
+// TABLE IF NOT EXISTS er en no-op når tabellen allerede finnes). Denne
+// blokken kjører KUN da – styrt av om family_members mangler family_id ennå
+// – og bygger de berørte tabellene på nytt med riktig kolonne/UNIQUE-form,
+// uten å miste eksisterende data eller endre noen primærnøkler (fremmednøkler
+// andre tabeller peker på må forbli identiske).
+const familyMembersColumns = db.prepare('PRAGMA table_info(family_members)').all().map((c) => c.name);
+const needsTenantMigration = !familyMembersColumns.includes('family_id');
+
+if (needsTenantMigration) {
+  console.log('🔧 Migrerer eksisterende database til flerfamilie-støtte …');
+
+  // Viktig: SQLite skriver som standard om REFERENCES-klausuler i ANDRE
+  // tabeller når en tabell RENAME-es (f.eks. brief_settings.member_id blir
+  // til "family_members_old_migrate") – de blir da hengende til et navn som
+  // slettes rett etterpå. "legacy_alter_table" slår av nettopp den
+  // automatikken, så uberørte tabeller fortsatt sier "family_members" (som
+  // igjen peker riktig med det samme den nye family_members-tabellen finnes).
+  // foreign_keys skrus også av under selve ombyggingen siden referanse-
+  // integriteten er forbigående i flux mens tabellene bygges om.
+  db.pragma('legacy_alter_table = ON');
+  db.pragma('foreign_keys = OFF');
+
+  const existingFamily = db.prepare('SELECT id FROM families ORDER BY id LIMIT 1').get();
+  let familyId = existingFamily?.id;
+
+  if (!familyId) {
+    const email = process.env.INITIAL_ADMIN_EMAIL;
+    if (!email) {
+      throw new Error(
+        'Migrering til flerfamilie-støtte krever INITIAL_ADMIN_EMAIL (og valgfritt ' +
+          'INITIAL_ADMIN_PASSWORD) i .env, slik at eksisterende data kan knyttes til en ' +
+          'innlogging. Se README.'
+      );
+    }
+    let password = process.env.INITIAL_ADMIN_PASSWORD;
+    const generatedPassword = !password;
+    if (generatedPassword) password = crypto.randomBytes(9).toString('base64url');
+
+    const familyName = process.env.INITIAL_ADMIN_FAMILY_NAME || config.relay.familyName || 'Min familie';
+    familyId = db.prepare('INSERT INTO families (name) VALUES (?)').run(familyName).lastInsertRowid;
+    const passwordHash = bcrypt.hashSync(password, 10);
+    db.prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)').run(
+      familyId,
+      email,
+      passwordHash
+    );
+
+    if (generatedPassword) {
+      console.log('='.repeat(64));
+      console.log(`🔑 Opprettet innlogging ${email} med generert passord: ${password}`);
+      console.log('   Skriv den ned nå og bytt passord ved første innlogging.');
+      console.log('='.repeat(64));
+    }
+  }
+
+  function migrateTable(table, columns) {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    if (cols.includes('family_id')) return; // allerede migrert (idempotent)
+    db.exec(`ALTER TABLE ${table} RENAME TO ${table}_old_migrate`);
+    db.exec(getCreateTableSql(table));
+    const colList = columns.join(', ');
+    db.exec(
+      `INSERT INTO ${table} (${colList}, family_id) SELECT ${colList}, ${familyId} FROM ${table}_old_migrate`
+    );
+    db.exec(`DROP TABLE ${table}_old_migrate`);
+  }
+
+  // family_members først – calendar_events/chores/telemedicine_bookings har
+  // fremmednøkkel dit, og skal migreres etter at den er på plass igjen.
+  migrateTable('family_members', ['id', 'name', 'role', 'color', 'avatar', 'sort_order', 'created_at']);
+  migrateTable('calendar_events', [
+    'id', 'member_id', 'title', 'start_at', 'end_at', 'all_day', 'location', 'notes',
+    'source', 'google_event_id', 'recurrence', 'external_id', 'connection_id', 'created_at',
+  ]);
+  migrateTable('chores', ['id', 'member_id', 'title', 'recurrence', 'due_date', 'stars', 'active', 'created_at']);
+  migrateTable('shopping_items', ['id', 'name', 'checked', 'checked_at', 'position', 'created_at']);
+  migrateTable('quick_items', ['id', 'name', 'icon']);
+  migrateTable('smart_plugs', ['id', 'name', 'ip', 'is_on', 'last_watt', 'last_seen_at', 'online', 'created_at']);
+  migrateTable('gps_positions', [
+    'id', 'device_name', 'lat', 'lon', 'speed', 'battery', 'accuracy', 'recorded_at', 'source', 'created_at',
+  ]);
+  migrateTable('messages', ['id', 'author', 'text', 'color', 'pos_x', 'pos_y', 'rotation', 'created_at']);
+  migrateTable('settings', ['key', 'value']);
+  migrateTable('play_locations', ['id', 'label', 'emoji', 'sort_order']);
+  migrateTable('friend_families', ['id', 'name', 'pairing_code', 'paired_at', 'approved', 'friend_hub_id']);
+  migrateTable('cameras', ['id', 'name', 'rtsp_url', 'created_at']);
+  migrateTable('dinner_plans', ['id', 'date', 'title', 'emoji', 'notes', 'created_at']);
+  migrateTable('rewards', ['id', 'title', 'description', 'star_cost', 'image', 'active', 'sort_order', 'created_at']);
+  migrateTable('telemedicine_bookings', [
+    'id', 'member_id', 'doctor_id', 'start_at', 'end_at', 'reason', 'status', 'calendar_event_id', 'created_at',
+  ]);
+
+  db.pragma('legacy_alter_table = OFF');
+  db.pragma('foreign_keys = ON');
+  console.log('✅ Flerfamilie-migrering ferdig.');
+}
+
+// Disse kan først opprettes her – etter en ev. migrering over – siden
+// kolonnen ikke finnes ennå på en database som migreres fra før flerfamilie-
+// støtten fantes (se merknad i schema.sql).
+db.exec('CREATE INDEX IF NOT EXISTS idx_family_members_family ON family_members(family_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_calendar_events_family ON calendar_events(family_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_chores_family ON chores(family_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_shopping_items_family ON shopping_items(family_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_users_family ON users(family_id)');
 
 // Migrering: friend_families kan finnes fra før del 1, uten friend_hub_id-kolonnen.
 const friendFamiliesColumns = db.prepare('PRAGMA table_info(friend_families)').all().map((c) => c.name);
@@ -75,19 +211,9 @@ if (doctorCount === 0) {
   ].forEach(([name, specialty, avatar], i) => insertDoctor.run(name, specialty, avatar, i + 1));
 }
 
-const { n: locationCount } = db.prepare('SELECT COUNT(*) AS n FROM play_locations').get();
-if (locationCount === 0) {
-  const insertLocation = db.prepare(
-    'INSERT INTO play_locations (label, emoji, sort_order) VALUES (?, ?, ?)'
-  );
-  insertLocation.run('Hjemme hos oss', '🏠', 1);
-  insertLocation.run('Lekeplassen', '🛝', 2);
-  insertLocation.run('Ballbingen', '⚽', 3);
-  insertLocation.run('Ute i gaten', '🚸', 4);
-}
-
-// Kuratert startliste med bibelvers til Morgenbrief-modulen "dagens vers".
-// fallback_text_no dekker demo-/offline-bruk (bible-api.com har ikke norsk).
+// play_locations og bible_verses seedes nå per familie (se familyMembers.js-
+// aktiveringen / seed.js) i stedet for globalt her, bortsett fra bible_verses
+// som forblir delt referansedata.
 const { n: verseCount } = db.prepare('SELECT COUNT(*) AS n FROM bible_verses').get();
 if (verseCount === 0) {
   const insertVerse = db.prepare(

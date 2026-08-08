@@ -8,13 +8,17 @@ const TARGET_MINUTE = 30;
 let lastRunDate = null;
 
 async function generateAllBriefs(io) {
-  const members = db.prepare('SELECT id FROM family_members').all();
-  for (const { id } of members) {
+  const members = db.prepare('SELECT id, family_id FROM family_members').all();
+  const affectedFamilies = new Set();
+  for (const { id, family_id } of members) {
     await generateBrief(id).catch((err) =>
       console.error(`Morgenbrief: klarte ikke å forhåndsgenerere for medlem ${id}`, err.message)
     );
+    affectedFamilies.add(family_id);
   }
-  io.emit('brief:update', { all: true });
+  for (const familyId of affectedFamilies) {
+    io.to(`family:${familyId}`).emit('brief:update', { all: true });
+  }
 }
 
 // Pre-genererer dagens Morgenbrief for alle familiemedlemmer kl. 05:30, slik
