@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import './BabyCameraTile.css';
 
 const POS_KEY = 'familiehub-baby-camera-pos';
+const RETRY_MS = 15000;
 
 function loadSavedPos() {
   try {
@@ -17,7 +18,10 @@ function loadSavedPos() {
 export default function BabyCameraTile() {
   const [camera, setCamera] = useState(null);
   const [loaded, setLoaded] = useState(false);
-  const [streamError, setStreamError] = useState(false);
+  // Strømmen prøves alltid i bakgrunnen, men ruten vises kun (visible=true)
+  // når den faktisk kommer opp – den skal forsvinne helt av seg selv når
+  // kameraet ikke er tilkoblet, ikke stå igjen som en tom/feilet boks.
+  const [visible, setVisible] = useState(false);
   const [streamKey, setStreamKey] = useState(0);
   const [pos, setPos] = useState(loadSavedPos);
   const boxRef = useRef(null);
@@ -34,16 +38,11 @@ export default function BabyCameraTile() {
       .finally(() => setLoaded(true));
   }, []);
 
-  // Prøv streamen på nytt med jevne mellomrom hvis kameraet er utilgjengelig
-  // (f.eks. slått av eller ikke ferdig koblet til WiFi ennå).
   useEffect(() => {
-    if (!streamError) return undefined;
-    const id = setInterval(() => {
-      setStreamKey((k) => k + 1);
-      setStreamError(false);
-    }, 15000);
+    if (!camera || visible) return undefined;
+    const id = setInterval(() => setStreamKey((k) => k + 1), RETRY_MS);
     return () => clearInterval(id);
-  }, [streamError]);
+  }, [camera, visible]);
 
   function clamp(x, y) {
     const box = boxRef.current;
@@ -88,7 +87,11 @@ export default function BabyCameraTile() {
   const style = pos ? { left: `${pos.x}px`, top: `${pos.y}px` } : undefined;
 
   return (
-    <div className={`baby-camera-tile ${pos ? 'baby-camera-tile-positioned' : ''}`} style={style} ref={boxRef}>
+    <div
+      className={`baby-camera-tile ${pos ? 'baby-camera-tile-positioned' : ''} ${visible ? '' : 'baby-camera-tile-hidden'}`}
+      style={style}
+      ref={boxRef}
+    >
       <div
         className="baby-camera-drag-handle"
         onPointerDown={onDragStart}
@@ -100,18 +103,15 @@ export default function BabyCameraTile() {
         <span className="baby-camera-drag-hint">✥</span>
       </div>
       <div className="baby-camera-stream-wrap">
-        {streamError ? (
-          <div className="baby-camera-offline">📷 Ikke tilkoblet</div>
-        ) : (
-          <img
-            key={streamKey}
-            className="baby-camera-stream"
-            src={`/api/cameras/${camera.id}/stream`}
-            alt={camera.name}
-            draggable={false}
-            onError={() => setStreamError(true)}
-          />
-        )}
+        <img
+          key={streamKey}
+          className="baby-camera-stream"
+          src={`/api/cameras/${camera.id}/stream`}
+          alt={camera.name}
+          draggable={false}
+          onLoad={() => setVisible(true)}
+          onError={() => setVisible(false)}
+        />
       </div>
     </div>
   );

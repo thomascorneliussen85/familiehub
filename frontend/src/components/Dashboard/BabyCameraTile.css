@@ -20,6 +20,9 @@
   left: 0;
   transform: none;
 }
+.baby-camera-tile-hidden {
+  display: none;
+}
 
 .baby-camera-drag-handle {
   flex-shrink: 0;
@@ -56,10 +59,4 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.baby-camera-offline {
-  color: var(--text-faint);
-  font-size: 12px;
-  text-align: center;
-  padding: 12px;
 }
