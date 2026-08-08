@@ -1,7 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import CalendarPanel from '../Calendar/CalendarPanel';
-import ChoresPanel from '../Chores/ChoresPanel';
-import ShoppingPanel from '../Shopping/ShoppingPanel';
 import WeatherBusPanel from '../WeatherBus/WeatherBusPanel';
 import PowerPricePanel from '../PowerPrice/PowerPricePanel';
 import SmartHomePanel from '../SmartHome/SmartHomePanel';
@@ -13,7 +10,7 @@ import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
 import RewardsPanel from '../Rewards/RewardsPanel';
-import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
+import HomeGrid from './HomeGrid';
 import BabyCameraTile from './BabyCameraTile';
 import NextEventBanner from './NextEventBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
@@ -133,12 +130,7 @@ export default function Dashboard() {
           <GoodMorningCard />
           <NextEventBanner />
 
-          <div className="dashboard-home-grid">
-            <CalendarPanel />
-            <ChoresPanel />
-            <ShoppingPanel />
-            <DinnerPlanPanel />
-          </div>
+          <HomeGrid />
 
           <BabyCameraTile />
         </div>
