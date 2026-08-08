@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import InstallAppPrompt from './InstallAppPrompt';
 import './Auth.css';
 
 export default function LoginPage() {
@@ -54,6 +55,7 @@ export default function LoginPage() {
         <div className="auth-switch">
           Ny familie? <Link to="/signup">Opprett konto</Link>
         </div>
+        <InstallAppPrompt />
       </form>
     </div>
   );
