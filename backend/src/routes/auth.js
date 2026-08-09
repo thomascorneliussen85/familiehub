@@ -149,4 +149,76 @@ router.delete('/users/:id', requireAuth, requireFamilyPin, (req, res) => {
   res.status(204).end();
 });
 
+// Søk etter familier ved navn – brukes fra signup-siden av noen som vil bli
+// med i en EKSISTERENDE familie i stedet for å opprette en ny. Ikke
+// innlogget ennå på dette tidspunktet, så ingen requireAuth her.
+router.get('/family-search', (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json([]);
+  const rows = db
+    .prepare('SELECT id, name FROM families WHERE name LIKE ? ORDER BY name ASC LIMIT 20')
+    .all(`%${q}%`);
+  res.json(rows);
+});
+
+// Sender en forespørsel om å bli med i en familie – oppretter IKKE en
+// innlogging med en gang. Familien må godkjenne først (se
+// /join-requests/:id/respond), akkurat som venneforespørsler mellom
+// familier.
+router.post('/join-request', async (req, res) => {
+  const { familyId, email, password } = req.body || {};
+  const famId = Number(familyId);
+  if (!famId || !email?.trim() || !password) {
+    return res.status(400).json({ error: 'Familie, e-post og passord er påkrevd' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Passordet må være minst 8 tegn' });
+  }
+  const family = db.prepare('SELECT id FROM families WHERE id = ?').get(famId);
+  if (!family) {
+    return res.status(404).json({ error: 'Fant ikke familien' });
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
+  if (existingUser) {
+    return res.status(409).json({ error: 'Det finnes allerede en konto med denne e-posten' });
+  }
+  const existingRequest = db.prepare('SELECT id FROM family_join_requests WHERE email = ?').get(normalizedEmail);
+  if (existingRequest) {
+    return res.status(409).json({ error: 'Det finnes allerede en forespørsel med denne e-posten' });
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  db.prepare('INSERT INTO family_join_requests (family_id, email, password_hash) VALUES (?, ?, ?)').run(
+    famId,
+    normalizedEmail,
+    passwordHash
+  );
+  res.status(201).json({ ok: true });
+});
+
+router.get('/join-requests', requireAuth, requireFamilyPin, (req, res) => {
+  const rows = db
+    .prepare('SELECT id, email, created_at FROM family_join_requests WHERE family_id = ? ORDER BY created_at ASC')
+    .all(req.familyId);
+  res.json(rows);
+});
+
+router.post('/join-requests/:id/respond', requireAuth, requireFamilyPin, (req, res) => {
+  const request = db
+    .prepare('SELECT * FROM family_join_requests WHERE id = ? AND family_id = ?')
+    .get(req.params.id, req.familyId);
+  if (!request) {
+    return res.status(404).json({ error: 'Fant ikke forespørselen' });
+  }
+  db.prepare('DELETE FROM family_join_requests WHERE id = ?').run(request.id);
+  if (req.body?.approve) {
+    db.prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)').run(
+      req.familyId,
+      request.email,
+      request.password_hash
+    );
+  }
+  res.status(204).end();
+});
+
 export default router;

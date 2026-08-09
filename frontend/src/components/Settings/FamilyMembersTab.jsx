@@ -8,12 +8,14 @@ const emptyLoginForm = { email: '', password: '' };
 
 function FamilyLoginsSection({ adminApi }) {
   const [users, setUsers] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(emptyLoginForm);
   const [error, setError] = useState('');
 
   function load() {
     adminApi.get('/auth/users').then(setUsers).catch(() => {});
+    adminApi.get('/auth/join-requests').then(setJoinRequests).catch(() => {});
   }
 
   useEffect(() => {
@@ -39,12 +41,36 @@ function FamilyLoginsSection({ adminApi }) {
     load();
   }
 
+  async function respondToJoinRequest(id, approve) {
+    await adminApi.post(`/auth/join-requests/${id}/respond`, { approve }).catch(() => {});
+    load();
+  }
+
   return (
     <div className="settings-section">
       <div className="settings-subtitle">Innlogginger</div>
       <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: -8 }}>
         Flere voksne kan logge inn på samme familie med hver sin e-post og passord.
       </div>
+
+      {joinRequests.length > 0 && (
+        <div className="settings-pending">
+          {joinRequests.map((r) => (
+            <div key={r.id} className="settings-pending-item">
+              <span>{r.email} ønsker å bli med i familien. Godkjenne?</span>
+              <div className="settings-pending-actions">
+                <button className="btn btn-accent" onClick={() => respondToJoinRequest(r.id, true)}>
+                  Godkjenn
+                </button>
+                <button className="btn" onClick={() => respondToJoinRequest(r.id, false)}>
+                  Avslå
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="settings-locations-list">
         {users.map((u) => (
           <div key={u.id} className="settings-location-item">

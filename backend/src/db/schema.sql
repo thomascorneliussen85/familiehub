@@ -418,6 +418,18 @@ CREATE TABLE IF NOT EXISTS local_friend_requests (
   UNIQUE(from_family_id, to_family_id)
 );
 
+-- Forespørsel om å bli med i en EKSISTERENDE familie (i stedet for å
+-- opprette en ny) – f.eks. en ektefelle som vil ha sin egen innlogging i
+-- familien. Passordet hashes med en gang; selve users-raden opprettes først
+-- når familien godkjenner forespørselen (se auth.js).
+CREATE TABLE IF NOT EXISTS family_join_requests (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  email          TEXT NOT NULL UNIQUE,
+  password_hash  TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Merk: indekser på family_id-kolonner (family_members, calendar_events, chores,
 -- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
 -- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som
