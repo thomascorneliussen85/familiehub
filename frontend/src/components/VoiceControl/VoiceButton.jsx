@@ -109,7 +109,7 @@ export default function VoiceButton() {
     return recognition;
   }
 
-  function startRecognition(mode) {
+  function startRecognition(mode, isRetry) {
     modeRef.current = mode;
     const recognition = createRecognition(mode);
     recognitionRef.current = recognition;
@@ -117,9 +117,21 @@ export default function VoiceButton() {
       recognition.start();
       if (mode === 'wake') setWakeActive(true);
       else setListening(true);
-    } catch {
-      // Kan skje hvis en annen gjenkjenning fortsatt er i ferd med å stoppe –
-      // onend/onerror for den forrige tar seg av gjenoppstart ved behov.
+    } catch (err) {
+      // Kan skje hvis en annen gjenkjenning fortsatt er i ferd med å stoppe
+      // (spesielt på Android, der bare én gjenkjenning kan være aktiv om
+      // gangen). Tidligere ble denne feilen svelget helt stille, så
+      // mikrofon-knappen så ut til ikke å reagere i det hele tatt – nå
+      // prøver vi én gang til, og viser en tydelig feilmelding hvis det
+      // fortsatt ikke går.
+      if (mode === 'wake') setWakeActive(false);
+      else setListening(false);
+      if (isRetry) {
+        modeRef.current = 'idle';
+        setFeedback(`Klarte ikke å starte mikrofonen: ${err?.message || 'ukjent feil'}`);
+        return;
+      }
+      setTimeout(() => startRecognition(mode, true), 300);
     }
   }
 
