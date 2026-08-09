@@ -52,8 +52,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // Henter /auth/me på nytt – brukes etter ting som endrer familienavnet, så
+  // resten av appen (header, innstillinger) viser det nye navnet med en gang
+  // uten at brukeren må logge ut og inn igjen.
+  async function refreshUser() {
+    const data = await api.get('/auth/me').catch(() => null);
+    if (data) setUser(data);
+    return data;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

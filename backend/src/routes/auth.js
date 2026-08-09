@@ -107,6 +107,20 @@ router.patch('/pin', requireAuth, requireFamilyPin, (req, res) => {
   res.status(204).end();
 });
 
+// Familienavnet er det andre familier søker etter for å sende en
+// venneforespørsel eller en forespørsel om å bli med (se local-friends.js
+// og /join-request over) – må derfor kunne endres etter at man har
+// registrert seg.
+router.patch('/family-name', requireAuth, requireFamilyPin, (req, res) => {
+  const { name } = req.body || {};
+  if (!name?.trim()) {
+    return res.status(400).json({ error: 'Familienavn er påkrevd' });
+  }
+  const trimmed = name.trim().slice(0, 60);
+  db.prepare('UPDATE families SET name = ? WHERE id = ?').run(trimmed, req.familyId);
+  res.json({ familyName: trimmed });
+});
+
 // Flere voksne i samme familie kan ha hver sin innlogging (egen e-post/
 // passord), i stedet for å dele én konto – de havner i samme family_id og
 // ser derfor nøyaktig den samme familiens data.

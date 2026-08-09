@@ -1,10 +1,55 @@
 import { useEffect, useState } from 'react';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ROLE_LABEL = { voksen: 'Voksen', barn: 'Barn' };
 
 const emptyForm = { name: '', role: 'voksen', avatar: '🙂', color: '#7c9cff' };
 const emptyLoginForm = { email: '', password: '' };
+
+function FamilyNameSection({ adminApi }) {
+  const { user, refreshUser } = useAuth();
+  const [name, setName] = useState(user?.familyName || '');
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    if (!name.trim()) return;
+    setError('');
+    setSaved(false);
+    try {
+      await adminApi.patch('/auth/family-name', { name: name.trim() });
+      await refreshUser();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="settings-section">
+      <div className="settings-subtitle">Familienavn</div>
+      <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: -8 }}>
+        Dette er navnet andre familier søker etter for å sende venneforespørsel eller be om å bli
+        med i familien deres.
+      </div>
+      <div className="settings-expiry">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <button className="btn btn-accent" onClick={save}>
+          Lagre
+        </button>
+        {saved && <span className="settings-saved-msg">Lagret ✓</span>}
+      </div>
+      {error && <div className="settings-message">{error}</div>}
+    </div>
+  );
+}
 
 function FamilyLoginsSection({ adminApi }) {
   const [users, setUsers] = useState([]);
@@ -180,7 +225,9 @@ export default function FamilyMembersTab({ adminApi }) {
   const showForm = adding || editingId !== null;
 
   return (
-    <div className="settings-section">
+    <>
+      <FamilyNameSection adminApi={adminApi} />
+      <div className="settings-section">
       <div className="settings-subtitle">Familiemedlemmer</div>
       <div className="settings-locations-list">
         {members.map((m) => (
@@ -251,6 +298,7 @@ export default function FamilyMembersTab({ adminApi }) {
       )}
 
       <FamilyLoginsSection adminApi={adminApi} />
-    </div>
+      </div>
+    </>
   );
 }
