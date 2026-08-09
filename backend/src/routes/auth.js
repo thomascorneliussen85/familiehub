@@ -107,4 +107,46 @@ router.patch('/pin', requireAuth, requireFamilyPin, (req, res) => {
   res.status(204).end();
 });
 
+// Flere voksne i samme familie kan ha hver sin innlogging (egen e-post/
+// passord), i stedet for å dele én konto – de havner i samme family_id og
+// ser derfor nøyaktig den samme familiens data.
+router.get('/users', requireAuth, requireFamilyPin, (req, res) => {
+  const rows = db
+    .prepare('SELECT id, email, created_at FROM users WHERE family_id = ? ORDER BY created_at ASC')
+    .all(req.familyId);
+  res.json(rows);
+});
+
+router.post('/users', requireAuth, requireFamilyPin, async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email?.trim() || !password) {
+    return res.status(400).json({ error: 'E-post og passord er påkrevd' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Passordet må være minst 8 tegn' });
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
+  if (existing) {
+    return res.status(409).json({ error: 'Det finnes allerede en konto med denne e-posten' });
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  const userId = db
+    .prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)')
+    .run(req.familyId, normalizedEmail, passwordHash).lastInsertRowid;
+  res.status(201).json({ id: userId, email: normalizedEmail });
+});
+
+router.delete('/users/:id', requireAuth, requireFamilyPin, (req, res) => {
+  const count = db.prepare('SELECT COUNT(*) AS c FROM users WHERE family_id = ?').get(req.familyId).c;
+  if (count <= 1) {
+    return res.status(400).json({ error: 'Kan ikke slette den siste innloggingen for familien' });
+  }
+  const result = db.prepare('DELETE FROM users WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Fant ikke innloggingen' });
+  }
+  res.status(204).end();
+});
+
 export default router;

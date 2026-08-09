@@ -1,9 +1,109 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 
 const ROLE_LABEL = { voksen: 'Voksen', barn: 'Barn' };
 
 const emptyForm = { name: '', role: 'voksen', avatar: '🙂', color: '#7c9cff' };
+const emptyLoginForm = { email: '', password: '' };
+
+function FamilyLoginsSection({ adminApi }) {
+  const [users, setUsers] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState(emptyLoginForm);
+  const [error, setError] = useState('');
+
+  function load() {
+    adminApi.get('/auth/users').then(setUsers).catch(() => {});
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function save() {
+    if (!form.email.trim() || !form.password) return;
+    setError('');
+    try {
+      await adminApi.post('/auth/users', form);
+      load();
+      setAdding(false);
+      setForm(emptyLoginForm);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function remove(id) {
+    await adminApi.delete(`/auth/users/${id}`).catch(() => {});
+    load();
+  }
+
+  return (
+    <div className="settings-section">
+      <div className="settings-subtitle">Innlogginger</div>
+      <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: -8 }}>
+        Flere voksne kan logge inn på samme familie med hver sin e-post og passord.
+      </div>
+      <div className="settings-locations-list">
+        {users.map((u) => (
+          <div key={u.id} className="settings-location-item">
+            <span>{u.email}</span>
+            {users.length > 1 && (
+              <button className="btn btn-icon" onClick={() => remove(u.id)} aria-label="Fjern innlogging">
+                🗑️
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {adding ? (
+        <div className="dinner-edit-form">
+          <div className="dinner-edit-row">
+            <input
+              type="email"
+              placeholder="E-post…"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              autoFocus
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div className="dinner-edit-row">
+            <input
+              type="password"
+              placeholder="Passord (minst 8 tegn)…"
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              minLength={8}
+              style={{ flex: 1 }}
+            />
+          </div>
+          {error && <div className="settings-message">{error}</div>}
+          <div className="dinner-edit-actions">
+            <button
+              className="btn"
+              onClick={() => {
+                setAdding(false);
+                setError('');
+              }}
+            >
+              Avbryt
+            </button>
+            <button className="btn btn-accent" onClick={save}>
+              Lagre
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn btn-accent" onClick={() => setAdding(true)}>
+          + Legg til innlogging
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function FamilyMembersTab({ adminApi }) {
   const { members, refresh } = useFamilyMembers();
@@ -123,6 +223,8 @@ export default function FamilyMembersTab({ adminApi }) {
           + Legg til familiemedlem
         </button>
       )}
+
+      <FamilyLoginsSection adminApi={adminApi} />
     </div>
   );
 }
