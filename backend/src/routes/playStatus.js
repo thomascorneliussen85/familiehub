@@ -15,11 +15,16 @@ function expiryHours(familyId) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : config.playStatus.expiryHours;
 }
 
-function broadcastLocal(io, familyId) {
-  // Vennestatuser (relay) er foreløpig kun koblet til for hovedfamilien –
-  // se relayClient.js.
-  const includeFriends = familyId === getOwnerFamilyId();
-  io.to(`family:${familyId}`).emit('play-status:update', getPlayStatusSnapshot(familyId, { includeFriends }));
+// En endring hos én familie påvirker "friends"-listen til ALLE andre
+// familier på installasjonen (siden de nå deler lekestatus direkte med
+// hverandre), så alle må få sin egen, personlige oppdatering – ikke bare
+// familien som faktisk endret noe.
+function broadcastLocal(io) {
+  const ownerFamilyId = getOwnerFamilyId();
+  const families = db.prepare('SELECT id FROM families').all();
+  for (const { id } of families) {
+    io.to(`family:${id}`).emit('play-status:update', getPlayStatusSnapshot(id, { includeFriends: id === ownerFamilyId }));
+  }
 }
 
 router.get('/', (req, res) => {
@@ -49,7 +54,7 @@ router.post('/', (req, res) => {
     .prepare('INSERT INTO play_status (child_id, location, emoji, expires_at) VALUES (?, ?, ?, ?)')
     .run(childId, location, emoji || null, expiresAt);
 
-  broadcastLocal(req.app.get('io'), req.familyId);
+  broadcastLocal(req.app.get('io'));
   if (req.familyId === getOwnerFamilyId()) {
     broadcastLocalStatus({
       statusId: info.lastInsertRowid,
@@ -82,7 +87,7 @@ router.post('/:id/end', (req, res) => {
     return res.status(404).json({ error: 'Fant ikke status' });
   }
   db.prepare(`UPDATE play_status SET ended_at = datetime('now') WHERE id = ?`).run(req.params.id);
-  broadcastLocal(req.app.get('io'), req.familyId);
+  broadcastLocal(req.app.get('io'));
 
   if (req.familyId === getOwnerFamilyId()) {
     const child = db.prepare('SELECT * FROM family_members WHERE id = ?').get(existing.child_id);
