@@ -75,6 +75,10 @@ export default function VoiceButton() {
   // 'wake' | 'command' | 'suspended' | 'idle' – hva den aktive/planlagte gjenkjenningen er for.
   const modeRef = useRef('idle');
   const wakeEnabledRef = useRef(wakeEnabled);
+  // Sikkerhetsnett for mobil, der gjenkjenningen av og til bare henger uten å
+  // noensinne fyre onresult/onend/onerror (sett på rødt for alltid, ingen
+  // respons) – tvinger den til å gi opp etter en stund i stedet.
+  const commandTimeoutRef = useRef(null);
   const timer = useTimer();
   const { openPanel } = usePanelNavigation();
 
@@ -90,12 +94,20 @@ export default function VoiceButton() {
     return () => {
       modeRef.current = 'idle';
       recognitionRef.current?.abort();
+      clearCommandTimeout();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!SpeechRecognitionImpl) {
     return null;
+  }
+
+  function clearCommandTimeout() {
+    if (commandTimeoutRef.current) {
+      clearTimeout(commandTimeoutRef.current);
+      commandTimeoutRef.current = null;
+    }
   }
 
   function createRecognition(mode) {
@@ -115,8 +127,20 @@ export default function VoiceButton() {
     recognitionRef.current = recognition;
     try {
       recognition.start();
-      if (mode === 'wake') setWakeActive(true);
-      else setListening(true);
+      if (mode === 'wake') {
+        setWakeActive(true);
+      } else {
+        setListening(true);
+        clearCommandTimeout();
+        commandTimeoutRef.current = setTimeout(() => {
+          if (recognitionRef.current !== recognition) return;
+          recognition.abort();
+          modeRef.current = 'idle';
+          setListening(false);
+          setFeedback('Hørte ingenting. Prøv igjen.');
+          resumeWakeIfEnabled();
+        }, 8000);
+      }
     } catch (err) {
       // Kan skje hvis en annen gjenkjenning fortsatt er i ferd med å stoppe
       // (spesielt på Android, der bare én gjenkjenning kan være aktiv om
@@ -196,6 +220,7 @@ export default function VoiceButton() {
       }
     } else {
       if (modeRef.current !== 'command') return;
+      clearCommandTimeout();
       const text = event.results[0][0].transcript;
       runCommand(text);
     }
@@ -203,6 +228,7 @@ export default function VoiceButton() {
 
   function handleEnd(mode, recognitionInstance) {
     if (recognitionRef.current !== recognitionInstance) return;
+    if (mode !== 'wake') clearCommandTimeout();
     if (mode === 'wake') {
       setWakeActive(false);
       // Kontinuerlig gjenkjenning stopper av seg selv (f.eks. etter en stund
@@ -230,6 +256,7 @@ export default function VoiceButton() {
       }
       return;
     }
+    clearCommandTimeout();
     setListening(false);
     const message = SPEECH_ERROR_MESSAGES[event.error];
     if (message) setFeedback(message);
@@ -243,11 +270,15 @@ export default function VoiceButton() {
       return;
     }
     if (modeRef.current === 'command') {
-      recognitionRef.current?.stop();
+      clearCommandTimeout();
+      recognitionRef.current?.abort();
+      modeRef.current = 'idle';
       setListening(false);
+      setFeedback('');
       resumeWakeIfEnabled();
       return;
     }
+    clearCommandTimeout();
     recognitionRef.current?.abort();
     setFeedback('');
     startRecognition('command');
