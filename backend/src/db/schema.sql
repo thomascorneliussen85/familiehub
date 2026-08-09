@@ -384,6 +384,18 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
 
+-- Veikart over kommende funksjoner ("Dette kommer framover"). Satt opp av
+-- installasjonens eier, men synlig for alle familier – delt/global
+-- referansedata, ikke per-familie (samme mønster som telemedicine_doctors).
+CREATE TABLE IF NOT EXISTS roadmap_items (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  title       TEXT NOT NULL,
+  description TEXT,
+  status      TEXT NOT NULL DEFAULT 'planned', -- 'planned' | 'in_progress' | 'done'
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Merk: indekser på family_id-kolonner (family_members, calendar_events, chores,
 -- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
 -- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som
