@@ -46,4 +46,14 @@
 
 .home-grid .react-resizable-handle {
   z-index: 5;
+  /* Biblioteket viser håndtaket kun ved museover (:hover) – finnes ikke på
+     en berøringsskjerm, så håndtaket var usynlig og umulig å finne der.
+     Vis det alltid i stedet, og gjør det litt større så det er lett å
+     treffe med en finger. */
+  opacity: 0.6 !important;
+  width: 30px;
+  height: 30px;
+}
+.home-grid .react-resizable-handle:active {
+  opacity: 1 !important;
 }
