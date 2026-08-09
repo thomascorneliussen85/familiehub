@@ -9,7 +9,7 @@ import { PinnedCameraProvider } from './context/PinnedCameraContext';
 import { PanelNavigationProvider } from './context/PanelNavigationContext';
 import { useIdleTimer } from './hooks/useIdleTimer';
 import { useTimeOfDay } from './hooks/useTimeOfDay';
-import Header from './components/Header/Header';
+import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
 import FriendPlayToast from './components/PlayOutside/FriendPlayToast';
@@ -53,8 +53,10 @@ function AppShell() {
       <FriendPlayToast />
       {calendarConnectMsg && <div className="calendar-connect-toast">{calendarConnectMsg}</div>}
       {!settingsOpen && <PairingPendingBanner onOpenSettings={() => setSettingsOpen(true)} />}
-      <Header onOpenSettings={() => setSettingsOpen(true)} />
-      <Dashboard />
+      <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
+      <main className="app-main">
+        <Dashboard onOpenSettings={() => setSettingsOpen(true)} />
+      </main>
       <FloatingCameraView />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>

@@ -1,31 +1,31 @@
 .chore-add-form {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: 6px;
+  margin-bottom: 10px;
   align-items: center;
 }
 .chore-add-form input[type='text'] {
-  flex: 1 1 100px;
-  min-height: 22px;
-  font-size: 10px;
-  padding: 3px 6px;
+  flex: 1 1 140px;
+  min-height: 38px;
+  font-size: 14px;
+  padding: 6px 10px;
 }
 .chore-add-form input[type='date'],
 .chore-add-form select {
   flex: 0 0 auto;
-  min-height: 22px;
-  font-size: 10px;
-  padding: 3px 4px;
+  min-height: 38px;
+  font-size: 14px;
+  padding: 6px 8px;
 }
 .chore-add-form > button[type='submit'] {
-  min-height: 22px;
-  padding: 3px 8px;
-  font-size: 10px;
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 14px;
 }
 .chore-type-row {
   display: flex;
-  gap: 3px;
+  gap: 5px;
   flex: 1 0 100%;
 }
 .chore-type-btn {
@@ -34,9 +34,9 @@
   border: 1.5px solid transparent;
   color: var(--text-dim);
   border-radius: var(--radius-sm);
-  padding: 3px 4px;
-  font-size: 9px;
-  min-height: 22px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  min-height: 34px;
 }
 .chore-type-btn-active {
   border-color: var(--accent);
@@ -46,15 +46,15 @@
 }
 .chore-stars-row {
   display: flex;
-  gap: 3px;
+  gap: 5px;
 }
 .chore-star-btn {
   background: var(--panel-bg-alt);
   border: 1.5px solid transparent;
   border-radius: var(--radius-sm);
-  padding: 3px 6px;
-  font-size: 9px;
-  min-height: 22px;
+  padding: 6px 10px;
+  font-size: 13px;
+  min-height: 34px;
 }
 .chore-star-btn-active {
   border-color: var(--accent);
@@ -63,18 +63,18 @@
 
 .stars-row {
   display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: 6px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 .star-chip {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
   border: 1px solid var(--accent);
   border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 9px;
+  padding: 4px 10px;
+  font-size: 12px;
   background: var(--panel-bg-alt);
 }
 .star-chip-name {
@@ -89,34 +89,34 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 4px;
 }
 .chore-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 6px;
+  gap: 9px;
+  padding: 7px 10px;
   border-radius: var(--radius-sm);
   background: var(--panel-bg-alt);
-  min-height: 19px;
+  min-height: 40px;
 }
 .chore-item-done {
-  opacity: 0.45;
+  opacity: 0.5;
 }
 .chore-item-done .chore-title {
   text-decoration: line-through;
 }
 .chore-checkbox {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
   border: 1.5px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-weight: 700;
-  font-size: 8px;
+  font-size: 12px;
 }
 .chore-info {
   flex: 1;
@@ -125,20 +125,20 @@
   min-width: 0;
 }
 .chore-title {
-  font-size: 11px;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .chore-meta {
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .chore-stars {
-  font-size: 9px;
+  font-size: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -146,10 +146,10 @@
   background: transparent;
   border: none;
   color: var(--text-faint);
-  font-size: 9px;
-  padding: 0 2px;
+  font-size: 13px;
+  padding: 4px;
   flex-shrink: 0;
-  min-height: 16px;
+  min-height: 28px;
 }
 .chore-remove:active {
   transform: scale(0.9);
