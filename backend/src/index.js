@@ -37,6 +37,7 @@ import rewardsRouter from './routes/rewards.js';
 import assistantRouter from './routes/assistant.js';
 import feedbackRouter from './routes/feedback.js';
 import roadmapRouter from './routes/roadmap.js';
+import localFriendsRouter from './routes/localFriends.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { startXploraPolling } from './services/xploraPoller.js';
@@ -114,6 +115,7 @@ app.use('/api/rewards', rewardsRouter);
 app.use('/api/assistant', assistantRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/roadmap', roadmapRouter);
+app.use('/api/local-friends', localFriendsRouter);
 
 // Servér det bygde frontend-bygget (frontend/dist) på samme origin som API-et,
 // hvis det finnes – dette er hva som kreves for produksjonshosting (se

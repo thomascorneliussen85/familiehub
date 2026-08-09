@@ -396,6 +396,28 @@ CREATE TABLE IF NOT EXISTS roadmap_items (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Vennefamilie-paring MELLOM familier på samme installasjon (i motsetning
+-- til friend_families, som er paring mot en helt separat installasjon via
+-- relay-tjenesten). Man søker opp en familie ved navn og sender en
+-- forespørsel som må godkjennes – uten det ville alle som noensinne
+-- oppretter en familie på samme lenke automatisk se hverandres barns
+-- lekestatus, som ikke er ønskelig.
+CREATE TABLE IF NOT EXISTS local_friend_pairs (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_a_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  family_b_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  paired_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(family_a_id, family_b_id)
+);
+
+CREATE TABLE IF NOT EXISTS local_friend_requests (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_family_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  to_family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(from_family_id, to_family_id)
+);
+
 -- Merk: indekser på family_id-kolonner (family_members, calendar_events, chores,
 -- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
 -- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som

@@ -1,4 +1,5 @@
 import { db } from '../db/index.js';
+import { listLocalFriendFamilies } from './localFriendsService.js';
 
 // Vennestatuser kommer fra relay-tjenesten i del 2 og skal ALDRI lagres i
 // databasen eller på disk (personvernkrav) – kun holdes i minnet her så
@@ -27,10 +28,15 @@ export function getActiveOwnStatuses(familyId) {
     .all(familyId);
 }
 
-// Andre familier på samme installasjon (f.eks. vennefamilier som har
-// opprettet sin egen konto her) – disse er alltid "kjente" av samme system,
-// så det trengs ingen paringskode slik som for eksterne relay-venner.
+// Andre familier på samme installasjon som denne familien har paret seg med
+// via en kode (se localFriendsService.js) – IKKE alle familier på
+// installasjonen, siden det ellers ville betydd at hvem som helst som
+// oppretter en konto på samme lenke automatisk ser hverandres barns
+// lekestatus.
 export function getOtherFamiliesActiveStatuses(excludeFamilyId) {
+  const pairedFamilyIds = listLocalFriendFamilies(excludeFamilyId).map((f) => f.id);
+  if (pairedFamilyIds.length === 0) return [];
+  const placeholders = pairedFamilyIds.map(() => '?').join(',');
   return db
     .prepare(
       `SELECT ps.id, ps.location, ps.emoji, ps.started_at, ps.expires_at,
@@ -38,10 +44,10 @@ export function getOtherFamiliesActiveStatuses(excludeFamilyId) {
        FROM play_status ps
        JOIN family_members m ON m.id = ps.child_id
        JOIN families f ON f.id = m.family_id
-       WHERE m.family_id != ? AND ps.ended_at IS NULL AND ps.expires_at > datetime('now')
+       WHERE m.family_id IN (${placeholders}) AND ps.ended_at IS NULL AND ps.expires_at > datetime('now')
        ORDER BY ps.started_at DESC`
     )
-    .all(excludeFamilyId)
+    .all(...pairedFamilyIds)
     .map((row) => ({
       id: `same-install:${row.id}`,
       childName: row.child_name,
@@ -54,9 +60,10 @@ export function getOtherFamiliesActiveStatuses(excludeFamilyId) {
 }
 
 // "friends" er en sammenslåing av to kilder: andre familier på samme
-// installasjon (fungerer for ALLE familier), og eksterne relay-venner – egne,
-// separate FamilieHub-installasjoner koblet til via paringskode, som i Fase 1
-// fortsatt kun er tilgjengelig for hovedfamilien (se relayClient.js).
+// installasjon man har paret seg med via kode (fungerer for ALLE familier),
+// og eksterne relay-venner – egne, separate FamilieHub-installasjoner koblet
+// til via paringskode, som i Fase 1 fortsatt kun er tilgjengelig for
+// hovedfamilien (se relayClient.js).
 export function getPlayStatusSnapshot(familyId, { includeFriends = false } = {}) {
   const sameInstallation = getOtherFamiliesActiveStatuses(familyId);
   const external = includeFriends ? getFriendStatuses() : [];
