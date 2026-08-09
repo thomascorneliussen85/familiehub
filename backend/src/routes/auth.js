@@ -179,35 +179,52 @@ router.get('/family-search', (req, res) => {
 // innlogging med en gang. Familien må godkjenne først (se
 // /join-requests/:id/respond), akkurat som venneforespørsler mellom
 // familier.
+//
+// E-posten kan allerede tilhøre en konto i en ANNEN familie – f.eks. noen
+// som opprettet sin egen familie ved en feil og egentlig skulle bli med i
+// denne i stedet. Da må passordet stemme med den eksisterende kontoen
+// (bekrefter at det faktisk er eieren som spør), og godkjenning FLYTTER
+// den innloggingen over i stedet for å opprette en ny.
 router.post('/join-request', async (req, res) => {
   const { familyId, email, password } = req.body || {};
   const famId = Number(familyId);
   if (!famId || !email?.trim() || !password) {
     return res.status(400).json({ error: 'Familie, e-post og passord er påkrevd' });
   }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Passordet må være minst 8 tegn' });
-  }
   const family = db.prepare('SELECT id FROM families WHERE id = ?').get(famId);
   if (!family) {
     return res.status(404).json({ error: 'Fant ikke familien' });
   }
   const normalizedEmail = email.trim().toLowerCase();
-  const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
+  const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedEmail);
+
+  let passwordHash;
   if (existingUser) {
-    return res.status(409).json({ error: 'Det finnes allerede en konto med denne e-posten' });
+    if (existingUser.family_id === famId) {
+      return res.status(409).json({ error: 'Denne kontoen er allerede med i familien' });
+    }
+    const ok = await bcrypt.compare(password, existingUser.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: 'Feil passord for denne kontoen' });
+    }
+    passwordHash = existingUser.password_hash;
+  } else {
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Passordet må være minst 8 tegn' });
+    }
+    passwordHash = await bcrypt.hash(password, 10);
   }
+
   const existingRequest = db.prepare('SELECT id FROM family_join_requests WHERE email = ?').get(normalizedEmail);
   if (existingRequest) {
     return res.status(409).json({ error: 'Det finnes allerede en forespørsel med denne e-posten' });
   }
-  const passwordHash = await bcrypt.hash(password, 10);
   db.prepare('INSERT INTO family_join_requests (family_id, email, password_hash) VALUES (?, ?, ?)').run(
     famId,
     normalizedEmail,
     passwordHash
   );
-  res.status(201).json({ ok: true });
+  res.status(201).json({ ok: true, existingAccount: Boolean(existingUser) });
 });
 
 router.get('/join-requests', requireAuth, requireFamilyPin, (req, res) => {
@@ -226,11 +243,24 @@ router.post('/join-requests/:id/respond', requireAuth, requireFamilyPin, (req, r
   }
   db.prepare('DELETE FROM family_join_requests WHERE id = ?').run(request.id);
   if (req.body?.approve) {
-    db.prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)').run(
-      req.familyId,
-      request.email,
-      request.password_hash
-    );
+    const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(request.email);
+    if (existingUser) {
+      const oldFamilyId = existingUser.family_id;
+      db.prepare('UPDATE users SET family_id = ? WHERE id = ?').run(req.familyId, existingUser.id);
+      const remaining = db.prepare('SELECT COUNT(*) AS c FROM users WHERE family_id = ?').get(oldFamilyId).c;
+      // Fjern den gamle familien hvis den nå står helt tom (ingen kan
+      // lenger logge inn på den uansett) – unngår en foreldreløs familie
+      // liggende igjen i søkeresultater.
+      if (remaining === 0) {
+        db.prepare('DELETE FROM families WHERE id = ?').run(oldFamilyId);
+      }
+    } else {
+      db.prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)').run(
+        req.familyId,
+        request.email,
+        request.password_hash
+      );
+    }
   }
   res.status(204).end();
 });
