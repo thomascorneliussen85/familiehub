@@ -11,6 +11,9 @@ import './HomeGrid.css';
 const LAYOUT_KEY = 'familiehub-home-layout';
 const COLS = 4;
 const ROWS = 2;
+// Under denne bredden er ikke draing/endring av størrelse med fingeren
+// naturlig – rutene stables i stedet i en enkel, rullbar liste.
+const MOBILE_BREAKPOINT = 560;
 
 const TILES = {
   calendar: CalendarPanel,
@@ -65,6 +68,7 @@ export default function HomeGrid() {
   }, [mounted]);
 
   const rowHeight = useMemo(() => (height > 0 ? Math.max(70, Math.floor(height / ROWS) - 6) : 150), [height]);
+  const isMobile = width > 0 && width < MOBILE_BREAKPOINT;
 
   function handleLayoutChange(next) {
     setLayout(next);
@@ -73,7 +77,16 @@ export default function HomeGrid() {
 
   return (
     <div className="home-grid-container" ref={containerRef}>
-      {mounted && (
+      {mounted && isMobile && (
+        <div className="home-grid-stack">
+          {Object.entries(TILES).map(([key, Tile]) => (
+            <div key={key} className="home-grid-stack-item">
+              <Tile />
+            </div>
+          ))}
+        </div>
+      )}
+      {mounted && !isMobile && (
         <ReactGridLayout
           className="home-grid"
           width={width}

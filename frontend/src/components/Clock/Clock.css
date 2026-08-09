@@ -18,3 +18,18 @@
 .clock-large .clock-date {
   font-size: 28px;
 }
+
+@media (max-width: 640px) {
+  .clock-normal .clock-time {
+    font-size: 22px;
+  }
+  .clock-normal .clock-date {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 400px) {
+  .clock-normal .clock-date {
+    display: none;
+  }
+}

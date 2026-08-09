@@ -11,6 +11,14 @@
   transform: scale(0.9);
 }
 
+@media (max-width: 640px) {
+  .feedback-trigger {
+    font-size: 18px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+}
+
 .feedback-overlay {
   position: fixed;
   inset: 0;

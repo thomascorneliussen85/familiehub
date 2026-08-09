@@ -4,6 +4,8 @@
   justify-content: space-between;
   padding: 14px 28px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 .app-header-brand {
   display: flex;
@@ -34,4 +36,30 @@
 }
 .app-header-settings:active {
   transform: scale(0.9);
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+  .app-header-logo {
+    font-size: 22px;
+  }
+  .app-header-title {
+    font-size: 17px;
+  }
+  .app-header-right {
+    gap: 8px;
+  }
+  .app-header-settings {
+    font-size: 18px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+}
+
+@media (max-width: 400px) {
+  .app-header-title {
+    display: none;
+  }
 }

@@ -2,6 +2,22 @@
   flex: 1;
   min-height: 0;
   position: relative;
+  overflow: hidden;
+}
+
+.home-grid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  height: 100%;
+}
+.home-grid-stack-item {
+  flex-shrink: 0;
+  min-height: 260px;
+}
+.home-grid-stack-item .panel {
+  height: 100%;
 }
 
 .home-grid .panel {
