@@ -45,6 +45,19 @@ import { cleanupOldPlayStatus } from './services/playStatusService.js';
 import { initRelayClient } from './services/relayClient.js';
 import { startBriefScheduler } from './services/briefScheduler.js';
 
+// Express 4 fanger IKKE opp en feil som kastes/avvises inne i en "async"
+// rute-handler (i motsetning til Express 5) – uten dette ville en
+// uventet feil ETT sted (f.eks. en midlertidig "database is locked" fra
+// SQLite mens en bakgrunnsjobb skriver samtidig) kunne krasje HELE
+// Node-prosessen og gjøre siden utilgjengelig for alle, ikke bare
+// personen som utløste feilen. Logg og fortsett i stedet for å krasje.
+process.on('unhandledRejection', (err) => {
+  console.error('Uventet feil (unhandled rejection):', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uventet feil (uncaught exception):', err);
+});
+
 if (config.jwtSecret === 'INSECURE_DEV_SECRET_CHANGE_ME') {
   console.warn(
     '⚠️  JWT_SECRET er ikke satt i .env – bruker en usikker standardverdi. ' +

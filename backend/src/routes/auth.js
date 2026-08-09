@@ -7,6 +7,16 @@ import { getOwnerFamilyId } from '../services/ownerFamily.js';
 
 const router = Router();
 
+// Express 4 videresender IKKE automatisk en avvist promise fra en "async"
+// rute-handler til feilhåndteringen – uten dette ville en uventet feil (f.eks.
+// en midlertidig databaselås) la forespørselen bare henge på ubestemt tid i
+// stedet for å gi et rent feilsvar.
+function asyncHandler(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
 const DEFAULT_PLAY_LOCATIONS = [
   ['Hjemme hos oss', '🏠', 1],
   ['Lekeplassen', '🛝', 2],
@@ -14,7 +24,7 @@ const DEFAULT_PLAY_LOCATIONS = [
   ['Ute i gaten', '🚸', 4],
 ];
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', asyncHandler(async (req, res) => {
   const { familyName, email, password } = req.body || {};
   if (!familyName?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: 'Familienavn, e-post og passord er påkrevd' });
@@ -51,9 +61,9 @@ router.post('/signup', async (req, res) => {
     familyName: familyName.trim(),
     isOwnerFamily: user.family_id === getOwnerFamilyId(),
   });
-});
+}));
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email?.trim() || !password) {
     return res.status(400).json({ error: 'E-post og passord er påkrevd' });
@@ -75,7 +85,7 @@ router.post('/login', async (req, res) => {
     familyName: family?.name || '',
     isOwnerFamily: user.family_id === getOwnerFamilyId(),
   });
-});
+}));
 
 router.post('/logout', (req, res) => {
   res.clearCookie(SESSION_COOKIE, cookieOptions());
@@ -131,7 +141,7 @@ router.get('/users', requireAuth, requireFamilyPin, (req, res) => {
   res.json(rows);
 });
 
-router.post('/users', requireAuth, requireFamilyPin, async (req, res) => {
+router.post('/users', requireAuth, requireFamilyPin, asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email?.trim() || !password) {
     return res.status(400).json({ error: 'E-post og passord er påkrevd' });
@@ -149,7 +159,7 @@ router.post('/users', requireAuth, requireFamilyPin, async (req, res) => {
     .prepare('INSERT INTO users (family_id, email, password_hash) VALUES (?, ?, ?)')
     .run(req.familyId, normalizedEmail, passwordHash).lastInsertRowid;
   res.status(201).json({ id: userId, email: normalizedEmail });
-});
+}));
 
 router.delete('/users/:id', requireAuth, requireFamilyPin, (req, res) => {
   const count = db.prepare('SELECT COUNT(*) AS c FROM users WHERE family_id = ?').get(req.familyId).c;
@@ -185,7 +195,7 @@ router.get('/family-search', (req, res) => {
 // denne i stedet. Da må passordet stemme med den eksisterende kontoen
 // (bekrefter at det faktisk er eieren som spør), og godkjenning FLYTTER
 // den innloggingen over i stedet for å opprette en ny.
-router.post('/join-request', async (req, res) => {
+router.post('/join-request', asyncHandler(async (req, res) => {
   const { familyId, email, password } = req.body || {};
   const famId = Number(familyId);
   if (!famId || !email?.trim() || !password) {
@@ -225,7 +235,7 @@ router.post('/join-request', async (req, res) => {
     passwordHash
   );
   res.status(201).json({ ok: true, existingAccount: Boolean(existingUser) });
-});
+}));
 
 router.get('/join-requests', requireAuth, requireFamilyPin, (req, res) => {
   const rows = db
