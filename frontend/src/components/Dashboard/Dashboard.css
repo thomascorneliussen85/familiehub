@@ -83,6 +83,13 @@
   gap: 16px;
   overflow-y: auto;
 }
+/* Uten dette kan flexbox klemme sammen barn (f.eks. middagskortet) til nesten
+   ingenting når det samlede innholdet er høyere enn skjermen, i stedet for å
+   la den ytre beholderen bare scrolle – hvert barn skal beholde sin naturlige
+   størrelse. */
+.dashboard-home > * {
+  flex-shrink: 0;
+}
 
 .dashboard-fixed-grid {
   display: grid;
@@ -174,5 +181,102 @@
   }
   .dashboard-mobile-settings {
     display: flex;
+  }
+
+  /* Rutene på forsiden er trange på en telefon – gjør skrift/avstand mer
+     kompakt her spesifikt, uten å røre de samme panelene når de vises i
+     fullskjerm (via "Handleliste"/"Gjøremål"/"Kalender" i menyen) eller på
+     den store kjøkkenskjermen, hvor det er god plass. */
+  .dashboard-fixed-grid .panel {
+    height: 280px;
+  }
+  .dashboard-fixed-grid .panel-header {
+    padding: 12px 14px 6px;
+  }
+  .dashboard-fixed-grid .panel-body {
+    padding: 4px 14px 12px;
+  }
+  .dashboard-fixed-grid .panel-title {
+    font-size: 15px;
+  }
+  .dashboard-fixed-grid .panel-icon {
+    font-size: 17px;
+  }
+
+  .dashboard-fixed-grid .chore-item,
+  .dashboard-fixed-grid .shopping-item {
+    padding: 5px 8px;
+    min-height: 32px;
+    gap: 7px;
+  }
+  .dashboard-fixed-grid .chore-title,
+  .dashboard-fixed-grid .shopping-name {
+    font-size: 12.5px;
+  }
+  .dashboard-fixed-grid .chore-meta {
+    font-size: 10.5px;
+  }
+  .dashboard-fixed-grid .chore-checkbox,
+  .dashboard-fixed-grid .shopping-checkbox {
+    width: 16px;
+    height: 16px;
+  }
+  .dashboard-fixed-grid .quick-item {
+    font-size: 11px;
+    padding: 2px 7px;
+    min-height: 22px;
+  }
+  .dashboard-fixed-grid .star-chip {
+    font-size: 10.5px;
+    padding: 3px 8px;
+  }
+
+  .dashboard-fixed-grid .calendar-grid {
+    grid-template-columns: repeat(7, minmax(78px, 1fr));
+    gap: 4px;
+  }
+  .dashboard-fixed-grid .calendar-day {
+    padding: 5px;
+    gap: 3px;
+  }
+  .dashboard-fixed-grid .calendar-day-header {
+    font-size: 9.5px;
+  }
+  .dashboard-fixed-grid .calendar-event {
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+  .dashboard-fixed-grid .calendar-event-time,
+  .dashboard-fixed-grid .calendar-event-member {
+    font-size: 9px;
+  }
+  .dashboard-fixed-grid .calendar-nav-btn {
+    font-size: 16px;
+    min-height: 24px;
+    min-width: 24px;
+  }
+  .dashboard-fixed-grid .calendar-nav-today {
+    font-size: 9.5px;
+    padding: 3px 8px;
+    min-height: 22px;
+  }
+
+  .next-event-banner {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .next-event-countdown {
+    font-size: 20px;
+    min-width: 54px;
+  }
+  .next-event-title {
+    font-size: 14px;
+  }
+  .next-event-meta {
+    font-size: 11.5px;
+  }
+
+  .dinner-today-title {
+    font-size: 13px;
   }
 }
