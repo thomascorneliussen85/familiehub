@@ -27,6 +27,8 @@ curl -fsSL "$FAMILIEHUB_URL/camera-bridge/package-lock.json" -o "$INSTALL_DIR/pa
 curl -fsSL "$FAMILIEHUB_URL/camera-bridge/src/index.js" -o "$INSTALL_DIR/src/index.js"
 curl -fsSL "$FAMILIEHUB_URL/camera-bridge/src/discovery.js" -o "$INSTALL_DIR/src/discovery.js"
 curl -fsSL "$FAMILIEHUB_URL/camera-bridge/src/streaming.js" -o "$INSTALL_DIR/src/streaming.js"
+curl -fsSL "$FAMILIEHUB_URL/camera-bridge/src/shellyDiscovery.js" -o "$INSTALL_DIR/src/shellyDiscovery.js"
+curl -fsSL "$FAMILIEHUB_URL/camera-bridge/src/shellyWebhook.js" -o "$INSTALL_DIR/src/shellyWebhook.js"
 
 cd "$INSTALL_DIR"
 echo "📦 Installerer avhengigheter …"

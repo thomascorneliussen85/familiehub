@@ -117,6 +117,8 @@ const cameraBridgePublicFiles = new Set([
   'src/index.js',
   'src/discovery.js',
   'src/streaming.js',
+  'src/shellyDiscovery.js',
+  'src/shellyWebhook.js',
 ]);
 app.get('/camera-bridge/*', (req, res) => {
   const rel = req.params[0];
