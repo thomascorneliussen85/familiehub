@@ -27,6 +27,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.3",
     "tsdav": "^2.3.1",
+    "web-push": "^3.6.7",
     "yahoo-finance2": "^4.0.0"
   },
   "devDependencies": {

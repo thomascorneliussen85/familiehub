@@ -69,6 +69,34 @@ export function registerCameraBridgeSockets(io) {
       cb?.({ id: info.lastInsertRowid, status: 'pending' });
     });
 
+    // Broen kaller dette når den finner en Shelly Gen2-enhet på nettverket
+    // (lokalt undernett-søk mot /rpc/Shelly.GetDeviceInfo). device_type
+    // avgjøres her (ikke på broen) ut fra "app"-feltet Shelly selv oppgir,
+    // slik at all forretningslogikk om hva som skal skje videre bor ett sted.
+    socket.on('shelly:discovered', (payload = {}, cb) => {
+      const { localIp, id: shellyId, model, mac, app } = payload;
+      if (!localIp || !mac) return cb?.({ error: 'localIp/mac mangler' });
+      const deviceType = /smoke/i.test(app || '') || /smoke/i.test(model || '') ? 'smoke' : 'unknown';
+      const existing = db.prepare('SELECT * FROM shelly_devices WHERE family_id = ? AND mac = ?').get(familyId, mac);
+      if (existing) {
+        db.prepare('UPDATE shelly_devices SET local_ip = ?, shelly_id = ?, model = ? WHERE id = ?').run(
+          localIp,
+          shellyId || null,
+          model || null,
+          existing.id
+        );
+        return cb?.({ id: existing.id, status: existing.status });
+      }
+      const info = db
+        .prepare(
+          `INSERT INTO shelly_devices (family_id, name, status, device_type, local_ip, shelly_id, model, mac)
+           VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)`
+        )
+        .run(familyId, model || 'Ny Shelly-enhet', deviceType, localIp, shellyId || null, model || null, mac);
+      io.to(`family:${familyId}`).emit('shelly:update');
+      cb?.({ id: info.lastInsertRowid, status: 'pending' });
+    });
+
     // Videovideresending: routes/cameras.js har allerede registrert en
     // ventende HTTP-respons under streamId og satt multipart-headerne før
     // broen begynner å sende biter.

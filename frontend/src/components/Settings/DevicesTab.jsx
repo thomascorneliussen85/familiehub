@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { socket } from '../../lib/socket';
+import PushNotificationSection from './PushNotificationSection';
 
 export default function DevicesTab({ adminApi }) {
   const [cameras, setCameras] = useState([]);
@@ -7,6 +8,10 @@ export default function DevicesTab({ adminApi }) {
   const [newCameraRtsp, setNewCameraRtsp] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [pendingNames, setPendingNames] = useState({});
+
+  const [shellyDevices, setShellyDevices] = useState([]);
+  const [pendingShellyNames, setPendingShellyNames] = useState({});
+  const [shellyError, setShellyError] = useState('');
 
   const [bridgeStatus, setBridgeStatus] = useState(null);
   const [newBridgeKey, setNewBridgeKey] = useState(null);
@@ -23,19 +28,45 @@ export default function DevicesTab({ adminApi }) {
   function loadBridgeStatus() {
     fetch('/api/camera-bridge/status', { credentials: 'include' }).then((r) => r.json()).then(setBridgeStatus).catch(() => {});
   }
+  function loadShellyDevices() {
+    fetch('/api/shelly-devices', { credentials: 'include' }).then((r) => r.json()).then(setShellyDevices).catch(() => {});
+  }
 
   useEffect(() => {
     loadCameras();
     loadBridgeStatus();
+    loadShellyDevices();
     fetch('/api/smart-plugs', { credentials: 'include' }).then((r) => r.json()).then(setPlugs).catch(() => {});
 
     socket.on('cameras:update', loadCameras);
     socket.on('camera-bridge:status', loadBridgeStatus);
+    socket.on('shelly:update', loadShellyDevices);
     return () => {
       socket.off('cameras:update', loadCameras);
       socket.off('camera-bridge:status', loadBridgeStatus);
+      socket.off('shelly:update', loadShellyDevices);
     };
   }, []);
+
+  async function approveShellyDevice(id) {
+    const name = (pendingShellyNames[id] || '').trim();
+    if (!name) return;
+    setShellyError('');
+    try {
+      await adminApi.patch(`/shelly-devices/${id}`, { name });
+      loadShellyDevices();
+    } catch (err) {
+      setShellyError(err.message);
+    }
+  }
+
+  async function removeShellyDevice(id) {
+    await adminApi.delete(`/shelly-devices/${id}`).catch(() => {});
+    setShellyDevices((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  const pendingShelly = shellyDevices.filter((d) => d.status === 'pending');
+  const activeShelly = shellyDevices.filter((d) => d.status !== 'pending');
 
   async function generateBridgeKey() {
     setBridgeError('');
@@ -203,6 +234,44 @@ export default function DevicesTab({ adminApi }) {
       <div className="empty-hint">Manuelt lagt inn RTSP-lenke fungerer kun hvis FamilieHub kjører på samme nettverk som kameraet (ikke via skyhosting).</div>
       {cameraError && <div className="settings-message">{cameraError}</div>}
 
+      <div className="settings-subtitle">Shelly-enheter (f.eks. røykvarsler)</div>
+      <div className="empty-hint">Broen finner Shelly-enheter på hjemmenettet automatisk – gi dem et navn under for å ta dem i bruk.</div>
+      {pendingShelly.length > 0 && (
+        <div className="settings-locations-list">
+          {pendingShelly.map((d) => (
+            <div key={d.id} className="settings-location-item">
+              <span>
+                🆕 {d.model || 'Ukjent enhet'} ({d.local_ip}){d.device_type === 'smoke' && ' – røykvarsler'}
+              </span>
+              <input
+                type="text"
+                placeholder="Gi enheten et navn…"
+                value={pendingShellyNames[d.id] || ''}
+                onChange={(e) => setPendingShellyNames((prev) => ({ ...prev, [d.id]: e.target.value }))}
+              />
+              <button className="btn btn-accent" onClick={() => approveShellyDevice(d.id)}>
+                Legg til
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="settings-locations-list">
+        {activeShelly.length === 0 && <div className="empty-hint">Ingen Shelly-enheter lagt til ennå.</div>}
+        {activeShelly.map((d) => (
+          <div key={d.id} className="settings-location-item">
+            <span>
+              {d.device_type === 'smoke' ? (d.alarm ? '🚨' : '🟢') : '🔌'} {d.name}
+              {d.device_type === 'smoke' && (d.alarm ? ' – ALARM!' : ' – normal')}
+            </span>
+            <button className="btn btn-icon" onClick={() => removeShellyDevice(d.id)} aria-label="Fjern">
+              🗑️
+            </button>
+          </div>
+        ))}
+      </div>
+      {shellyError && <div className="settings-message">{shellyError}</div>}
+
       <div className="settings-subtitle">Smartplugger</div>
       <div className="settings-locations-list">
         {plugs.length === 0 && <div className="empty-hint">Ingen smartplugger lagt til ennå.</div>}
@@ -233,6 +302,8 @@ export default function DevicesTab({ adminApi }) {
         </button>
       </div>
       {plugError && <div className="settings-message">{plugError}</div>}
+
+      <PushNotificationSection />
     </div>
   );
 }

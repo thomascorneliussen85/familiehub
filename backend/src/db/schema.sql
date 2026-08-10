@@ -204,6 +204,52 @@ CREATE TABLE IF NOT EXISTS cameras (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Nøkkel-verdi-innstillinger for HELE installasjonen (ikke per familie) –
+-- foreløpig kun VAPID-nøkkelparet som signerer web push-varsler. Generert
+-- automatisk ved første oppstart (se services/pushService.js) og lagret her
+-- slik at det er stabilt på tvers av restarter, uten manuelt .env-steg.
+CREATE TABLE IF NOT EXISTS app_config (
+  key    TEXT PRIMARY KEY,
+  value  TEXT
+);
+
+-- Web push-abonnement per nettleser/enhet en familiemedlem har skrudd på
+-- varsler fra. Ett medlem kan ha flere (telefon + nettbrett), og samme
+-- endpoint dukker aldri opp to ganger.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  endpoint    TEXT NOT NULL UNIQUE,
+  keys_json   TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Shelly-enheter (Gen2/"Plus"-serien) funnet av kamera-broen på hjemmenettet
+-- – samme "oppdaget, venter på navn"-mønster som cameras. device_type styrer
+-- oppfølging: 'smoke' får automatisk satt opp webhook for alarm-hendelser,
+-- se services/cameraBridgeRegistry.js/sockets/cameraBridge.js.
+-- webhook_token er hemmeligheten i webhook-URL-en enheten selv roper til –
+-- ingen innlogging mulig fra en fysisk enhet, så URL-en ER autentiseringen
+-- (samme mønster som f.eks. Slack sine incoming webhooks).
+CREATE TABLE IF NOT EXISTS shelly_devices (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'active'
+  device_type    TEXT NOT NULL DEFAULT 'unknown', -- 'smoke' | 'unknown'
+  local_ip       TEXT,
+  shelly_id      TEXT,
+  model          TEXT,
+  mac            TEXT UNIQUE,
+  webhook_token  TEXT UNIQUE,
+  alarm          INTEGER NOT NULL DEFAULT 0,
+  alarm_at       TEXT,
+  last_event     TEXT,
+  last_event_at  TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- En "bro" er en liten lokal tjeneste (typisk på en alltid-på Raspberry Pi
 -- hjemme) som familien kobler til FamilieHub-skyen. Den finner Tapo-kameraer
 -- på hjemmenettet automatisk (ONVIF) og henter/videresender RTSP-video – noe

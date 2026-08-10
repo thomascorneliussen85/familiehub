@@ -26,3 +26,33 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+
+// Push-varsler (f.eks. røykvarsler-alarm) – payloaden sendes som JSON fra
+// backend (se services/pushService.js): { title, body, tag }.
+self.addEventListener('push', (event) => {
+  let data = { title: 'FamilieHub', body: 'Du har et nytt varsel.' };
+  try {
+    data = { ...data, ...event.data.json() };
+  } catch {
+    // ingen/ikke-JSON payload – bruk standardteksten over
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.svg',
+      badge: '/icon-192.svg',
+      tag: data.tag,
+      requireInteraction: data.tag === 'smoke-alarm',
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      if (clients.length > 0) return clients[0].focus();
+      return self.clients.openWindow('/');
+    })
+  );
+});

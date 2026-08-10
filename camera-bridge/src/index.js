@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { io as ioClient } from 'socket.io-client';
 import { discoverCameras } from './discovery.js';
 import { startStream, stopStream, stopAllStreams } from './streaming.js';
+import { discoverShellyDevices } from './shellyDiscovery.js';
+import { configureSmokeWebhooks } from './shellyWebhook.js';
 
 const config = {
   familieHubUrl: (process.env.FAMILIEHUB_URL || '').replace(/\/+$/, ''),
@@ -46,6 +48,18 @@ socket.on('camera:stream-stop', ({ streamId }) => {
   stopStream(streamId);
 });
 
+// Sendes når familien navngir/godkjenner en oppdaget røykvarsler i
+// Innstillinger – setter opp alarm-webhooken direkte på enheten, lokalt.
+socket.on('shelly:configure-webhook', async ({ localIp, webhookToken, deviceType }) => {
+  if (deviceType !== 'smoke') return;
+  try {
+    await configureSmokeWebhooks(localIp, config.familieHubUrl, webhookToken);
+    console.log(`✅ Satte opp alarm-varsling for ${localIp}`);
+  } catch (err) {
+    console.error(`❌ Klarte ikke sette opp varsling for ${localIp}:`, err.message);
+  }
+});
+
 let discoveryTimer = null;
 function startDiscoveryLoop() {
   if (discoveryTimer) return;
@@ -67,6 +81,24 @@ function startDiscoveryLoop() {
       }
     } catch (err) {
       console.error('Feil under kamera-søk:', err.message);
+    }
+
+    try {
+      const shellyDevices = await discoverShellyDevices();
+      if (shellyDevices.length === 0) {
+        console.log('🔍 Søkte etter Shelly-enheter på nettverket – fant ingen.');
+      }
+      for (const device of shellyDevices) {
+        socket.emit('shelly:discovered', device, (result) => {
+          if (result?.error) {
+            console.warn(`Kunne ikke registrere Shelly ${device.localIp}: ${result.error}`);
+          } else {
+            console.log(`🔌 Fant Shelly-enhet ${device.localIp} (${device.model || 'ukjent modell'}) – status: ${result.status}`);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Feil under Shelly-søk:', err.message);
     }
   };
   tick();
