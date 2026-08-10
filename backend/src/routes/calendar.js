@@ -1,9 +1,16 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
+import { scanCalendarImage } from '../services/calendarScanService.js';
 
 const router = Router();
 router.use(requireAuth);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+});
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -73,6 +80,25 @@ router.get('/events', (req, res) => {
     (a, b) => new Date(a.start_at) - new Date(b.start_at)
   );
   res.json(rows);
+});
+
+// Tar imot et bilde tatt med nettbrettets kamera (f.eks. av en timeplan eller
+// et oppslag på skolen) og bruker Claude til å finne avtaler i det. Oppretter
+// ikke avtalene ennå – frontend viser dem for bekreftelse først.
+router.post('/scan', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Ingen bilde mottatt' });
+  }
+  if (!req.file.mimetype?.startsWith('image/')) {
+    return res.status(400).json({ error: 'Filen må være et bilde' });
+  }
+  try {
+    const base64 = req.file.buffer.toString('base64');
+    const events = await scanCalendarImage(base64, req.file.mimetype, req.familyId);
+    res.json({ events });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
 });
 
 router.post('/events', (req, res) => {

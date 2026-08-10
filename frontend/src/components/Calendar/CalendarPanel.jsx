@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
+import ScanCalendarModal from './ScanCalendarModal';
 import './CalendarPanel.css';
 
 const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -38,6 +39,10 @@ export default function CalendarPanel() {
   const [formMode, setFormMode] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanResults, setScanResults] = useState(null);
+  const scanInputRef = useRef(null);
   const thisWeekStart = useMemo(() => startOfWeek(new Date()), []);
   const weekStart = useMemo(() => {
     const d = new Date(thisWeekStart);
@@ -122,6 +127,27 @@ export default function CalendarPanel() {
     closeForm();
   }
 
+  async function handleScanFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setScanning(true);
+    setScanError('');
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/calendar/scan', { method: 'POST', credentials: 'include', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Klarte ikke å lese bildet');
+      setScanResults(data.events);
+    } catch (err) {
+      setScanError(err.message);
+      setTimeout(() => setScanError(''), 5000);
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function handleDelete() {
     if (typeof formMode !== 'number') return;
     await api.delete(`/calendar/events/${formMode}`).catch(() => {});
@@ -159,12 +185,30 @@ export default function CalendarPanel() {
         </div>
         <button
           className="btn btn-icon"
+          onClick={() => scanInputRef.current?.click()}
+          aria-label="Skann bilde av timeplan"
+          title="Ta bilde av en timeplan/oppslag – finner avtaler automatisk"
+          disabled={scanning}
+        >
+          {scanning ? '⏳' : '📷'}
+        </button>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          ref={scanInputRef}
+          onChange={handleScanFile}
+          hidden
+        />
+        <button
+          className="btn btn-icon"
           onClick={() => (formMode === 'add' ? closeForm() : openAdd())}
           aria-label="Legg til avtale"
         >
           {formMode === 'add' ? '✕' : '+'}
         </button>
       </div>
+      {scanError && <div className="calendar-scan-error">{scanError}</div>}
       <div className="panel-body calendar-body">
         {formMode !== null && (
           <form className="calendar-add-form" onSubmit={handleSubmit}>
@@ -257,6 +301,9 @@ export default function CalendarPanel() {
           })}
         </div>
       </div>
+      {scanResults && (
+        <ScanCalendarModal events={scanResults} onClose={() => setScanResults(null)} />
+      )}
     </section>
   );
 }

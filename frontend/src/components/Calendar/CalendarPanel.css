@@ -2,6 +2,11 @@
   padding-top: 0 !important;
   overflow-x: auto;
 }
+.calendar-scan-error {
+  color: var(--danger);
+  font-size: 12.5px;
+  padding: 0 20px 6px;
+}
 .calendar-title {
   min-width: 0;
   flex-wrap: nowrap;
