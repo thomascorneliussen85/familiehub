@@ -43,18 +43,19 @@
 }
 .voice-feedback {
   position: absolute;
-  right: 64px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 0;
+  top: calc(100% + 8px);
   background: var(--panel-bg-alt);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 8px 14px;
   font-size: 14px;
-  white-space: nowrap;
-  max-width: 40vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: max-content;
+  max-width: min(60vw, 320px);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  z-index: 20;
+  box-shadow: var(--shadow-panel);
 }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.5); }
@@ -80,7 +81,7 @@
     font-size: 12px;
   }
   .voice-feedback {
-    max-width: 55vw;
+    max-width: min(70vw, 260px);
     font-size: 12px;
     padding: 6px 10px;
   }
