@@ -1,0 +1,15 @@
+{
+  "name": "familiehub-camera-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Lokal bro som kjører på hjemmenettet og lar FamilieHub-skyen finne og vise Tapo-kameraer",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "socket.io-client": "^4.8.1"
+  }
+}

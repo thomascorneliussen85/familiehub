@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 import { config } from './config.js';
 import { db } from './db/index.js';
 import { registerSockets } from './sockets/index.js';
+import { registerCameraBridgeSockets } from './sockets/cameraBridge.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import authRouter from './routes/auth.js';
 import familyMembersRouter from './routes/familyMembers.js';
@@ -24,6 +25,7 @@ import messagesRouter from './routes/messages.js';
 import photosRouter from './routes/photos.js';
 import googlePhotosRouter from './routes/googlePhotos.js';
 import camerasRouter from './routes/cameras.js';
+import cameraBridgeRouter from './routes/cameraBridge.js';
 import garminRouter from './routes/garmin.js';
 import playStatusRouter from './routes/playStatus.js';
 import playLocationsRouter from './routes/playLocations.js';
@@ -115,6 +117,7 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/photos/google', googlePhotosRouter);
 app.use('/api/cameras', camerasRouter);
+app.use('/api/camera-bridge', cameraBridgeRouter);
 app.use('/api/garmin', garminRouter);
 app.use('/api/play-status', playStatusRouter);
 app.use('/api/play-locations', playLocationsRouter);
@@ -155,6 +158,7 @@ app.use((err, req, res, next) => {
 });
 
 registerSockets(io);
+registerCameraBridgeSockets(io);
 
 server.listen(config.port, () => {
   console.log(`🏠 FamilieHub-backend kjører på port ${config.port} (${config.nodeEnv})`);

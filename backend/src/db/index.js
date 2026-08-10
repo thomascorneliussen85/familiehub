@@ -196,6 +196,18 @@ const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)
   }
 });
 
+// Migrering: cameras kan finnes fra før kamera-bro-støtten (auto-oppdagelse
+// via en lokal Raspberry Pi-bro), uten disse kolonnene.
+const camerasColumns = db.prepare('PRAGMA table_info(cameras)').all().map((c) => c.name);
+if (!camerasColumns.includes('status')) {
+  db.exec("ALTER TABLE cameras ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+}
+['local_ip', 'manufacturer', 'model', 'serial'].forEach((col) => {
+  if (!camerasColumns.includes(col)) {
+    db.exec(`ALTER TABLE cameras ADD COLUMN ${col} TEXT`);
+  }
+});
+
 // DoktorNå: kuratert liste over fiktive leger til demo-legetjenesten.
 const { n: doctorCount } = db.prepare('SELECT COUNT(*) AS n FROM telemedicine_doctors').get();
 if (doctorCount === 0) {

@@ -186,12 +186,37 @@ CREATE TABLE IF NOT EXISTS friend_families (
   friend_hub_id TEXT
 );
 
+-- rtsp_url er '' (tom streng) for kameraer oppdaget av en kamera-bro (se
+-- camera_bridges) – broen kjenner selv RTSP-legitimasjonen lokalt, den
+-- lagres aldri i skyen. rtsp_url brukes bare av det gamle manuelle
+-- oppsettet, som fortsatt fungerer for noen som kjører FamilieHub direkte
+-- på hjemmenettet.
 CREATE TABLE IF NOT EXISTS cameras (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  rtsp_url    TEXT NOT NULL,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL,
+  rtsp_url      TEXT NOT NULL DEFAULT '',
+  status        TEXT NOT NULL DEFAULT 'active', -- 'active' | 'pending' (oppdaget, venter på navn/godkjenning)
+  local_ip      TEXT,
+  manufacturer  TEXT,
+  model         TEXT,
+  serial        TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- En "bro" er en liten lokal tjeneste (typisk på en alltid-på Raspberry Pi
+-- hjemme) som familien kobler til FamilieHub-skyen. Den finner Tapo-kameraer
+-- på hjemmenettet automatisk (ONVIF) og henter/videresender RTSP-video – noe
+-- selve sky-serveren aldri kan gjøre siden den ikke er på hjemmenettet.
+-- api_key_hash er sha256 av en engangsvist nøkkel, samme mønster som
+-- relay/src/crypto.js sin hashApiKey.
+CREATE TABLE IF NOT EXISTS camera_bridges (
+  id            TEXT PRIMARY KEY,
+  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  api_key_hash  TEXT NOT NULL,
+  name          TEXT NOT NULL DEFAULT 'Kamera-bro',
+  last_seen_at  TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS dinner_plans (
