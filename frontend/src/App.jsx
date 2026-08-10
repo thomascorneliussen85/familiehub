@@ -9,6 +9,7 @@ import { PinnedCameraProvider } from './context/PinnedCameraContext';
 import { PanelNavigationProvider } from './context/PanelNavigationContext';
 import { useIdleTimer } from './hooks/useIdleTimer';
 import { useTimeOfDay } from './hooks/useTimeOfDay';
+import { useDailyReload } from './hooks/useDailyReload';
 import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
@@ -90,6 +91,7 @@ function Routed() {
 }
 
 export default function App() {
+  useDailyReload();
   return (
     <BrowserRouter>
       <AuthProvider>
