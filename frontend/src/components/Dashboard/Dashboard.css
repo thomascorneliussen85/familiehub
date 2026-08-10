@@ -178,6 +178,11 @@
 @media (max-width: 640px) {
   .dashboard-root {
     padding-bottom: 74px;
+    padding-top: max(32px, env(safe-area-inset-top));
+    overflow-y: auto;
+  }
+  .dashboard-top-row {
+    padding-top: 8px;
   }
   .dashboard-mobile-settings {
     display: flex;
