@@ -76,9 +76,9 @@
     font-size: 18px;
   }
   .voice-mute-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
   }
   .voice-feedback {
     max-width: min(70vw, 260px);

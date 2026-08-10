@@ -20,6 +20,9 @@
   gap: 14px;
   min-width: 0;
 }
+.dashboard-greeting-text {
+  min-width: 0;
+}
 .dashboard-home-photo {
   width: 42px;
   height: 42px;
@@ -186,6 +189,11 @@
   }
   .dashboard-mobile-settings {
     display: flex;
+    width: 32px;
+    height: 32px;
+  }
+  .dashboard-top-right {
+    gap: 6px;
   }
 
   /* Rutene på forsiden er trange på en telefon – gjør skrift/avstand mer
