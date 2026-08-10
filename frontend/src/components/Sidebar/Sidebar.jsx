@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import { usePanelNavigation } from '../../context/PanelNavigationContext';
+import FullscreenButton from '../Fullscreen/FullscreenButton';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -96,6 +97,7 @@ export default function Sidebar({ onOpenSettings }) {
             <span className="sidebar-user-sub">{members.length} medlemmer</span>
           </span>
         </div>
+        <FullscreenButton showLabel />
         <button className="sidebar-settings-row" onClick={onOpenSettings}>
           <Icon name="gear" />
           Innstillinger

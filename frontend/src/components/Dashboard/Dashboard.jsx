@@ -19,6 +19,7 @@ import NextEventBanner from './NextEventBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import VoiceButton from '../VoiceControl/VoiceButton';
 import FeedbackButton from '../Feedback/FeedbackButton';
+import FullscreenButton from '../Fullscreen/FullscreenButton';
 import Clock from '../Clock/Clock';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
 import { usePanelNavigation } from '../../context/PanelNavigationContext';
@@ -131,6 +132,7 @@ export default function Dashboard({ onOpenSettings }) {
         <div className="dashboard-top-right">
           <VoiceButton />
           <FeedbackButton />
+          <FullscreenButton />
           <Clock />
           <button className="dashboard-mobile-settings" onClick={onOpenSettings} aria-label="Innstillinger">
             <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.5-2-3.4-2.3.9a7.6 7.6 0 00-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.3-.9-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.5 2 3.4 2.3-.9a7.6 7.6 0 001.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 001.7-1l2.3.9 2-3.4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>

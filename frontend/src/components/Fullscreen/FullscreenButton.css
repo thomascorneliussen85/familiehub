@@ -1,0 +1,37 @@
+.fullscreen-trigger {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fullscreen-trigger:active {
+  transform: scale(0.9);
+}
+
+@media (max-width: 640px) {
+  .fullscreen-trigger:not(.fullscreen-trigger-row) {
+    font-size: 16px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+}
+
+.fullscreen-trigger-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  justify-content: flex-start;
+}
