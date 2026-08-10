@@ -20,60 +20,44 @@ Broen gjør to ting:
   tilgang – det er ikke det samme som TP-Link-kontoen din. Uten dette svarer
   ikke kameraet på nettverkssøket i det hele tatt.
 
-## Oppsett
+## Oppsett (anbefalt: ett kommando)
 
 1. Generer en bro-nøkkel i FamilieHub: **Innstillinger → Enheter → "Generer
    bro-nøkkel"**. Du får en `BRIDGE_ID` og en `BRIDGE_API_KEY` – de vises kun
    én gang, så kopier dem med det samme.
-2. På Raspberry Pi-en:
+2. På Raspberry Pi-en (eller en annen alltid-på maskin på hjemmenettet):
    ```bash
-   git clone <repo-url>
-   cd familiehub/camera-bridge
-   npm install
-   cp .env.example .env
+   curl -fsSL https://<din-familiehub>.onrender.com/camera-bridge/install.sh | bash
    ```
-3. Fyll ut `.env`:
-   - `FAMILIEHUB_URL` – adressen til FamilieHub-installasjonen din
-   - `BRIDGE_ID` / `BRIDGE_API_KEY` – fra steg 1
-   - `TAPO_USERNAME` / `TAPO_PASSWORD` – ONVIF-legitimasjonen fra Tapo-appen
-4. Start broen:
-   ```bash
-   npm start
-   ```
-   Du bør se `✅ Tilkoblet FamilieHub` og deretter kameraer dukke opp etter
-   hvert som de blir funnet. Nye kameraer vises i FamilieHub under
-   Innstillinger → Enheter som "oppdaget, venter på navn" – gi dem et navn
-   der for å ta dem i bruk.
+   Bytt ut `<din-familiehub>` med den faktiske FamilieHub-adressen din. Du
+   trenger **ikke** Github-tilgang – installasjonsfilene lastes ned direkte
+   fra FamilieHub-appen selv (repoet er privat, så vanlig `git clone` ville
+   krevd innlogging). Skriptet installerer det som mangler, spør deg om
+   bro-nøkkelen og Tapo-legitimasjonen underveis, og setter opp autostart
+   (systemd) automatisk.
 
-## Kjør alltid i bakgrunnen (systemd)
+Du bør se `✅ Ferdig!` til slutt, og deretter `✅ Tilkoblet FamilieHub` i
+loggen. Nye kameraer vises i FamilieHub under Innstillinger → Enheter som
+"oppdaget, venter på navn" – gi dem et navn der for å ta dem i bruk.
 
-Så broen starter automatisk når Pi-en starter, og restarter selv hvis den
-krasjer:
-
+Status/logger etterpå:
 ```bash
-sudo tee /etc/systemd/system/familiehub-camera-bridge.service > /dev/null <<'EOF'
-[Unit]
-Description=FamilieHub kamera-bro
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=/home/pi/familiehub/camera-bridge
-ExecStart=/usr/bin/npm start
-Restart=always
-RestartSec=5
-User=pi
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable --now familiehub-camera-bridge
+sudo systemctl status familiehub-camera-bridge
+journalctl -u familiehub-camera-bridge -f
 ```
 
-Se logger med `journalctl -u familiehub-camera-bridge -f`.
+## Manuelt oppsett (alternativ, hvis du har full tilgang til Github-repoet)
+
+```bash
+git clone <repo-url>
+cd familiehub/camera-bridge
+npm install
+cp .env.example .env
+# fyll ut .env, se innholdet over
+npm start
+```
+
+Se systemd-oppsettet i `install.sh` hvis du vil sette opp autostart manuelt.
 
 ## Feilsøking
 

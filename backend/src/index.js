@@ -99,6 +99,28 @@ function serveFamilyFile(baseDir) {
 app.get('/photos/:familyId/:filename', requireAuth, serveFamilyFile(config.photos.dir));
 app.get('/reward-images/:familyId/:filename', requireAuth, serveFamilyFile(config.rewardsImagesDir));
 
+const backendRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
+// Kamera-bro-installasjonsfiler, servert offentlig (ingen innlogging) – slik
+// at install.sh kan laste dem ned uten Github-tilgang. Repoet er privat, så
+// verken familien selv eller vennefamilier ville kunnet "git clone" for å
+// sette opp broen ellers. Kun en eksplisitt liste over ufarlige,
+// ikke-sensitive filer serveres – aldri en hel mappe.
+const cameraBridgeDir = path.join(backendRoot, '../camera-bridge');
+const cameraBridgePublicFiles = new Set([
+  'install.sh',
+  'package.json',
+  'package-lock.json',
+  'src/index.js',
+  'src/discovery.js',
+  'src/streaming.js',
+]);
+app.get('/camera-bridge/*', (req, res) => {
+  const rel = req.params[0];
+  if (!cameraBridgePublicFiles.has(rel)) return res.status(404).end();
+  res.sendFile(path.join(cameraBridgeDir, rel));
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
@@ -137,7 +159,6 @@ app.use('/api/local-friends', localFriendsRouter);
 // hvis det finnes – dette er hva som kreves for produksjonshosting (se
 // README "Plan for deploy"). I vanlig lokal utvikling kjører frontend på egen
 // Vite-server i stedet, og dist/ finnes ikke, så dette gjør ingenting da.
-const backendRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const frontendDist = path.join(backendRoot, '../frontend/dist');
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
