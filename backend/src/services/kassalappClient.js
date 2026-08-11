@@ -59,6 +59,7 @@ function enqueue(run) {
 // løpet av en dag), EAN-prissammenligning cachet lenger (pris endrer seg
 // typisk ikke flere ganger samme dag). ----
 const SEARCH_CACHE_MS = 6 * 60 * 60 * 1000;
+const AUTOCOMPLETE_CACHE_MS = 10 * 60 * 1000; // kort – skal føles ferskt mens man skriver
 const EAN_CACHE_MS = 12 * 60 * 60 * 1000;
 const STORES_CACHE_MS = 24 * 60 * 60 * 1000;
 const cache = new Map(); // key -> { value, expiresAt }
@@ -115,6 +116,20 @@ export async function searchProducts(search, size = 10) {
   const data = await request('products', { search, size, unique: 1 });
   const result = Array.isArray(data) ? data : [];
   setCached(key, result, SEARCH_CACHE_MS);
+  return result;
+}
+
+// Autocomplete mens brukeren skriver i "legg til vare"-feltet – kun
+// produkter MED strekkode (exclude_without_ean), siden vi må ha en EAN å
+// slå opp eksakt pris med senere. Egen (kortere) cache enn searchProducts,
+// siden dette skal føles responsivt mens man skriver.
+export async function autocompleteProducts(search, size = 6) {
+  const key = `autocomplete:${search.toLowerCase()}:${size}`;
+  const cached = getCached(key);
+  if (cached) return cached;
+  const data = await request('products', { search, size, unique: 1, exclude_without_ean: 1 });
+  const result = Array.isArray(data) ? data : [];
+  setCached(key, result, AUTOCOMPLETE_CACHE_MS);
   return result;
 }
 

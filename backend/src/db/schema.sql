@@ -86,15 +86,35 @@ CREATE TABLE IF NOT EXISTS chore_completions (
   UNIQUE(chore_id, completed_on)
 );
 
+-- ean settes når linjen er opprettet via autocomplete/hurtigvalg/"Dette
+-- mener jeg" – da vet vi eksakt hvilket produkt det er, og kan hente eksakt
+-- pris i stedet for å gjette med fuzzy-søk (se smartShoppingService.js).
 CREATE TABLE IF NOT EXISTS shopping_items (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
+  ean         TEXT,
   checked     INTEGER NOT NULL DEFAULT 0,
   checked_at  TEXT,
   position    INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Lærer familiens egne produktvalg over tid: hvilket eksakt produkt (EAN) de
+-- pleier å velge for et gitt søkeord, brukt til å stjernemerke treff øverst i
+-- autocomplete-dropdownen og til hurtigvalg-knappene (de 8 mest brukte).
+-- search_term er det brukeren faktisk skrev, ikke nødvendigvis produktnavnet.
+CREATE TABLE IF NOT EXISTS item_history (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  search_term   TEXT NOT NULL,
+  chosen_ean    TEXT NOT NULL,
+  chosen_name   TEXT NOT NULL,
+  times_used    INTEGER NOT NULL DEFAULT 1,
+  last_used     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(family_id, search_term, chosen_ean)
+);
+CREATE INDEX IF NOT EXISTS idx_item_history_family ON item_history(family_id, times_used DESC);
 
 CREATE TABLE IF NOT EXISTS quick_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,

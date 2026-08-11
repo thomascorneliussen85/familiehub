@@ -64,10 +64,30 @@ export function getDemoStores() {
   return DEMO_STORES;
 }
 
+// Brukes for linjer som allerede har en kjent EAN (fra autocomplete/"Dette
+// mener jeg") – slår opp riktig demo-vare direkte på strekkoden.
+export function getDemoItemByEan(ean) {
+  return Object.values(DEMO_ITEMS).find((item) => item.ean === ean) || null;
+}
+
 // Enkel substring-match ("helmelk" -> "melk") – demoen trenger ikke ekte
 // fuzzy-søk, bare å demonstrere resten av funksjonen.
 export function getDemoMatch(itemText) {
   const normalized = itemText.toLowerCase().trim();
   const key = Object.keys(DEMO_ITEMS).find((k) => normalized.includes(k));
   return key ? { ...DEMO_ITEMS[key], matchedKey: key } : null;
+}
+
+// Autocomplete-variant: matcher også prefiks ("mel" -> "melk"), siden det er
+// slik man faktisk skriver mens man taster.
+export function getDemoAutocompleteSuggestions(text) {
+  const normalized = text.toLowerCase().trim();
+  return Object.entries(DEMO_ITEMS)
+    .filter(([key]) => key.includes(normalized) || normalized.includes(key))
+    .map(([, item]) => ({
+      ean: item.ean,
+      name: item.product_name,
+      image: null,
+      lowestPrice: Math.min(...item.prices.map((p) => p.price)),
+    }));
 }

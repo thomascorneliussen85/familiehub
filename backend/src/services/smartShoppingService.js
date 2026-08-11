@@ -1,7 +1,7 @@
 import { db } from '../db/index.js';
 import { config } from '../config.js';
-import { searchProducts, getNearbyStores, isKassalappConfigured } from './kassalappClient.js';
-import { getDemoMatch, getDemoStores } from './smartShoppingDemoData.js';
+import { searchProducts, autocompleteProducts, getProductByEan, getNearbyStores, isKassalappConfigured } from './kassalappClient.js';
+import { getDemoMatch, getDemoStores, getDemoAutocompleteSuggestions, getDemoItemByEan } from './smartShoppingDemoData.js';
 
 const MAX_MATCHES_PER_ITEM = 3;
 // En vare regnes som "på tilbud" hvis nåværende pris er minst 10% under
@@ -144,10 +144,63 @@ async function fetchMatchesForText(familyId, itemText) {
   return products.slice(0, MAX_MATCHES_PER_ITEM);
 }
 
+// Linjer med en allerede kjent EAN (valgt via autocomplete, hurtigvalg eller
+// "Dette mener jeg") trenger ikke fuzzy-søk – vi vet nøyaktig hvilket
+// produkt det er, og henter eksakt pris i hver butikk direkte på strekkoden.
+// current_price sitt eksakte format var usikkert ut fra tredjeparts-
+// klientens datamodeller alene (tallverdi ELLER {unit_price}), så begge
+// tolkes defensivt her – bekreftet/justert mot ekte svar fra API-et.
+async function fetchExactMatch(familyId, ean, fallbackName) {
+  if (!isKassalappConfigured()) {
+    const demo = getDemoItemByEan(ean);
+    if (!demo) return null;
+    const settings = getFamilySettings(familyId);
+    const allowedChains = settings.enabledChains.length > 0 ? new Set(settings.enabledChains.map((c) => c.toLowerCase())) : null;
+    const stores = demo.prices
+      .filter((p) => chainAllowed(p.store, allowedChains))
+      .map((p) => ({ store_name: p.store, store_id: null, price: p.price, is_offer: p.is_offer }));
+    if (stores.length === 0) return null;
+    return { ean, product_name: demo.product_name, image_url: null, stores };
+  }
+
+  try {
+    const data = await getProductByEan(ean);
+    const items = Array.isArray(data?.products) ? data.products : [];
+    const allowedChains = await getAllowedChainNames(familyId);
+    const stores = items
+      .map((item) => {
+        const storeName = item.store?.name;
+        const priceRaw = item.current_price;
+        const price = typeof priceRaw === 'number' ? priceRaw : (priceRaw?.unit_price ?? priceRaw?.price ?? null);
+        if (!storeName || price == null) return null;
+        return {
+          store_name: storeName,
+          store_id: item.store?.id ?? null,
+          price,
+          is_offer: computeIsOffer(item.price_history, price),
+        };
+      })
+      .filter(Boolean)
+      .filter((s) => chainAllowed(s.store_name, allowedChains));
+    if (stores.length === 0) return null;
+    return {
+      ean,
+      product_name: items[0]?.name || fallbackName,
+      image_url: items[0]?.image || null,
+      stores,
+    };
+  } catch (err) {
+    console.error(`Smart handleliste (eksakt EAN ${ean}):`, err.message);
+    return null;
+  }
+}
+
 // Matcher én handleliste-linje mot Kassalapp (eller demodata) og lagrer
-// resultatet – erstatter ev. tidligere treff for samme linje.
+// resultatet – erstatter ev. tidligere treff for samme linje. Linjer med en
+// kjent EAN får eksakt pris (fetchExactMatch); resten går via fuzzy-søk.
 export async function matchShoppingItem(familyId, shoppingItem) {
-  const matches = await fetchMatchesForText(familyId, shoppingItem.name);
+  const exact = shoppingItem.ean ? await fetchExactMatch(familyId, shoppingItem.ean, shoppingItem.name) : null;
+  const matches = exact ? [exact] : await fetchMatchesForText(familyId, shoppingItem.name);
 
   db.prepare('DELETE FROM product_matches WHERE shopping_item_id = ?').run(shoppingItem.id);
 
@@ -205,6 +258,61 @@ export function lockItem(familyId, itemText, ean, productName) {
   ).run(familyId, normalizeText(itemText), ean, productName);
 }
 
+// Husker at familien valgte akkurat dette produktet for akkurat dette
+// søkeordet – brukt til å stjernemerke treff i autocomplete-dropdownen og
+// til hurtigvalg-knappene neste gang.
+export function recordHistoryChoice(familyId, searchTerm, ean, name) {
+  db.prepare(
+    `INSERT INTO item_history (family_id, search_term, chosen_ean, chosen_name, times_used, last_used)
+     VALUES (?, ?, ?, ?, 1, datetime('now'))
+     ON CONFLICT(family_id, search_term, chosen_ean)
+     DO UPDATE SET times_used = times_used + 1, chosen_name = excluded.chosen_name, last_used = datetime('now')`
+  ).run(familyId, normalizeText(searchTerm), ean, name);
+}
+
+// Familiens egne tidligere valg for samme/lignende søkeord – vises
+// stjernemerket øverst i autocomplete-dropdownen, foran ferske Kassalapp-treff.
+export function getHistoryMatches(familyId, searchTerm, limit = 3) {
+  const normalized = normalizeText(searchTerm);
+  return db
+    .prepare(
+      `SELECT * FROM item_history
+       WHERE family_id = ? AND (search_term LIKE '%' || ? || '%' OR ? LIKE '%' || search_term || '%')
+       ORDER BY times_used DESC, last_used DESC LIMIT ?`
+    )
+    .all(familyId, normalized, normalized, limit);
+}
+
+export function getQuickPicks(familyId, limit = 8) {
+  return db
+    .prepare('SELECT * FROM item_history WHERE family_id = ? ORDER BY times_used DESC, last_used DESC LIMIT ?')
+    .all(familyId, limit);
+}
+
+// Autocomplete mens brukeren skriver: familiens egne tidligere valg først
+// (stjernemerket, se getHistoryMatches), deretter ferske Kassalapp-treff
+// (eller fiktive demo-treff uten API-nøkkel).
+export async function autocomplete(familyId, text) {
+  const history = getHistoryMatches(familyId, text);
+  if (text.trim().length < 3) return { history, suggestions: [] };
+
+  if (!isKassalappConfigured()) {
+    return { history, suggestions: getDemoAutocompleteSuggestions(text) };
+  }
+
+  try {
+    const rows = await autocompleteProducts(text, 6);
+    const seen = new Set(history.map((h) => h.chosen_ean));
+    const suggestions = rows
+      .filter((r) => r.ean && !seen.has(r.ean))
+      .map((r) => ({ ean: r.ean, name: r.name, image: r.image || null, lowestPrice: r.current_price ?? null }));
+    return { history, suggestions };
+  } catch (err) {
+    console.error('Smart handleliste (autocomplete):', err.message);
+    return { history, suggestions: [] };
+  }
+}
+
 export function getItemMatches(shoppingItemId) {
   const matches = db
     .prepare('SELECT * FROM product_matches WHERE shopping_item_id = ? ORDER BY rank ASC')
@@ -224,16 +332,18 @@ export function getItemMatches(shoppingItemId) {
 // antall tilbud per butikk. Ingen vekting av bestemte kjeder: butikker
 // sorteres kun på total pris.
 export function getPriceCheckSummary(familyId) {
-  const items = db.prepare('SELECT id FROM shopping_items WHERE family_id = ? AND checked = 0').all(familyId);
+  const items = db.prepare('SELECT id, ean FROM shopping_items WHERE family_id = ? AND checked = 0').all(familyId);
   const totalLines = items.length;
   const storeTotals = new Map(); // store_name -> { total, coveredLines, offerCount }
   const itemBadges = {}; // shopping_item_id -> { price, storeName, isOffer } (billigste treff for linjen)
+  let uncertainLines = 0; // linjer med treff, men uten eksakt EAN (fuzzy-gjetning)
 
   for (const item of items) {
     const matches = db
       .prepare('SELECT id FROM product_matches WHERE shopping_item_id = ? ORDER BY rank ASC LIMIT 1')
       .all(item.id);
     if (matches.length === 0) continue;
+    if (!item.ean) uncertainLines += 1;
     const prices = db
       .prepare('SELECT store_name, price, is_offer FROM product_prices WHERE match_id = ? ORDER BY price ASC')
       .all(matches[0].id);
@@ -273,6 +383,7 @@ export function getPriceCheckSummary(familyId) {
     cheapest3: cheapest.map((s) => s.store),
     savingsVsMostExpensive: savings,
     itemBadges,
+    uncertainLines,
   };
 }
 

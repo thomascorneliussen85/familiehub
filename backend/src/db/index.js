@@ -151,6 +151,12 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_chores_family ON chores(family_id)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_shopping_items_family ON shopping_items(family_id)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_users_family ON users(family_id)');
 
+// Migrering: shopping_items kan finnes fra før autocomplete-støtten, uten ean-kolonnen.
+const shoppingItemsColumns = db.prepare('PRAGMA table_info(shopping_items)').all().map((c) => c.name);
+if (!shoppingItemsColumns.includes('ean')) {
+  db.exec('ALTER TABLE shopping_items ADD COLUMN ean TEXT');
+}
+
 // Migrering: friend_families kan finnes fra før del 1, uten friend_hub_id-kolonnen.
 const friendFamiliesColumns = db.prepare('PRAGMA table_info(friend_families)').all().map((c) => c.name);
 if (!friendFamiliesColumns.includes('friend_hub_id')) {
