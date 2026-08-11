@@ -147,9 +147,10 @@ async function fetchMatchesForText(familyId, itemText) {
 // Linjer med en allerede kjent EAN (valgt via autocomplete, hurtigvalg eller
 // "Dette mener jeg") trenger ikke fuzzy-søk – vi vet nøyaktig hvilket
 // produkt det er, og henter eksakt pris i hver butikk direkte på strekkoden.
-// current_price sitt eksakte format var usikkert ut fra tredjeparts-
-// klientens datamodeller alene (tallverdi ELLER {unit_price}), så begge
-// tolkes defensivt her – bekreftet/justert mot ekte svar fra API-et.
+// Bekreftet mot et ekte API-svar: her er current_price et objekt
+// { price, unit_price, date } – price er faktisk hylleprisen, unit_price er
+// normalisert pr. liter/kg (ikke det samme, og betydelig høyere for f.eks.
+// en 330ml-pakke).
 async function fetchExactMatch(familyId, ean, fallbackName) {
   if (!isKassalappConfigured()) {
     const demo = getDemoItemByEan(ean);
@@ -171,7 +172,11 @@ async function fetchExactMatch(familyId, ean, fallbackName) {
       .map((item) => {
         const storeName = item.store?.name;
         const priceRaw = item.current_price;
-        const price = typeof priceRaw === 'number' ? priceRaw : (priceRaw?.unit_price ?? priceRaw?.price ?? null);
+        // Bekreftet mot ekte API-svar: current_price er { price, unit_price,
+        // date } – price er faktisk hylleprisen, unit_price er normalisert
+        // pr. liter/kg (var feil brukt her først, viste f.eks. 51,21 kr for
+        // en vare som faktisk koster 16,90 kr).
+        const price = typeof priceRaw === 'number' ? priceRaw : (priceRaw?.price ?? priceRaw?.unit_price ?? null);
         if (!storeName || price == null) return null;
         return {
           store_name: storeName,

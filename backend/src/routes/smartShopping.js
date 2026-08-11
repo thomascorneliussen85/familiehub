@@ -14,21 +14,8 @@ import {
   getQuickPicks,
   recordHistoryChoice,
 } from '../services/smartShoppingService.js';
-import { getProductByEan } from '../services/kassalappClient.js';
-
 const router = Router();
 router.use(requireAuth);
-
-// MIDLERTIDIG diagnoseendepunkt for å bekrefte det eksakte responsformatet
-// fra Kassalapp – fjernes rett etter verifisering.
-router.get('/_debug-ean/:ean', async (req, res) => {
-  try {
-    const data = await getProductByEan(req.params.ean);
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 router.get('/autocomplete', async (req, res) => {
   const q = (req.query.q || '').toString();
