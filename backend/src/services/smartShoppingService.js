@@ -119,13 +119,20 @@ async function fetchMatchesForText(familyId, itemText) {
 
   if (itemText.trim().length < 3) return []; // Kassalapp krever minimum 3 tegn i søket
 
-  const rows = await searchProducts(itemText, 30);
+  const rows = await searchProducts(itemText, 50);
   let products = groupByProduct(rows);
 
   const allowedChains = await getAllowedChainNames(familyId);
   products = products
     .map((p) => ({ ...p, stores: p.stores.filter((s) => chainAllowed(s.store_name, allowedChains)) }))
     .filter((p) => p.stores.length > 0);
+
+  // Kassalapp sin egen fuzzy-rangering er ikke alltid til hjelp for et bredt
+  // søkeord ("Melk" kan gi treff i mandelmelk/kokosmelk før vanlig melk) –
+  // et produkt som føres av MANGE butikker er som regel et vanligere/mer
+  // "standard" produkt enn et som bare føres ett sted, så det brukes som
+  // hovedsorteringen i stedet for rekkefølgen fra søket.
+  products.sort((a, b) => b.stores.length - a.stores.length);
 
   if (lock) {
     const lockedFirst = products.find((p) => p.ean === lock.ean);
