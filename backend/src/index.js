@@ -43,6 +43,8 @@ import localFriendsRouter from './routes/localFriends.js';
 import pushRouter from './routes/push.js';
 import shellyWebhookRouter from './routes/shellyWebhook.js';
 import shellyDevicesRouter from './routes/shellyDevices.js';
+import smartShoppingRouter from './routes/smartShopping.js';
+import { startSmartShoppingScheduler } from './services/smartShoppingService.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { startXploraPolling } from './services/xploraPoller.js';
@@ -162,6 +164,7 @@ app.use('/api/local-friends', localFriendsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/shelly-webhook', shellyWebhookRouter);
 app.use('/api/shelly-devices', shellyDevicesRouter);
+app.use('/api/smart-shopping', smartShoppingRouter);
 
 // Servér det bygde frontend-bygget (frontend/dist) på samme origin som API-et,
 // hvis det finnes – dette er hva som kreves for produksjonshosting (se
@@ -199,6 +202,7 @@ server.listen(config.port, () => {
   setInterval(cleanupOldPlayStatus, 24 * 60 * 60 * 1000);
   initRelayClient(io);
   startBriefScheduler(io);
+  startSmartShoppingScheduler(io);
 });
 
 process.on('SIGINT', () => {

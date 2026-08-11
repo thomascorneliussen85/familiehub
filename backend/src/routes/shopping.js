@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
+import { scheduleMatchingRun } from '../services/smartShoppingService.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -34,6 +35,7 @@ router.post('/', (req, res) => {
     maxPos + 1
   );
   broadcast(req);
+  scheduleMatchingRun(req.familyId, req.app.get('io'));
   res.status(201).json(listItems(req.familyId));
 });
 
@@ -47,6 +49,7 @@ router.patch('/:id/toggle', (req, res) => {
     item.id
   );
   broadcast(req);
+  if (!checked) scheduleMatchingRun(req.familyId, req.app.get('io'));
   res.json(listItems(req.familyId));
 });
 

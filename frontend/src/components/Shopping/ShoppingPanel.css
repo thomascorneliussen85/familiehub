@@ -1,3 +1,56 @@
+.smart-shopping-banner {
+  background: var(--panel-bg-alt);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  position: relative;
+}
+.smart-shopping-banner-text {
+  padding-right: 46px;
+}
+.smart-shopping-demo-tag {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: var(--text-faint);
+  color: var(--panel-bg);
+  font-size: 9.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 7px;
+  letter-spacing: 0.03em;
+}
+.smart-shopping-cheapest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+.smart-shopping-unavailable {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  margin-bottom: 6px;
+}
+.shopping-price-badge {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .shopping-count {
   background: var(--accent);
   color: var(--on-accent);
