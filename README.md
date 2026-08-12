@@ -116,6 +116,95 @@ treningsplan basert på nylig treningshistorikk. Begge deler bruker samme
 demokommentar/-plan basert på de samme tallene. Krever at Garmin er
 synkronisert (`GARMIN_USERNAME`/`GARMIN_PASSWORD` i `.env`).
 
+## Økonomimodul – personlig økonomi
+
+Under 💰 **Økonomi**-kortet på dashbordet vises et lettvekts, PIN-frie
+"nivå 1"-sammendrag (budsjett-status som trafikklys, sum brukt, kommende
+faste regninger de neste 14 dagene, dagens strømpris) – trygt å vise fram
+uten opplåsing, siden det aldri inneholder saldoer eller enkelttransaksjoner.
+Trykk på kortet for å låse opp full oversikt (foreldre-PIN, samme som
+Enheter/Belønninger) med kontoer, transaksjoner, budsjett per kategori,
+diagrammer og en AI-generert ukesbrief + chat. Nivå 2 låser seg automatisk
+igjen etter 2 minutter uten aktivitet.
+
+Modulen har to uavhengige datakilder:
+
+- **CSV-import** (fungerer med det samme, ingen ekstra oppsett): last opp en
+  kontoutskrift under **Opplasting**, bekreft hvilke kolonner som er
+  dato/beløp/motpart i veiviseren (den gjetter ofte riktig automatisk), og
+  transaksjonene kategoriseres selv (Claude, med gjenkjenning av tidligere
+  sette kategorier som gratis "cache" – ingen kontonummer eller navn sendes
+  til Claude, kun motpart/beløp/dato).
+- **Enable Banking** (ekte, automatisk kontosynk) – se eget avsnitt under.
+
+### Krav
+
+- `FINANCE_ENCRYPTION_KEY` i `.env` – **må** settes før noen nøkler
+  (Claude/Enable Banking) kan lagres. Generer med:
+  ```bash
+  openssl rand -hex 32
+  ```
+- Claude-nøkkelen til Økonomimodulen settes **per familie** i appen (⚙️
+  Økonomi → Oppsett), i motsetning til Morgenbrief/AI-assistenten som bruker
+  `ANTHROPIC_API_KEY` fra `.env`. Uten nøkkel fungerer CSV-import og budsjett
+  fint, men kategorisering/ukesbrief/chat viser demo-innhold i stedet.
+
+### CSV-eksport – hvor finner jeg den i banken?
+
+Nettbankenes menyer endrer seg fra tid til annen, så bruk dette som en
+pekepinn – uansett hvilke kolonner filen har, bekrefter du dem selv i
+opplastingsveiviseren, så et lite avvik i banken sin meny knekker ingenting:
+
+| Bank | Vanlig plassering |
+|---|---|
+| DNB | Konto → velg konto → «Transaksjoner» → eksporter/last ned (CSV) |
+| Sparebanken Vest | Nettbank → konto → «Kontoutskrift»/«Transaksjoner» → eksporter |
+| Bulder Bank | App/nettbank → konto → transaksjonsliste → del/eksporter som fil |
+| Sbanken | Nettbank → konto → «Vis flere transaksjoner» → eksporter til CSV/Excel |
+| Nordea | Nettbank → konto → «Kontoutskrift» → velg periode → last ned CSV |
+
+Filer med semikolon eller komma som skilletegn, norsk tallformat
+(`1 234,56`), og både UTF-8- og Latin-1-kodede filer støttes automatisk.
+
+### Enable Banking – ekte kontotilkobling (avansert, valgfritt)
+
+Enable Banking gir automatisk daglig kontosynk (i stedet for manuell
+CSV-opplasting) via bankenes offisielle PSD2-API-er, men krever en egen
+utviklerkonto hos [enablebanking.com](https://enablebanking.com) (Application
+ID + privat nøkkel) som ikke følger med FamilieHub. Funksjonen er derfor
+bygget ferdig, men **skrudd av som standard** bak to uavhengige brytere:
+
+1. `ENABLE_BANKING_ACTIVE=true` i `.env` (global, skrur på funksjonen for
+   *hele* installasjonen – krever omstart av backend).
+2. Per familie: ⚙️ Økonomi → Oppsett → fyll inn Application ID + privat
+   nøkkel (PEM) fra Enable Banking, samt domenet installasjonen kjører på
+   (brukes til tilbakekoblings-URL-en etter samtykke i banken), og skru på
+   "Aktiver kontosynk for denne familien".
+
+Uten en ekte Enable Banking-avtale vises seksjonen som «Kommer snart» i
+Oppsett, og resten av modulen (CSV, budsjett, AI-lag) fungerer helt uvirket.
+
+### Selvhosting med Docker (for en vennefamilie som vil ha Økonomimodulen)
+
+I motsetning til Raspberry Pi-planen lenger ned (systemd + Chromium kiosk,
+uten innebygget HTTPS), er dette oppsettet ment for en vennefamilie som vil
+kjøre en *egen* FamilieHub-instans, tilgjengelig utenfra via HTTPS uten
+portforwarding – nyttig for Enable Banking, som krever en ekte HTTPS-URL for
+tilbakekoblingen etter samtykke i banken:
+
+```bash
+git clone <ditt-repo-url> familiehub
+cd familiehub
+./scripts/install-finance-pi.sh
+```
+
+Skriptet installerer Docker om nødvendig, genererer `JWT_SECRET` og
+`FINANCE_ENCRYPTION_KEY` automatisk, spør om familienavn/innlogging/domene,
+og starter appen med `docker compose up -d`. Cloudflare Tunnel (for HTTPS)
+må settes opp manuelt én gang (krever nettleser-innlogging hos Cloudflare) –
+se `cloudflared/config.yml.example` for stegene. Uten tunnelen fungerer
+appen fint lokalt på `http://<pi-ens-ip>:4000`, bare uten ekstern HTTPS-tilgang.
+
 ## GPS-klokke (Xplora)
 
 Under 📍 **Kart** vises barnets siste kjente posisjon på et kart, med et

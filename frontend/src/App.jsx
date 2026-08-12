@@ -15,6 +15,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
 import FriendPlayToast from './components/PlayOutside/FriendPlayToast';
 import SettingsModal from './components/Settings/SettingsModal';
+import FinancePage from './components/Finance/FinancePage';
 import PairingPendingBanner from './components/Settings/PairingPendingBanner';
 import FloatingCameraView from './components/Cameras/FloatingCameraView';
 import './App.css';
@@ -24,6 +25,7 @@ const PHOTO_MODE_IDLE_MINUTES = 5;
 function AppShell() {
   const idle = useIdleTimer(PHOTO_MODE_IDLE_MINUTES);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
   const [calendarConnectMsg, setCalendarConnectMsg] = useState('');
   const { isDark } = useTimeOfDay();
 
@@ -56,10 +58,11 @@ function AppShell() {
       {!settingsOpen && <PairingPendingBanner onOpenSettings={() => setSettingsOpen(true)} />}
       <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
       <main className="app-main">
-        <Dashboard onOpenSettings={() => setSettingsOpen(true)} />
+        <Dashboard onOpenSettings={() => setSettingsOpen(true)} onOpenFinance={() => setFinanceOpen(true)} />
       </main>
       <FloatingCameraView />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {financeOpen && <FinancePage onClose={() => setFinanceOpen(false)} />}
     </div>
   );
 }

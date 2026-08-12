@@ -1,0 +1,33 @@
+# Selvhosting-oppsett for en vennefamilie som installerer sin egen
+# FamilieHub-instans (i motsetning til den delte Render-hostingen). Se
+# scripts/install-finance-pi.sh og README.md for full oppsettsveiledning.
+#
+# cloudflared-tjenesten er valgfri – den gir HTTPS uten portforwarding via en
+# Cloudflare Tunnel, som anbefales for en Raspberry Pi uten fast IP/sertifikat.
+# Kjør uten den (kommenter bort) hvis dere allerede har HTTPS på annet vis.
+services:
+  app:
+    build: .
+    container_name: familiehub-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    volumes:
+      - familiehub-data:/app/backend/data
+      - ./photos:/app/photos
+      - ./backend/data/reward-images:/app/backend/data/reward-images
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: familiehub-cloudflared
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    depends_on:
+      - app
+
+volumes:
+  familiehub-data:

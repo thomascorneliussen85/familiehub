@@ -45,6 +45,13 @@ import shellyWebhookRouter from './routes/shellyWebhook.js';
 import shellyDevicesRouter from './routes/shellyDevices.js';
 import smartShoppingRouter from './routes/smartShopping.js';
 import { startSmartShoppingScheduler } from './services/smartShoppingService.js';
+import financeImportRouter from './routes/financeImport.js';
+import financeRouter from './routes/finance.js';
+import financeAiRouter from './routes/financeAi.js';
+import { startFinanceBriefScheduler } from './services/financeBriefScheduler.js';
+import { startEnableBankingSync } from './services/enableBankingSync.js';
+import financeSetupRouter from './routes/financeSetup.js';
+import financeBankingRouter from './routes/financeBanking.js';
 import { startPlugPolling } from './services/shellyPoller.js';
 import { startTraccarPolling } from './services/traccarPoller.js';
 import { startXploraPolling } from './services/xploraPoller.js';
@@ -165,6 +172,11 @@ app.use('/api/push', pushRouter);
 app.use('/api/shelly-webhook', shellyWebhookRouter);
 app.use('/api/shelly-devices', shellyDevicesRouter);
 app.use('/api/smart-shopping', smartShoppingRouter);
+app.use('/api/finance-import', financeImportRouter);
+app.use('/api/finance', financeRouter);
+app.use('/api/finance-ai', financeAiRouter);
+app.use('/api/finance-setup', financeSetupRouter);
+app.use('/api/finance-banking', financeBankingRouter);
 
 // Servér det bygde frontend-bygget (frontend/dist) på samme origin som API-et,
 // hvis det finnes – dette er hva som kreves for produksjonshosting (se
@@ -203,6 +215,8 @@ server.listen(config.port, () => {
   initRelayClient(io);
   startBriefScheduler(io);
   startSmartShoppingScheduler(io);
+  startFinanceBriefScheduler(io);
+  startEnableBankingSync();
 });
 
 process.on('SIGINT', () => {

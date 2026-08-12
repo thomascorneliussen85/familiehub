@@ -552,6 +552,121 @@ CREATE TABLE IF NOT EXISTS local_friend_requests (
   UNIQUE(from_family_id, to_family_id)
 );
 
+-- Økonomimodul: personlig økonomi per familie, med CSV-import som primær
+-- kilde nå og Enable Banking (kontoaggregering) som en feature-flagget
+-- sekundær kilde (finance_config.enable_banking_active OG den globale
+-- ENABLE_BANKING_ACTIVE-env-variabelen må begge være på). "finance_"-prefiks
+-- for å unngå kollisjon med den generiske settings-tabellen (parent_pin osv.).
+-- Claude-nøkkel og Enable Banking-PEM lagres kryptert (financeCrypto.js).
+CREATE TABLE IF NOT EXISTS finance_config (
+  family_id                    INTEGER PRIMARY KEY REFERENCES families(id) ON DELETE CASCADE,
+  claude_api_key_encrypted     TEXT,
+  enable_banking_app_id        TEXT,
+  enable_banking_pem_encrypted TEXT,
+  enable_banking_active        INTEGER NOT NULL DEFAULT 0,
+  domain                       TEXT,
+  updated_at                   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS finance_accounts (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id          INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  bank_name          TEXT NOT NULL,
+  account_name       TEXT NOT NULL,
+  account_type       TEXT NOT NULL DEFAULT 'brukskonto',
+  balance            REAL,
+  owner_member_id    INTEGER REFERENCES family_members(id) ON DELETE SET NULL,
+  data_source        TEXT NOT NULL DEFAULT 'csv', -- 'csv' | 'api' | 'begge'
+  eb_account_id      TEXT,
+  consent_expires_at TEXT,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Sådd med standardkategorier per familie ved første bruk (Dagligvarer,
+-- Transport, Bolig, Strøm, Abonnement, Barn, Fritid, Annet) i
+-- financeCategorizer.js/financeImportService.js, ikke her i skjemaet.
+CREATE TABLE IF NOT EXISTS finance_categories (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  parent_id   INTEGER REFERENCES finance_categories(id) ON DELETE SET NULL,
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS finance_imports (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id        INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  account_id       INTEGER NOT NULL REFERENCES finance_accounts(id) ON DELETE CASCADE,
+  filename         TEXT,
+  imported_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  new_count        INTEGER NOT NULL DEFAULT 0,
+  duplicate_count  INTEGER NOT NULL DEFAULT 0,
+  status           TEXT NOT NULL DEFAULT 'active', -- 'active' | 'rolled_back'
+  rolled_back_at   TEXT
+);
+
+-- Kolonnetilordning per bank, husket fra første opplasting slik at
+-- mappingveiviseren ikke må vises på nytt for samme bank.
+CREATE TABLE IF NOT EXISTS finance_bank_mappings (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  bank_name   TEXT NOT NULL,
+  column_map  TEXT NOT NULL, -- JSON: {date, amount, counterparty, description, delimiter, dateFormat, encoding}
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(family_id, bank_name)
+);
+
+-- dedup_key (sha256 av konto+dato+beløp+motpart) er felles for csv- og
+-- api-kilde, slik at samme reelle transaksjon aldri kan importeres to ganger
+-- selv om den kommer inn via begge veier.
+CREATE TABLE IF NOT EXISTS finance_transactions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id       INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  account_id      INTEGER NOT NULL REFERENCES finance_accounts(id) ON DELETE CASCADE,
+  date            TEXT NOT NULL, -- YYYY-MM-DD
+  amount          REAL NOT NULL, -- negativ = utgift, positiv = inntekt
+  counterparty    TEXT,
+  raw_description TEXT,
+  category_id     INTEGER REFERENCES finance_categories(id) ON DELETE SET NULL,
+  ai_categorized  INTEGER NOT NULL DEFAULT 0,
+  source          TEXT NOT NULL DEFAULT 'csv', -- 'csv' | 'api'
+  import_id       INTEGER REFERENCES finance_imports(id) ON DELETE SET NULL,
+  dedup_key       TEXT NOT NULL,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(account_id, dedup_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_finance_transactions_family_date ON finance_transactions(family_id, date);
+CREATE INDEX IF NOT EXISTS idx_finance_transactions_category ON finance_transactions(category_id);
+
+CREATE TABLE IF NOT EXISTS finance_recurring (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  counterparty   TEXT NOT NULL,
+  amount         REAL NOT NULL,
+  frequency      TEXT NOT NULL DEFAULT 'monthly',
+  next_due_date  TEXT,
+  price_history  TEXT NOT NULL DEFAULT '[]', -- JSON [{date, amount}]
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS finance_budgets (
+  family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  category_id  INTEGER NOT NULL REFERENCES finance_categories(id) ON DELETE CASCADE,
+  month        TEXT NOT NULL, -- YYYY-MM, eller 'default' for malen
+  amount       REAL NOT NULL,
+  PRIMARY KEY (family_id, category_id, month)
+);
+
+CREATE TABLE IF NOT EXISTS finance_ai_briefs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  week_start  TEXT NOT NULL, -- YYYY-MM-DD, mandag
+  content     TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(family_id, week_start)
+);
+
 -- Forespørsel om å bli med i en EKSISTERENDE familie (i stedet for å
 -- opprette en ny) – f.eks. en ektefelle som vil ha sin egen innlogging i
 -- familien. Passordet hashes med en gang; selve users-raden opprettes først

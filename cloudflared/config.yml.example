@@ -1,0 +1,21 @@
+# Cloudflare Tunnel-oppsett – gir HTTPS til FamilieHub uten portforwarding
+# eller et fast sertifikat, som anbefales for en Raspberry Pi hjemme.
+#
+# Oppsett (gjøres ÉN gang, utenfor Docker, før dere starter docker-compose):
+#   1. Installer cloudflared lokalt: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+#   2. cloudflared tunnel login
+#   3. cloudflared tunnel create familiehub
+#      (dette skriver en credentials-fil til ~/.cloudflared/<TUNNEL_ID>.json –
+#       kopier den til denne mappen, f.eks. cloudflared/<TUNNEL_ID>.json)
+#   4. cloudflared tunnel route dns familiehub familiehub.deres-domene.no
+#   5. Kopiér denne filen til cloudflared/config.yml og fyll inn TUNNEL_ID + domenet
+#
+# Se README.md for full steg-for-steg-veiledning.
+
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: familiehub.deres-domene.no
+    service: http://app:4000
+  - service: http_status:404

@@ -111,6 +111,17 @@ export const config = {
     radiusKm: num(process.env.SHOP_RADIUS_KM, 10),
   },
 
+  // financeEncryptionKey krypterer Claude-nøkkel + Enable Banking-PEM i
+  // finance_config (se financeCrypto.js). MÅ settes til en ekte 32-byte
+  // hex-nøkkel (openssl rand -hex 32) før dette hostes for andre familier.
+  // enableBankingActive er en GLOBAL bryter: selv om en familie har slått på
+  // enable_banking_active i sin egen finance_config, kjører ingenting med
+  // mindre denne også er true – dobbel sikring mot utilsiktet bank-sync før
+  // en ekte Enable Banking-avtale/app-id finnes.
+  financeEncryptionKey: process.env.FINANCE_ENCRYPTION_KEY || '',
+  enableBankingActive: process.env.ENABLE_BANKING_ACTIVE === 'true',
+  enableBankingBaseUrl: process.env.ENABLE_BANKING_BASE_URL || 'https://api.enablebanking.com',
+
   rewardsImagesDir: path.resolve(backendRoot, process.env.REWARDS_IMAGES_DIR || 'data/reward-images'),
 
   brief: {
