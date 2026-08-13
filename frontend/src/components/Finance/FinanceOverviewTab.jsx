@@ -16,6 +16,8 @@ export default function FinanceOverviewTab({ adminApi }) {
   const [accountFilter, setAccountFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [categorizing, setCategorizing] = useState(false);
+  const [categorizeMessage, setCategorizeMessage] = useState('');
 
   useEffect(() => {
     adminApi.get('/finance/accounts').then(setAccounts);
@@ -48,6 +50,30 @@ export default function FinanceOverviewTab({ adminApi }) {
     setTransactions((prev) => [...prev, ...data.transactions]);
     setTotal(data.total);
     setPage(nextPage);
+  }
+
+  // Kjøres normalt automatisk etter hver import – denne knappen er for
+  // transaksjoner som ble importert FØR en Claude-nøkkel var på plass (de
+  // blir ikke kategorisert i ettertid av seg selv).
+  async function categorizeNow() {
+    setCategorizing(true);
+    setCategorizeMessage('');
+    try {
+      const result = await adminApi.post('/finance-ai/categorize');
+      setCategorizeMessage(
+        result.aiCategorized || result.cacheHits
+          ? `${result.aiCategorized + result.cacheHits} transaksjon(er) kategorisert.`
+          : result.skipped > 0
+            ? 'Ingen Claude-nøkkel funnet – legg til én under Oppsett.'
+            : 'Ingenting å kategorisere.'
+      );
+      const data = await adminApi.get(`/finance/transactions?${buildParams(1).toString()}`);
+      setTransactions(data.transactions);
+      setTotal(data.total);
+      setPage(1);
+    } finally {
+      setCategorizing(false);
+    }
   }
 
   async function changeCategory(txId, categoryId) {
@@ -88,7 +114,13 @@ export default function FinanceOverviewTab({ adminApi }) {
       </div>
 
       <div className="finance-section">
-        <div className="finance-subtitle">Transaksjoner</div>
+        <div className="finance-header-row">
+          <div className="finance-subtitle">Transaksjoner</div>
+          <button className="btn btn-icon" onClick={categorizeNow} disabled={categorizing}>
+            {categorizing ? 'Kategoriserer…' : 'Kategoriser ukategoriserte nå'}
+          </button>
+        </div>
+        {categorizeMessage && <div className="finance-message">{categorizeMessage}</div>}
         <div className="finance-filter-row">
           <select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
             <option value="">Alle kontoer</option>

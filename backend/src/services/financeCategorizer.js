@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../db/index.js';
 import { decryptSecret } from './financeCrypto.js';
+import { ensureDefaultCategories } from './financeImportService.js';
 
 const REPORT_CATEGORIES_TOOL = {
   name: 'report_categories',
@@ -73,6 +74,10 @@ const BATCH_SIZE = 40;
 // personopplysninger (se finance_transactions-skjemaet: de feltene finnes
 // ikke engang i objektet som sendes).
 export async function categorizeTransactions(familyId) {
+  // Kategoriene sås ellers latent kun ved besøk i Oversikt/Budsjett-fanen –
+  // uten dette ville kategorisering stille gjort ingenting (0 kategorier å
+  // velge mellom) for en familie som importerer FØR de har åpnet de fanene.
+  ensureDefaultCategories(familyId);
   const categories = db.prepare('SELECT id, name FROM finance_categories WHERE family_id = ?').all(familyId);
   if (categories.length === 0) return { cacheHits: 0, aiCategorized: 0, skipped: 0 };
   const categoryByName = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
 import { generateWeeklyBrief, getBriefHistory, askFinanceChat } from '../services/financeBriefService.js';
+import { categorizeTransactions } from '../services/financeCategorizer.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -14,6 +15,18 @@ router.get('/briefs', (req, res) => {
 router.post('/briefs/regenerate', async (req, res) => {
   try {
     const result = await generateWeeklyBrief(req.familyId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Kjøres normalt automatisk etter hver import, men eksponert som egen rute
+// slik at man kan trigge kategorisering på nytt manuelt – f.eks. for
+// transaksjoner som ble importert FØR en Claude-nøkkel ble lagt inn.
+router.post('/categorize', async (req, res) => {
+  try {
+    const result = await categorizeTransactions(req.familyId);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
