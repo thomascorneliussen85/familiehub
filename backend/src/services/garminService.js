@@ -1,4 +1,5 @@
-import { GarminConnect } from 'garmin-connect';
+import garminConnectPkg from 'garmin-connect';
+const { GarminConnect } = garminConnectPkg;
 import { config } from '../config.js';
 import { db } from '../db/index.js';
 
