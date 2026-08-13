@@ -27,11 +27,41 @@ const HEADER_KEYWORDS = {
   description: ['tekst', 'beskrivelse', 'forklaring', 'melding', 'description'],
 };
 
+// "inn"/"ut" er for korte til trygg substreng-matching (ville truffet feil
+// kolonner), så de kreves som eksakt kolonnenavn – lengre synonymer
+// (innbetaling/kreditert osv.) matches som substreng som normalt.
+const CREDIT_EXACT = ['inn'];
+const CREDIT_SUBSTRING = ['kredit', 'credit', 'innbetaling'];
+const DEBIT_EXACT = ['ut'];
+const DEBIT_SUBSTRING = ['debet', 'debit', 'utbetaling'];
+
+function findColumn(headers, exactWords, substringWords) {
+  const exactMatch = headers.find((h) => exactWords.includes(h.toLowerCase().trim()));
+  if (exactMatch) return exactMatch;
+  const substringMatch = headers.find((h) => substringWords.some((w) => h.toLowerCase().includes(w)));
+  return substringMatch || null;
+}
+
+// Gjetter kolonnetilordning ut fra vanlige norske banknavn (DNB,
+// Sparebanken Vest, Bulder, Sbanken, Nordea bruker alle litt ulik ordlyd),
+// slik at ColumnMappingModal kan forhåndsutfylles i stedet for å starte tomt.
+// Brukeren bekrefter/retter alltid før import kjøres.
 export function guessColumnMapping(headers) {
   const mapping = {};
   for (const [field, keywords] of Object.entries(HEADER_KEYWORDS)) {
     const match = headers.find((h) => keywords.some((k) => h.toLowerCase().includes(k)));
     if (match) mapping[field] = match;
+  }
+  // Noen banker (f.eks. SR-Bank) eksporterer "Inn"/"Ut" som to separate
+  // kolonner i stedet for ett fortegnet beløp – prøv dette kun hvis vi ikke
+  // allerede fant en enkelt beløp-kolonne.
+  if (!mapping.amount) {
+    const creditColumn = findColumn(headers, CREDIT_EXACT, CREDIT_SUBSTRING);
+    const debitColumn = findColumn(headers, DEBIT_EXACT, DEBIT_SUBSTRING);
+    if (creditColumn || debitColumn) {
+      mapping.creditColumn = creditColumn;
+      mapping.debitColumn = debitColumn;
+    }
   }
   return mapping;
 }

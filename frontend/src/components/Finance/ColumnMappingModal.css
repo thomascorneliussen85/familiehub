@@ -48,6 +48,14 @@
   margin-top: -8px;
 }
 
+.mapping-split-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 .mapping-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;

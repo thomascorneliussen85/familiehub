@@ -114,16 +114,31 @@ export function previewCsv(buffer, { sampleRows = 5 } = {}) {
   };
 }
 
-// mapping: { date, amount, counterparty, description, dateFormat }
-// (kolonnenavn fra headers over, bekreftet/rettet av brukeren i veiviseren)
+// mapping: { date, amount, counterparty, description, dateFormat } for
+// banker med ett fortegnet beløp-felt, ELLER { date, creditColumn,
+// debitColumn, counterparty, description, dateFormat } for banker som
+// eksporterer "Inn"/"Ut" (kreditert/debitert) som to separate kolonner i
+// stedet for ett beløp med fortegn (f.eks. SR-Bank) – kolonnenavn fra
+// headers over, bekreftet/rettet av brukeren i veiviseren.
 export function parseTransactions(buffer, mapping) {
   const { rows } = parseRows(buffer);
   const dateFormat = mapping.dateFormat || 'DD.MM.YYYY';
+  const useSplitAmount = !mapping.amount && (mapping.creditColumn || mapping.debitColumn);
   const results = [];
   const errors = [];
   rows.forEach((row, index) => {
     const date = parseDate(row[mapping.date], dateFormat);
-    const amount = parseAmount(row[mapping.amount]);
+    let amount;
+    if (useSplitAmount) {
+      const credit = mapping.creditColumn ? parseAmount(row[mapping.creditColumn]) : null;
+      const debit = mapping.debitColumn ? parseAmount(row[mapping.debitColumn]) : null;
+      // En rad har typisk kun én av de to fylt ut – fortegnet er implisitt
+      // gitt av hvilken kolonne som har en verdi, ikke det rå tallet i seg
+      // selv (noen banker skriver "Ut" som positivt tall).
+      amount = credit === null && debit === null ? null : (credit || 0) - Math.abs(debit || 0);
+    } else {
+      amount = parseAmount(row[mapping.amount]);
+    }
     if (!date || amount === null) {
       errors.push({ row: index + 1, raw: row });
       return;
