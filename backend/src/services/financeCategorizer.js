@@ -30,6 +30,27 @@ function normalizeCounterparty(text) {
   return (text || '').trim().toLowerCase();
 }
 
+// Vipps-overføringer (og lignende) skriver ofte et personnavn rett inn i
+// beskrivelsen ("Vipps*Andre Corneliussen") – det skal ALDRI sendes til
+// Claude, kun selve tjenestenavnet. Butikk-/firmanavn i beskrivelsen
+// (Rema 1000, Extra, APCOA osv.) er ikke personopplysninger og går gjennom
+// uendret.
+function redactPersonalNames(text) {
+  if (!text) return text;
+  const vippsMatch = text.match(/^(vipps)\s*\*/i);
+  if (vippsMatch) return vippsMatch[1][0].toUpperCase() + vippsMatch[1].slice(1).toLowerCase();
+  return text;
+}
+
+// Mange banker (f.eks. SR-Bank) har ingen egen motpart-/til-fra-kolonne –
+// bare én fri beskrivelsestekst som butikknavnet ligger i. Uten dette
+// fallback-et fikk Claude kun "(ukjent)" å jobbe med for slike transaksjoner
+// og kategoriserte i praksis blindt (bekreftet: samme butikk endte med
+// forskjellig kategori fra rad til rad).
+function transactionLabel(tx) {
+  return (tx.counterparty || redactPersonalNames(tx.raw_description) || '').trim();
+}
+
 export function getFamilyClaudeKey(familyId) {
   const row = db.prepare('SELECT claude_api_key_encrypted FROM finance_config WHERE family_id = ?').get(familyId);
   if (!row?.claude_api_key_encrypted) return null;
@@ -51,15 +72,14 @@ export function isFinanceClaudeConfigured(familyId) {
 function buildCounterpartyCache(familyId) {
   const rows = db
     .prepare(
-      `SELECT counterparty, category_id FROM finance_transactions
-       WHERE family_id = ? AND counterparty IS NOT NULL AND category_id IS NOT NULL
-       GROUP BY counterparty
-       ORDER BY MAX(created_at) DESC`
+      `SELECT counterparty, raw_description, category_id FROM finance_transactions
+       WHERE family_id = ? AND category_id IS NOT NULL AND (counterparty IS NOT NULL OR raw_description IS NOT NULL)
+       ORDER BY created_at DESC`
     )
     .all(familyId);
   const cache = new Map();
   for (const row of rows) {
-    const key = normalizeCounterparty(row.counterparty);
+    const key = normalizeCounterparty(transactionLabel(row));
     if (key && !cache.has(key)) cache.set(key, row.category_id);
   }
   return cache;
@@ -69,10 +89,10 @@ const BATCH_SIZE = 40;
 
 // Kategoriserer alle ukategoriserte transaksjoner for familien: først via
 // motpart-cachen (gratis, ingen API-kall), deretter i batcher til Claude for
-// resten. Personvern: batchen til Claude inneholder KUN motpart + beløp +
-// dato per transaksjon – aldri kontonummer, kontonavn eller andre
-// personopplysninger (se finance_transactions-skjemaet: de feltene finnes
-// ikke engang i objektet som sendes).
+// resten. Personvern: batchen til Claude inneholder KUN motpart (eller
+// beskrivelsestekst som fallback, se transactionLabel – personnavn i denne
+// filtreres ut av redactPersonalNames) + beløp + dato per transaksjon –
+// aldri kontonummer eller andre identifiserende opplysninger.
 export async function categorizeTransactions(familyId) {
   // Kategoriene sås ellers latent kun ved besøk i Oversikt/Budsjett-fanen –
   // uten dette ville kategorisering stille gjort ingenting (0 kategorier å
@@ -84,7 +104,9 @@ export async function categorizeTransactions(familyId) {
   const fallbackCategoryId = categoryByName.get('annet') ?? categories[categories.length - 1].id;
 
   const uncategorized = db
-    .prepare('SELECT id, counterparty, amount, date FROM finance_transactions WHERE family_id = ? AND category_id IS NULL')
+    .prepare(
+      'SELECT id, counterparty, raw_description, amount, date FROM finance_transactions WHERE family_id = ? AND category_id IS NULL'
+    )
     .all(familyId);
   if (uncategorized.length === 0) return { cacheHits: 0, aiCategorized: 0, skipped: 0 };
 
@@ -94,7 +116,7 @@ export async function categorizeTransactions(familyId) {
   let cacheHits = 0;
   const remaining = [];
   for (const tx of uncategorized) {
-    const key = normalizeCounterparty(tx.counterparty);
+    const key = normalizeCounterparty(transactionLabel(tx));
     if (key && cache.has(key)) {
       updateCategory.run(cache.get(key), tx.id);
       cacheHits += 1;
@@ -116,7 +138,7 @@ export async function categorizeTransactions(familyId) {
     const batch = remaining.slice(i, i + BATCH_SIZE);
     const payload = batch.map((tx, idx) => ({
       index: idx,
-      motpart: tx.counterparty || '(ukjent)',
+      motpart: transactionLabel(tx) || '(ukjent)',
       belop: tx.amount,
       dato: tx.date,
     }));
