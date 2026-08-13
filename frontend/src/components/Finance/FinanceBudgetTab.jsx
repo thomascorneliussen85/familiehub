@@ -22,6 +22,9 @@ export default function FinanceBudgetTab({ adminApi }) {
   const [month, setMonth] = useState(currentMonth());
   const [summary, setSummary] = useState(null);
   const [drafts, setDrafts] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [nameDrafts, setNameDrafts] = useState({});
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   function load() {
     adminApi.get(`/finance/summary?month=${month}`).then((data) => {
@@ -33,12 +36,47 @@ export default function FinanceBudgetTab({ adminApi }) {
       setDrafts(nextDrafts);
     });
   }
+  function loadCategories() {
+    adminApi.get('/finance/categories').then((data) => {
+      setCategories(data);
+      const nextNameDrafts = {};
+      data.forEach((c) => {
+        nextNameDrafts[c.id] = c.name;
+      });
+      setNameDrafts(nextNameDrafts);
+    });
+  }
 
   useEffect(load, [adminApi, month]);
+  useEffect(loadCategories, [adminApi]);
 
   async function saveBudget(categoryId) {
     const amount = Number(drafts[categoryId] || 0);
     await adminApi.patch('/finance/budgets', { categoryId, month, amount });
+    load();
+  }
+
+  async function renameCategory(categoryId) {
+    const name = (nameDrafts[categoryId] || '').trim();
+    const existing = categories.find((c) => c.id === categoryId);
+    if (!name || name === existing?.name) return;
+    await adminApi.patch(`/finance/categories/${categoryId}`, { name });
+    loadCategories();
+    load();
+  }
+
+  async function addCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    await adminApi.post('/finance/categories', { name });
+    setNewCategoryName('');
+    loadCategories();
+    load();
+  }
+
+  async function deleteCategory(categoryId) {
+    await adminApi.delete(`/finance/categories/${categoryId}`);
+    loadCategories();
     load();
   }
 
@@ -81,6 +119,41 @@ export default function FinanceBudgetTab({ adminApi }) {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="finance-section">
+        <div className="finance-subtitle">Kategorier</div>
+        <ul className="finance-category-manage-list">
+          {categories.map((c) => (
+            <li key={c.id} className="finance-category-manage-item">
+              <input
+                className="finance-category-name-input"
+                value={nameDrafts[c.id] ?? ''}
+                onChange={(e) => setNameDrafts((d) => ({ ...d, [c.id]: e.target.value }))}
+                onBlur={() => renameCategory(c.id)}
+              />
+              <button className="btn btn-icon" onClick={() => deleteCategory(c.id)} aria-label={`Slett ${c.name}`}>
+                🗑️
+              </button>
+            </li>
+          ))}
+        </ul>
+        <form
+          className="finance-category-add-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addCategory();
+          }}
+        >
+          <input
+            placeholder="Ny kategori…"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+          />
+          <button type="submit" className="btn btn-accent">
+            Legg til
+          </button>
+        </form>
       </div>
     </div>
   );
