@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
+import { getStarsBalance } from '../services/starsService.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -40,40 +41,7 @@ function rewardWithUrl(familyId, reward) {
 // løses inn nå).
 router.get('/balances', (req, res) => {
   const members = db.prepare('SELECT id, name, avatar, color FROM family_members WHERE family_id = ?').all(req.familyId);
-  const now = new Date();
-  const currentIdx = (now.getDay() + 6) % 7;
-  const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - currentIdx);
-  weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
-
-  const totalStmt = db.prepare(
-    `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
-     FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ? AND c.family_id = ?`
-  );
-  const weekStmt = db.prepare(
-    `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
-     FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ? AND c.family_id = ? AND cc.completed_on >= ?`
-  );
-  const spentStmt = db.prepare(
-    `SELECT COALESCE(SUM(stars_spent), 0) AS total FROM reward_redemptions WHERE member_id = ?`
-  );
-
-  res.json(
-    members.map((m) => {
-      const total = totalStmt.get(m.id, req.familyId).total;
-      const spent = spentStmt.get(m.id).total;
-      return {
-        ...m,
-        stars_total: total,
-        stars_this_week: weekStmt.get(m.id, req.familyId, weekStartStr).total,
-        stars_spent: spent,
-        stars_balance: total - spent,
-      };
-    })
-  );
+  res.json(members.map((m) => ({ ...m, ...getStarsBalance(req.familyId, m.id) })));
 });
 
 router.get('/', (req, res) => {
@@ -164,17 +132,7 @@ router.post('/redeem', (req, res) => {
   const reward = db.prepare('SELECT * FROM rewards WHERE id = ? AND family_id = ? AND active = 1').get(reward_id, req.familyId);
   if (!reward) return res.status(404).json({ error: 'Fant ikke belønningen' });
 
-  const total = db
-    .prepare(
-      `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
-       FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-       WHERE c.member_id = ? AND c.family_id = ?`
-    )
-    .get(member_id, req.familyId).total;
-  const spent = db
-    .prepare(`SELECT COALESCE(SUM(stars_spent), 0) AS total FROM reward_redemptions WHERE member_id = ?`)
-    .get(member_id).total;
-  const balance = total - spent;
+  const { stars_balance: balance } = getStarsBalance(req.familyId, member_id);
 
   if (balance < reward.star_cost) {
     return res.status(400).json({ error: 'Ikke nok stjerner ennå' });

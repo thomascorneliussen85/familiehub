@@ -499,6 +499,34 @@ CREATE TABLE IF NOT EXISTS reward_redemptions (
 
 CREATE INDEX IF NOT EXISTS idx_reward_redemptions_member ON reward_redemptions(member_id);
 
+-- Sparemål: ett aktivt mål av gangen per barn, priset i stjerner (ikke ekte
+-- penger). Innløsning skjer via reward_redemptions (reward_id NULL,
+-- reward_title = målets tittel) – gjenbruker eksisterende saldo-fratrekk i
+-- stedet for å duplisere den logikken, og målet får achieved_at satt.
+CREATE TABLE IF NOT EXISTS savings_goals (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id    INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  member_id    INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  title        TEXT NOT NULL,
+  star_cost    INTEGER NOT NULL,
+  achieved_at  TEXT, -- NULL = fortsatt aktivt
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_savings_goals_member ON savings_goals(member_id);
+
+-- Langsiktige mål uten poeng/stjerner – ren avkrysningsliste ("Les en hel
+-- bok"), atskilt fra gjøremål/belønninger med vilje siden de ikke skal
+-- premieres med stjerner.
+CREATE TABLE IF NOT EXISTS long_term_goals (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  member_id   INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  done        INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_long_term_goals_member ON long_term_goals(member_id);
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_at);
 CREATE INDEX IF NOT EXISTS idx_chore_completions_chore ON chore_completions(chore_id);
 CREATE INDEX IF NOT EXISTS idx_gps_positions_recorded ON gps_positions(recorded_at);

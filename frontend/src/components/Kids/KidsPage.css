@@ -1,0 +1,434 @@
+.kids-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+.kids-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.kids-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kids-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-bg-alt);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 6px 14px 6px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 42px;
+}
+.kids-tab-active {
+  background: var(--accent-soft);
+}
+.kids-tab-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.kids-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.kids-stat-card {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kids-stat-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+.kids-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.kids-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kids-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+}
+.kids-add-chore-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  min-height: 30px;
+}
+
+.kids-goal-card {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kids-goal-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+.kids-goal-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--panel-bg);
+  overflow: hidden;
+}
+.kids-goal-track-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.kids-goal-meta {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.kids-goal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.kids-goal-actions button {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.kids-goal-add-btn,
+.kids-goal-form {
+  align-self: flex-start;
+}
+.kids-goal-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+.kids-goal-form input[type='text'] {
+  flex: 1 1 160px;
+  min-height: 40px;
+  font-size: 14px;
+  padding: 6px 10px;
+}
+.kids-goal-form input[type='number'] {
+  width: 80px;
+  min-height: 40px;
+  font-size: 14px;
+  padding: 6px 8px;
+}
+.kids-goal-form button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.kids-longterm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kids-longterm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13.5px;
+}
+.kids-longterm-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.kids-longterm-item-done .kids-longterm-title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.kids-longterm-title {
+  flex: 1;
+}
+.kids-longterm-remove {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 12px;
+  min-width: 26px;
+  min-height: 26px;
+}
+.kids-longterm-form {
+  display: flex;
+  gap: 6px;
+}
+.kids-longterm-form input {
+  flex: 1;
+  min-height: 38px;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.kids-longterm-form button {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.kids-chore-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 10px;
+}
+.kids-chore-form input[type='text'] {
+  flex: 1 1 160px;
+  min-height: 38px;
+  font-size: 13.5px;
+  padding: 6px 10px;
+}
+.kids-chore-type-row {
+  display: flex;
+  gap: 5px;
+  flex: 1 0 100%;
+}
+.kids-chore-type-btn {
+  flex: 1;
+  background: var(--panel-bg);
+  border: 1.5px solid transparent;
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  min-height: 34px;
+}
+.kids-chore-type-btn-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+.kids-chore-stars-row {
+  display: flex;
+  gap: 5px;
+}
+.kids-chore-star-btn {
+  background: var(--panel-bg);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  min-height: 34px;
+}
+.kids-chore-star-btn-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.kids-chore-form > button[type='submit'] {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.kids-grid-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  flex-wrap: wrap;
+}
+.kids-grid-row-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.kids-grid-row-stars {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.kids-grid-row-days {
+  display: flex;
+  gap: 4px;
+}
+.kids-grid-checkbox {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1.5px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kids-grid-checkbox-today {
+  border-color: var(--accent);
+}
+.kids-grid-checkbox-done {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.kids-other-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kids-other-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13.5px;
+}
+.kids-other-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.kids-other-item-done .kids-other-title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.kids-other-title {
+  flex: 1;
+}
+.kids-other-stars {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.kids-other-remove {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 12px;
+  min-width: 26px;
+  min-height: 26px;
+}
+
+.kids-rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.kids-reward-card {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+}
+.kids-reward-card-locked {
+  opacity: 0.55;
+}
+.kids-reward-card-image {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  overflow: hidden;
+}
+.kids-reward-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kids-reward-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.kids-reward-card-cost {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.kids-reward-card-btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+  width: 100%;
+}
+
+.kids-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.kids-celebration-emoji {
+  font-size: 56px;
+}
+.kids-celebration-text {
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+}

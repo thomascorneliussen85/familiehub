@@ -11,6 +11,7 @@ import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
 import RewardsPanel from '../Rewards/RewardsPanel';
+import KidsPage from '../Kids/KidsPage';
 import ShoppingPanel from '../Shopping/ShoppingPanel';
 import ChoresPanel from '../Chores/ChoresPanel';
 import CalendarPanel from '../Calendar/CalendarPanel';
@@ -56,6 +57,7 @@ const MORE_PANELS = [
   { key: 'play-outside', icon: '🛝', label: 'Ut og leke', Component: PlayOutsidePanel },
   { key: 'telemedicine', icon: '🩺', label: 'DoktorNå', Component: TelemedicinePanel },
   { key: 'rewards', icon: '🏆', label: 'Belønninger', Component: RewardsPanel },
+  { key: 'kids', icon: '🧒', label: 'Barn', Component: KidsPage },
 ];
 
 const ALL_PANELS = { ...CORE_PANELS, ...Object.fromEntries(MORE_PANELS.map((p) => [p.key, p])) };

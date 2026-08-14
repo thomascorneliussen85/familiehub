@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
+import { getStarsBalance } from '../services/starsService.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -37,7 +38,7 @@ function mondayOfThisWeek() {
   const currentIdx = (now.getDay() + 6) % 7;
   const d = new Date(now);
   d.setDate(d.getDate() - currentIdx);
-  return d.toISOString().slice(0, 10);
+  return d;
 }
 
 function listChores(familyId) {
@@ -75,11 +76,17 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
-// Kryss av / fjern avkrysning for gjeldende periode (i dag / denne uken)
+// Kryss av / fjern avkrysning for gjeldende periode (i dag / denne uken) –
+// eller, kun for daglige gjøremål, en spesifikk dato i uketavlen (se
+// /weekly-grid), slik at en kan krysse av en annen dag enn i dag.
 router.post('/:id/toggle', (req, res) => {
   const chore = db.prepare('SELECT * FROM chores WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId);
   if (!chore) return res.status(404).json({ error: 'Gjøremål ikke funnet' });
-  const periodKey = currentPeriodKey(chore.recurrence, chore.due_date);
+  const { date } = req.body || {};
+  if (date && chore.recurrence !== 'daily') {
+    return res.status(400).json({ error: 'Kan bare velge en annen dato for daglige gjøremål' });
+  }
+  const periodKey = date || currentPeriodKey(chore.recurrence, chore.due_date);
   const existing = db
     .prepare('SELECT * FROM chore_completions WHERE chore_id = ? AND completed_on = ?')
     .get(chore.id, periodKey);
@@ -102,27 +109,41 @@ router.delete('/:id', (req, res) => {
   res.status(204).end();
 });
 
+// Uketavle: for hvert daglige gjøremål (kun 'daily' – et ukentlig gjøremål
+// har uansett bare én relevant dag), 7 avkrysningsbokser (man-søn) for
+// inneværende uke i stedet for bare "gjort i dag". Brukes av Barn-siden.
+router.get('/weekly-grid', (req, res) => {
+  const { member_id } = req.query;
+  const params = member_id ? [req.familyId, member_id] : [req.familyId];
+  const chores = db
+    .prepare(
+      `SELECT * FROM chores WHERE family_id = ? AND active = 1 AND recurrence = 'daily'${member_id ? ' AND member_id = ?' : ''} ORDER BY id`
+    )
+    .all(...params);
+
+  const monday = mondayOfThisWeek();
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+
+  const completionStmt = db.prepare(
+    `SELECT completed_on FROM chore_completions WHERE chore_id = ? AND completed_on >= ? AND completed_on <= ?`
+  );
+
+  res.json(
+    chores.map((chore) => {
+      const doneDates = new Set(completionStmt.all(chore.id, days[0], days[6]).map((r) => r.completed_on));
+      return { ...chore, days: days.map((date) => ({ date, done: doneDates.has(date) })) };
+    })
+  );
+});
+
 // Stjerneoversikt per familiemedlem (totalt og denne uken)
 router.get('/stars', (req, res) => {
   const members = db.prepare('SELECT id, name, avatar, color FROM family_members WHERE family_id = ?').all(req.familyId);
-  const weekStart = mondayOfThisWeek();
-  const totalStmt = db.prepare(
-    `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
-     FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ? AND c.family_id = ?`
-  );
-  const weekStmt = db.prepare(
-    `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total
-     FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
-     WHERE c.member_id = ? AND c.family_id = ? AND cc.completed_on >= ?`
-  );
-  res.json(
-    members.map((m) => ({
-      ...m,
-      stars_total: totalStmt.get(m.id, req.familyId).total,
-      stars_this_week: weekStmt.get(m.id, req.familyId, weekStart).total,
-    }))
-  );
+  res.json(members.map((m) => ({ ...m, ...getStarsBalance(req.familyId, m.id) })));
 });
 
 export default router;
