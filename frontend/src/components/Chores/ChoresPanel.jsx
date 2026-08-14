@@ -47,6 +47,7 @@ export default function ChoresPanel() {
   const [chores, setChores] = useState([]);
   const [stars, setStars] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   function loadAll() {
@@ -90,6 +91,35 @@ export default function ChoresPanel() {
       })
       .catch(() => {});
     setShowAdd(false);
+  }
+
+  const activeChores = chores.filter((c) => !c.done);
+  const doneChores = chores.filter((c) => c.done);
+
+  function renderChoreItem(chore) {
+    return (
+      <li
+        key={chore.id}
+        className={`chore-item ${chore.done ? 'chore-item-done' : ''}`}
+        onClick={() => toggle(chore.id)}
+      >
+        <span className="chore-checkbox" style={{ borderColor: chore.member_color }}>
+          {chore.done ? '✔' : ''}
+        </span>
+        <div className="chore-info">
+          <span className="chore-title">{chore.title}</span>
+          <span className="chore-meta">
+            {chore.member_avatar} {chore.member_name} · {RECURRENCE_LABELS[chore.recurrence] || chore.recurrence}
+            {chore.recurrence === 'once' && chore.due_date &&
+              ` · frist ${new Date(chore.due_date).toLocaleDateString('nb-NO')}`}
+          </span>
+        </div>
+        <span className="chore-stars">{'⭐'.repeat(chore.stars)}</span>
+        <button className="chore-remove" onClick={(e) => remove(chore.id, e)} aria-label="Slett gjøremål">
+          🗑️
+        </button>
+      </li>
+    );
   }
 
   return (
@@ -205,35 +235,28 @@ export default function ChoresPanel() {
           </div>
         )}
 
-        {chores.length === 0 && <div className="empty-hint">Ingen gjøremål registrert</div>}
+        {activeChores.length === 0 && doneChores.length === 0 && (
+          <div className="empty-hint">Ingen gjøremål registrert</div>
+        )}
+        {activeChores.length === 0 && doneChores.length > 0 && (
+          <div className="empty-hint">🎉 Alle gjøremål er gjort!</div>
+        )}
 
-        <ul className="chore-list">
-          {chores.map((chore) => (
-            <li
-              key={chore.id}
-              className={`chore-item ${chore.done ? 'chore-item-done' : ''}`}
-              onClick={() => toggle(chore.id)}
+        <ul className="chore-list">{activeChores.map(renderChoreItem)}</ul>
+
+        {doneChores.length > 0 && (
+          <div className="chore-done-section">
+            <button
+              type="button"
+              className="chore-done-toggle"
+              onClick={() => setShowDone((v) => !v)}
             >
-              <span className="chore-checkbox" style={{ borderColor: chore.member_color }}>
-                {chore.done ? '✔' : ''}
-              </span>
-              <div className="chore-info">
-                <span className="chore-title">{chore.title}</span>
-                <span className="chore-meta">
-                  {chore.member_avatar} {chore.member_name} · {RECURRENCE_LABELS[chore.recurrence] || chore.recurrence}
-                  {chore.recurrence === 'once' && chore.due_date &&
-                    ` · frist ${new Date(chore.due_date).toLocaleDateString('nb-NO')}`}
-                </span>
-              </div>
-              <span className="chore-stars">
-                {'⭐'.repeat(chore.stars)}
-              </span>
-              <button className="chore-remove" onClick={(e) => remove(chore.id, e)} aria-label="Slett gjøremål">
-                🗑️
-              </button>
-            </li>
-          ))}
-        </ul>
+              <span>Fullført ({doneChores.length})</span>
+              <span className={`chore-done-caret ${showDone ? 'chore-done-caret-open' : ''}`}>▾</span>
+            </button>
+            {showDone && <ul className="chore-list chore-list-done">{doneChores.map(renderChoreItem)}</ul>}
+          </div>
+        )}
       </div>
     </section>
   );
