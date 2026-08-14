@@ -17,13 +17,22 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Nettverk først (dashbordet trenger ferske data), med app-shell som fallback ved nettverksfeil.
+// Nettverk først (dashbordet trenger ferske data), med app-shell som fallback
+// ved nettverksfeil ELLER en feilrespons (f.eks. 502 fra Render midt i en
+// deploy, når gammel instans er stoppet og ny ikke er klar ennå) – uten dette
+// ville en oppfrisking av siden i akkurat det vinduet vist Render sin rå
+// feilside i stedet for appen som allerede lå i cache.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || event.request.url.includes('/api/') || event.request.url.includes('/socket.io/')) {
     return;
   }
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request)
+      .then((res) => {
+        if (res.ok) return res;
+        return caches.match(event.request).then((cached) => cached || res);
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 

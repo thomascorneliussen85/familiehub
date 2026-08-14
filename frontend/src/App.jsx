@@ -10,6 +10,8 @@ import { PanelNavigationProvider } from './context/PanelNavigationContext';
 import { useIdleTimer } from './hooks/useIdleTimer';
 import { useTimeOfDay } from './hooks/useTimeOfDay';
 import { useDailyReload } from './hooks/useDailyReload';
+import { useConnectionWatchdog } from './hooks/useConnectionWatchdog';
+import ConnectionOverlay from './components/ConnectionOverlay/ConnectionOverlay';
 import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
@@ -95,11 +97,13 @@ function Routed() {
 
 export default function App() {
   useDailyReload();
+  const connectionDown = useConnectionWatchdog();
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routed />
       </AuthProvider>
+      {connectionDown && <ConnectionOverlay />}
     </BrowserRouter>
   );
 }
