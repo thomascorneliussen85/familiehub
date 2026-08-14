@@ -130,4 +130,11 @@ export const config = {
       .map((s) => s.trim())
       .filter(Boolean),
   },
+
+  // Valgfritt: gratis Unsplash-nøkkel (unsplash.com/developers) gir ekte
+  // matbilder på AI-genererte middagsforslag. Uten nøkkel viser
+  // ukemenyplanleggeren bare emoji i stedet – funker helt fint uten.
+  unsplash: {
+    accessKey: process.env.UNSPLASH_ACCESS_KEY || '',
+  },
 };

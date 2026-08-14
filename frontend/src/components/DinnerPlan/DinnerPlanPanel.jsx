@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
+import { usePanelNavigation } from '../../context/PanelNavigationContext';
 import './DinnerPlanPanel.css';
 
 const DAY_LABELS = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
@@ -14,6 +15,7 @@ function toDateStr(d) {
 }
 
 export default function DinnerPlanPanel() {
+  const { openPanel } = usePanelNavigation();
   const [plans, setPlans] = useState({});
   const [editingDate, setEditingDate] = useState(null);
   const [title, setTitle] = useState('');
@@ -77,6 +79,9 @@ export default function DinnerPlanPanel() {
         <div className="panel-title">
           <span className="panel-icon">🍽️</span> Middag
         </div>
+        <button className="dinner-plan-week-btn" onClick={() => openPanel('dinner-planner')}>
+          Ukemeny →
+        </button>
       </div>
       <div className="panel-body dinner-body">
         {editingDate ? (

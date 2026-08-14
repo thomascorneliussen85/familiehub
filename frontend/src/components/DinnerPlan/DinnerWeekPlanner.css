@@ -1,0 +1,242 @@
+.dinner-planner-plan-btn {
+  font-size: 13.5px;
+  padding: 10px 16px;
+  min-height: 40px;
+  white-space: nowrap;
+}
+.dinner-planner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.dinner-planner-error {
+  color: var(--danger);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.dinner-planner-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dinner-planner-nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 19px;
+  line-height: 1;
+  min-height: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dinner-planner-nav-btn:active {
+  transform: scale(0.85);
+}
+.dinner-planner-nav-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+.dinner-planner-today-btn {
+  background: var(--accent-soft);
+  border: none;
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  min-height: 26px;
+}
+
+.dinner-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(140px, 1fr));
+  gap: 10px;
+}
+.dinner-planner-card {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.dinner-planner-card-today {
+  outline: 1.5px solid var(--accent);
+}
+.dinner-planner-card-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.dinner-planner-card-body {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  min-height: 150px;
+  position: relative;
+  flex: 1;
+}
+.dinner-planner-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.dinner-planner-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+.dinner-planner-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.dinner-planner-card-desc {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+.dinner-planner-card-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.dinner-planner-card-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.dinner-planner-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dinner-planner-edit-row {
+  display: flex;
+  gap: 5px;
+}
+.dinner-planner-emoji-input {
+  width: 42px;
+  flex: 0 0 auto;
+  text-align: center;
+  min-height: 34px;
+  font-size: 13px;
+  padding: 5px;
+}
+.dinner-planner-edit-row input:not(.dinner-planner-emoji-input) {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  font-size: 13px;
+  padding: 5px 8px;
+}
+.dinner-planner-desc-input,
+.dinner-planner-ingredients-input {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text);
+  resize: none;
+}
+.dinner-planner-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.dinner-planner-edit-actions button {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.dinner-planner-suggestions {
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.dinner-planner-suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+}
+.dinner-planner-toggle-all {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  min-height: 28px;
+}
+.dinner-planner-suggestions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dinner-planner-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+}
+.dinner-planner-suggestion-item input {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.dinner-planner-suggestions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dinner-planner-added-message {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}

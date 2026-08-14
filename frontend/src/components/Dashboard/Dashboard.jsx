@@ -15,6 +15,7 @@ import ShoppingPanel from '../Shopping/ShoppingPanel';
 import ChoresPanel from '../Chores/ChoresPanel';
 import CalendarPanel from '../Calendar/CalendarPanel';
 import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
+import DinnerWeekPlanner from '../DinnerPlan/DinnerWeekPlanner';
 import FinanceWidget from '../Finance/FinanceWidget';
 import BabyCameraTile from './BabyCameraTile';
 import NextEventBanner from './NextEventBanner';
@@ -48,6 +49,7 @@ const MORE_PANELS = [
   { key: 'gps', icon: '📍', label: 'Kart', Component: GpsMapPanel },
   { key: 'powerprice', icon: '⚡', label: 'Strømpris', Component: PowerPricePanel },
   { key: 'messages', icon: '📌', label: 'Beskjedtavle', Component: MessageBoardPanel },
+  { key: 'dinner-planner', icon: '🍽️', label: 'Middagsplanlegger', Component: DinnerWeekPlanner },
   { key: 'timer', icon: '⏱️', label: 'Timer', Component: TimerPanel },
   { key: 'cameras', icon: '📹', label: 'Kameraer', Component: CameraPanel },
   { key: 'garmin', icon: '⌚', label: 'Garmin', Component: GarminPanel },

@@ -176,6 +176,22 @@ if (!calendarEventsColumns.includes('connection_id')) {
   db.exec('ALTER TABLE calendar_events ADD COLUMN connection_id INTEGER REFERENCES calendar_connections(id) ON DELETE CASCADE');
 }
 
+// Migrering: dinner_plans kan finnes fra før AI-ukemeny-planleggeren, uten
+// disse kolonnene (oppskriftsbeskrivelse/ingredienser/bilde/kilde).
+const dinnerPlansColumns = db.prepare('PRAGMA table_info(dinner_plans)').all().map((c) => c.name);
+if (!dinnerPlansColumns.includes('description')) {
+  db.exec('ALTER TABLE dinner_plans ADD COLUMN description TEXT');
+}
+if (!dinnerPlansColumns.includes('ingredients_json')) {
+  db.exec("ALTER TABLE dinner_plans ADD COLUMN ingredients_json TEXT NOT NULL DEFAULT '[]'");
+}
+if (!dinnerPlansColumns.includes('photo_url')) {
+  db.exec('ALTER TABLE dinner_plans ADD COLUMN photo_url TEXT');
+}
+if (!dinnerPlansColumns.includes('source')) {
+  db.exec("ALTER TABLE dinner_plans ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
+}
+
 // Migrering: garmin_activities kan finnes fra før, uten de nye detalj-kolonnene
 // for treningscoach-siden (lagt til senere).
 const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)').all().map((c) => c.name);

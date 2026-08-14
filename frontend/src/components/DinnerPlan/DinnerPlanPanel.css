@@ -1,3 +1,16 @@
+.dinner-plan-week-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 4px;
+  min-height: 30px;
+}
+.dinner-plan-week-btn:active {
+  transform: scale(0.96);
+}
+
 .dinner-body {
   display: flex;
   flex-direction: column;

@@ -329,13 +329,17 @@ CREATE TABLE IF NOT EXISTS camera_bridges (
 );
 
 CREATE TABLE IF NOT EXISTS dinner_plans (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  date        TEXT NOT NULL, -- YYYY-MM-DD
-  title       TEXT NOT NULL,
-  emoji       TEXT,
-  notes       TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id        INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  date             TEXT NOT NULL, -- YYYY-MM-DD
+  title            TEXT NOT NULL,
+  emoji            TEXT,
+  notes            TEXT,
+  description      TEXT,               -- kort AI-generert beskrivelse av retten
+  ingredients_json TEXT NOT NULL DEFAULT '[]', -- JSON-array av tekststrenger, f.eks. "500 g kjøttdeig"
+  photo_url        TEXT,               -- Unsplash-bilde hvis konfigurert, ellers null (emoji brukes da)
+  source           TEXT NOT NULL DEFAULT 'manual', -- 'manual' | 'ai'
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(family_id, date)
 );
 
