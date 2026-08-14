@@ -5,6 +5,7 @@ import SmartHomePanel from '../SmartHome/SmartHomePanel';
 import GpsMapPanel from '../GpsMap/GpsMapPanel';
 import MessageBoardPanel from '../MessageBoard/MessageBoardPanel';
 import TimerPanel from '../Timer/TimerPanel';
+import MiniTimerBadge from '../Timer/MiniTimerBadge';
 import CameraPanel from '../Cameras/CameraPanel';
 import GarminPanel from '../Garmin/GarminPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
@@ -130,6 +131,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance }) {
           </div>
         </div>
         <div className="dashboard-top-right">
+          <MiniTimerBadge />
           <VoiceButton />
           <FeedbackButton />
           <Clock />
