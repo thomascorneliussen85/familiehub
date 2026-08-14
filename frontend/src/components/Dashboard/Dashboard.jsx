@@ -28,10 +28,18 @@ import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import './Dashboard.css';
 
+// Den utvidede kalenderen (Uke/Tavle/Kalender-visninger) er kun tilgjengelig
+// når panelet er åpnet i fullskjerm – den kompakte kortet på "I dag"-siden
+// forblir den enkle ukelisten, siden det ellers ville tatt for mye plass på
+// en skjerm som allerede har mye annet.
+function ExpandedCalendarPanel() {
+  return <CalendarPanel expanded />;
+}
+
 const CORE_PANELS = {
   shopping: { icon: '🛒', label: 'Handleliste', Component: ShoppingPanel },
   chores: { icon: '✅', label: 'Gjøremål', Component: ChoresPanel },
-  calendar: { icon: '📅', label: 'Kalender', Component: CalendarPanel },
+  calendar: { icon: '📅', label: 'Kalender', Component: ExpandedCalendarPanel },
 };
 
 const MORE_PANELS = [
