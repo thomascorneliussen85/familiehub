@@ -101,16 +101,6 @@ export const config = {
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
 
-  // HOME_LAT/HOME_LNG faller tilbake til samme koordinater som geofenceHome
-  // over hvis ikke satt eksplisitt – de fleste familier har uansett bare ett
-  // "hjemme"-punkt å regne butikk-nærhet ut fra.
-  kassalapp: {
-    apiKey: process.env.KASSALAPP_API_KEY || '',
-    homeLat: num(process.env.HOME_LAT, num(process.env.GEOFENCE_HOME_LAT, 60.51)),
-    homeLng: num(process.env.HOME_LNG, num(process.env.GEOFENCE_HOME_LON, 5.24)),
-    radiusKm: num(process.env.SHOP_RADIUS_KM, 10),
-  },
-
   // financeEncryptionKey krypterer Claude-nøkkel + Enable Banking-PEM i
   // finance_config (se financeCrypto.js). MÅ settes til en ekte 32-byte
   // hex-nøkkel (openssl rand -hex 32) før dette hostes for andre familier.

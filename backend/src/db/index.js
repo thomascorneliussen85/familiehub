@@ -192,6 +192,10 @@ if (!dinnerPlansColumns.includes('source')) {
   db.exec("ALTER TABLE dinner_plans ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
 }
 
+// Opprydding: Smart handleliste (Kassalapp-prissammenligning) er fjernet –
+// rydder bort den gamle per-familie-innstillingsraden i settings-tabellen.
+db.exec("DELETE FROM settings WHERE key = 'smart_shopping'");
+
 // Migrering: garmin_activities kan finnes fra før, uten de nye detalj-kolonnene
 // for treningscoach-siden (lagt til senere).
 const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)').all().map((c) => c.name);

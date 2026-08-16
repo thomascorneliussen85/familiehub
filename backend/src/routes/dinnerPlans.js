@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { generateWeekPlan } from '../services/dinnerSuggestionService.js';
-import { scheduleMatchingRun } from '../services/smartShoppingService.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -168,7 +167,6 @@ router.post('/add-ingredients-to-shopping', (req, res) => {
     )
     .all(req.familyId);
   req.app.get('io').to(`family:${req.familyId}`).emit('shopping:update', list);
-  if (added > 0) scheduleMatchingRun(req.familyId, req.app.get('io'));
   res.status(201).json({ added, list });
 });
 

@@ -11,7 +11,6 @@ import RewardsSettingsTab from './RewardsSettingsTab';
 import PhotosSettingsTab from './PhotosSettingsTab';
 import FeedbackTab from './FeedbackTab';
 import RoadmapTab from './RoadmapTab';
-import SmartShoppingSettingsTab from './SmartShoppingSettingsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -115,12 +114,6 @@ export default function SettingsModal({ onClose }) {
             Enheter
           </button>
           <button
-            className={`settings-tab ${tab === 'smart-shopping' ? 'settings-tab-active' : ''}`}
-            onClick={() => setTab('smart-shopping')}
-          >
-            Smart handleliste
-          </button>
-          <button
             className={`settings-tab ${tab === 'calendars' ? 'settings-tab-active' : ''}`}
             onClick={() => setTab('calendars')}
           >
@@ -163,7 +156,6 @@ export default function SettingsModal({ onClose }) {
         {tab === 'friends' && <FriendsTab adminApi={adminApi} />}
         {tab === 'settings' && <PlaySettingsTab adminApi={adminApi} />}
         {tab === 'devices' && <DevicesTab adminApi={adminApi} />}
-        {tab === 'smart-shopping' && <SmartShoppingSettingsTab adminApi={adminApi} />}
         {tab === 'calendars' && <CalendarConnectionsTab adminApi={adminApi} />}
         {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
         {tab === 'rewards' && <RewardsSettingsTab adminApi={adminApi} />}

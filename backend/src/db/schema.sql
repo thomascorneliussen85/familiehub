@@ -86,9 +86,9 @@ CREATE TABLE IF NOT EXISTS chore_completions (
   UNIQUE(chore_id, completed_on)
 );
 
--- ean settes når linjen er opprettet via autocomplete/hurtigvalg/"Dette
--- mener jeg" – da vet vi eksakt hvilket produkt det er, og kan hente eksakt
--- pris i stedet for å gjette med fuzzy-søk (se smartShoppingService.js).
+-- ean er ubrukt siden Smart handleliste (Kassalapp-prissammenligning) ble
+-- fjernet – står igjen som en tom, valgfri kolonne i stedet for å kreve en
+-- DROP COLUMN-migrering på eksisterende installasjoner.
 CREATE TABLE IF NOT EXISTS shopping_items (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
@@ -99,22 +99,6 @@ CREATE TABLE IF NOT EXISTS shopping_items (
   position    INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
--- Lærer familiens egne produktvalg over tid: hvilket eksakt produkt (EAN) de
--- pleier å velge for et gitt søkeord, brukt til å stjernemerke treff øverst i
--- autocomplete-dropdownen og til hurtigvalg-knappene (de 8 mest brukte).
--- search_term er det brukeren faktisk skrev, ikke nødvendigvis produktnavnet.
-CREATE TABLE IF NOT EXISTS item_history (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  search_term   TEXT NOT NULL,
-  chosen_ean    TEXT NOT NULL,
-  chosen_name   TEXT NOT NULL,
-  times_used    INTEGER NOT NULL DEFAULT 1,
-  last_used     TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(family_id, search_term, chosen_ean)
-);
-CREATE INDEX IF NOT EXISTS idx_item_history_family ON item_history(family_id, times_used DESC);
 
 CREATE TABLE IF NOT EXISTS quick_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -223,49 +207,6 @@ CREATE TABLE IF NOT EXISTS cameras (
   serial        TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
--- Smart handleliste: prissammenligning/tilbudsmatch mot Kassalapp (kassal.app).
--- product_matches holder de 3 beste produkttreffene per handleliste-linje;
--- product_prices holder prisen i hver nærliggende butikk for hvert treff.
--- family_id står direkte her (ikke bare via shopping_item_id) av samme grunn
--- som andre steder i skjemaet: raskere/sikrere skoping uten en ekstra join.
-CREATE TABLE IF NOT EXISTS product_matches (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id         INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  shopping_item_id  INTEGER NOT NULL REFERENCES shopping_items(id) ON DELETE CASCADE,
-  ean               TEXT,
-  product_name      TEXT,
-  image_url         TEXT,
-  rank              INTEGER NOT NULL DEFAULT 0, -- 0 = beste treff, 1, 2 = nr. to/tre
-  matched_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS product_prices (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  match_id    INTEGER NOT NULL REFERENCES product_matches(id) ON DELETE CASCADE,
-  store_name  TEXT NOT NULL,
-  store_id    INTEGER,
-  price       REAL NOT NULL,
-  is_offer    INTEGER NOT NULL DEFAULT 0, -- utledet fra prishistorikk, se smartShoppingService.js
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- Låser en handleliste-TEKST (ikke selve raden, som forsvinner når varen
--- krysses av/fjernes) til et bestemt produkt – "Dette mener jeg"-knappen.
--- item_text er normalisert (trim + lowercase) slik at "Melk" og "melk"
--- gjenbruker samme lås neste gang noen skriver ordet på nytt.
-CREATE TABLE IF NOT EXISTS item_locks (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id     INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  item_text     TEXT NOT NULL,
-  ean           TEXT NOT NULL,
-  product_name  TEXT,
-  locked_at     TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(family_id, item_text)
-);
-
-CREATE INDEX IF NOT EXISTS idx_product_matches_item ON product_matches(shopping_item_id);
-CREATE INDEX IF NOT EXISTS idx_product_prices_match ON product_prices(match_id);
 
 -- Nøkkel-verdi-innstillinger for HELE installasjonen (ikke per familie) –
 -- foreløpig kun VAPID-nøkkelparet som signerer web push-varsler. Generert
