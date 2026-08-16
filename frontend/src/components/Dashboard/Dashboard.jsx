@@ -181,10 +181,13 @@ export default function Dashboard({ onOpenSettings, onOpenFinance }) {
           <NextEventBanner />
           <GoodMorningCard />
 
+          <div className="dashboard-calendar-hero">
+            <CalendarPanel />
+          </div>
+
           <div className="dashboard-fixed-grid">
             <ShoppingPanel />
             <ChoresPanel />
-            <CalendarPanel />
           </div>
 
           <DinnerPlanPanel />

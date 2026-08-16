@@ -94,14 +94,21 @@
   flex-shrink: 0;
 }
 
+.dashboard-calendar-hero {
+  flex-shrink: 0;
+}
+.dashboard-calendar-hero .panel {
+  height: 480px;
+}
+
 .dashboard-fixed-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   align-items: start;
 }
 .dashboard-fixed-grid .panel {
-  height: 420px;
+  height: 320px;
 }
 
 .dashboard-status-bar {
@@ -170,6 +177,9 @@
 }
 
 @media (max-width: 900px) {
+  .dashboard-calendar-hero .panel {
+    height: 360px;
+  }
   .dashboard-fixed-grid {
     grid-template-columns: 1fr;
   }
@@ -200,18 +210,25 @@
      kompakt her spesifikt, uten å røre de samme panelene når de vises i
      fullskjerm (via "Handleliste"/"Gjøremål"/"Kalender" i menyen) eller på
      den store kjøkkenskjermen, hvor det er god plass. */
+  .dashboard-calendar-hero .panel {
+    height: 300px;
+  }
   .dashboard-fixed-grid .panel {
     height: 280px;
   }
+  .dashboard-calendar-hero .panel-header,
   .dashboard-fixed-grid .panel-header {
     padding: 12px 14px 6px;
   }
+  .dashboard-calendar-hero .panel-body,
   .dashboard-fixed-grid .panel-body {
     padding: 4px 14px 12px;
   }
+  .dashboard-calendar-hero .panel-title,
   .dashboard-fixed-grid .panel-title {
     font-size: 15px;
   }
+  .dashboard-calendar-hero .panel-icon,
   .dashboard-fixed-grid .panel-icon {
     font-size: 17px;
   }
@@ -244,31 +261,31 @@
     padding: 3px 8px;
   }
 
-  .dashboard-fixed-grid .calendar-grid {
+  .dashboard-calendar-hero .calendar-grid {
     grid-template-columns: repeat(7, minmax(78px, 1fr));
     gap: 4px;
   }
-  .dashboard-fixed-grid .calendar-day {
+  .dashboard-calendar-hero .calendar-day {
     padding: 5px;
     gap: 3px;
   }
-  .dashboard-fixed-grid .calendar-day-header {
+  .dashboard-calendar-hero .calendar-day-header {
     font-size: 9.5px;
   }
-  .dashboard-fixed-grid .calendar-event {
+  .dashboard-calendar-hero .calendar-event {
     padding: 3px 5px;
     font-size: 10px;
   }
-  .dashboard-fixed-grid .calendar-event-time,
-  .dashboard-fixed-grid .calendar-event-member {
+  .dashboard-calendar-hero .calendar-event-time,
+  .dashboard-calendar-hero .calendar-event-member {
     font-size: 9px;
   }
-  .dashboard-fixed-grid .calendar-nav-btn {
+  .dashboard-calendar-hero .calendar-nav-btn {
     font-size: 16px;
     min-height: 24px;
     min-width: 24px;
   }
-  .dashboard-fixed-grid .calendar-nav-today {
+  .dashboard-calendar-hero .calendar-nav-today {
     font-size: 9.5px;
     padding: 3px 8px;
     min-height: 22px;
