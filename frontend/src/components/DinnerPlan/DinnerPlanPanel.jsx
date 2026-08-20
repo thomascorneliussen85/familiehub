@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import { usePanelNavigation } from '../../context/PanelNavigationContext';
+import DinnerRecipeModal from './DinnerRecipeModal';
 import './DinnerPlanPanel.css';
 
 const DAY_LABELS = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
@@ -20,6 +21,7 @@ export default function DinnerPlanPanel() {
   const [editingDate, setEditingDate] = useState(null);
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🍽️');
+  const [recipeFor, setRecipeFor] = useState(null);
 
   function loadPlans() {
     const today = new Date();
@@ -57,6 +59,13 @@ export default function DinnerPlanPanel() {
     setTitle(existing?.title || '');
     setEmoji(existing?.emoji || '🍽️');
     setEditingDate(dateStr);
+  }
+
+  // Dager med en middag allerede satt åpner den store oppskriftsvisningen;
+  // tomme dager går rett til hurtig-legg-til-skjemaet, samme som før.
+  function openDay(dateStr) {
+    if (plans[dateStr]) setRecipeFor(dateStr);
+    else openEdit(dateStr);
   }
 
   async function save() {
@@ -115,7 +124,7 @@ export default function DinnerPlanPanel() {
           </div>
         ) : (
           <>
-            <button className="dinner-today" onClick={() => openEdit(toDateStr(today))}>
+            <button className="dinner-today" onClick={() => openDay(toDateStr(today))}>
               <span className="dinner-today-label">I dag</span>
               {todayPlan ? (
                 <>
@@ -133,7 +142,7 @@ export default function DinnerPlanPanel() {
                 label="I morgen"
                 dateStr={toDateStr(tomorrow)}
                 plan={tomorrowPlan}
-                onEdit={openEdit}
+                onOpen={openDay}
                 onRemove={remove}
               />
               {rest.map((d) => (
@@ -142,7 +151,7 @@ export default function DinnerPlanPanel() {
                   label={DAY_LABELS[d.getDay()]}
                   dateStr={toDateStr(d)}
                   plan={plans[toDateStr(d)]}
-                  onEdit={openEdit}
+                  onOpen={openDay}
                   onRemove={remove}
                 />
               ))}
@@ -150,13 +159,24 @@ export default function DinnerPlanPanel() {
           </>
         )}
       </div>
+      {recipeFor && plans[recipeFor] && (
+        <DinnerRecipeModal
+          plan={plans[recipeFor]}
+          onClose={() => setRecipeFor(null)}
+          onEdit={() => {
+            const date = recipeFor;
+            setRecipeFor(null);
+            openEdit(date);
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function DinnerUpcomingRow({ label, dateStr, plan, onEdit, onRemove }) {
+function DinnerUpcomingRow({ label, dateStr, plan, onOpen, onRemove }) {
   return (
-    <div className="dinner-upcoming-row" onClick={() => onEdit(dateStr)}>
+    <div className="dinner-upcoming-row" onClick={() => onOpen(dateStr)}>
       <span className="dinner-upcoming-day">{label}</span>
       {plan ? (
         <span className="dinner-upcoming-title">
