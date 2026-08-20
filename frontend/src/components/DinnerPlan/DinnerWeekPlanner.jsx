@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
+import DinnerLibraryModal from './DinnerLibraryModal';
 import './DinnerWeekPlanner.css';
 
 const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -39,6 +40,7 @@ export default function DinnerWeekPlanner() {
   const [plans, setPlans] = useState({});
   const [editingDate, setEditingDate] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [libraryFor, setLibraryFor] = useState(null);
   const [planning, setPlanning] = useState(false);
   const [planError, setPlanError] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -137,6 +139,15 @@ export default function DinnerWeekPlanner() {
     loadSuggestions();
   }
 
+  async function selectFromLibrary(recipe) {
+    const date = libraryFor;
+    setLibraryFor(null);
+    setEditingDate(null);
+    await api.post('/dinner-plans', { date, title: recipe.title, emoji: recipe.emoji || '🍽️' }).catch(() => {});
+    loadPlans();
+    loadSuggestions();
+  }
+
   async function removePlan(dateStr, e) {
     e.stopPropagation();
     await api.delete(`/dinner-plans/${dateStr}`).catch(() => {});
@@ -221,6 +232,13 @@ export default function DinnerWeekPlanner() {
 
                 {isEditing ? (
                   <div className="dinner-planner-edit-form">
+                    <button
+                      type="button"
+                      className="dinner-planner-library-link"
+                      onClick={() => setLibraryFor(dateStr)}
+                    >
+                      📖 Velg fra liste i stedet
+                    </button>
                     <div className="dinner-planner-edit-row">
                       <input
                         type="text"
@@ -259,25 +277,28 @@ export default function DinnerWeekPlanner() {
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : plan ? (
                   <button className="dinner-planner-card-body" onClick={() => openEdit(dateStr)}>
-                    {plan ? (
-                      <>
-                        {plan.photo_url ? (
-                          <img className="dinner-planner-photo" src={plan.photo_url} alt="" />
-                        ) : (
-                          <div className="dinner-planner-photo-placeholder">{plan.emoji || '🍽️'}</div>
-                        )}
-                        <span className="dinner-planner-card-title">{plan.title}</span>
-                        {plan.description && <span className="dinner-planner-card-desc">{plan.description}</span>}
-                        <span className="dinner-planner-card-remove" onClick={(e) => removePlan(dateStr, e)} aria-label="Fjern">
-                          ✕
-                        </span>
-                      </>
+                    {plan.photo_url ? (
+                      <img className="dinner-planner-photo" src={plan.photo_url} alt="" />
                     ) : (
-                      <span className="dinner-planner-card-empty">+ Legg til</span>
+                      <div className="dinner-planner-photo-placeholder">{plan.emoji || '🍽️'}</div>
                     )}
+                    <span className="dinner-planner-card-title">{plan.title}</span>
+                    {plan.description && <span className="dinner-planner-card-desc">{plan.description}</span>}
+                    <span className="dinner-planner-card-remove" onClick={(e) => removePlan(dateStr, e)} aria-label="Fjern">
+                      ✕
+                    </span>
                   </button>
+                ) : (
+                  <div className="dinner-planner-card-empty-actions">
+                    <button className="dinner-planner-card-empty-btn" onClick={() => setLibraryFor(dateStr)}>
+                      📖 Velg fra liste
+                    </button>
+                    <button className="dinner-planner-card-empty-btn" onClick={() => openEdit(dateStr)}>
+                      ✏️ Skriv selv
+                    </button>
+                  </div>
                 )}
               </div>
             );
@@ -315,6 +336,7 @@ export default function DinnerWeekPlanner() {
           </div>
         )}
       </div>
+      {libraryFor && <DinnerLibraryModal onSelect={selectFromLibrary} onClose={() => setLibraryFor(null)} />}
     </section>
   );
 }

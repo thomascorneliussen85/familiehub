@@ -287,6 +287,20 @@ CREATE TABLE IF NOT EXISTS dinner_plans (
   UNIQUE(family_id, date)
 );
 
+-- Bla-i-liste av middagsforslag, uavhengig av dato – i tillegg til AI-forslag
+-- ("Planlegg denne uken") kan familien velge en rett herfra direkte inn på en
+-- bestemt dag. Seedes med en standardliste ved første bruk (se
+-- ensureDefaultDinnerLibrary i dinnerPlans.js), og familien kan legge til
+-- sine egne i tillegg.
+CREATE TABLE IF NOT EXISTS dinner_recipes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  emoji       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dinner_recipes_family ON dinner_recipes(family_id);
+
 -- Garmin er foreløpig én delt konto for hele installasjonen (satt opp via
 -- .env av installasjonens eier), ikke per-familie – se README. Ingen
 -- family_id her ennå; egen kreditiv-lagring per familie er en senere jobb.

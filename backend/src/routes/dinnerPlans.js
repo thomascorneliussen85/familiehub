@@ -11,6 +11,54 @@ function serializePlan(row) {
   return { ...row, ingredients: JSON.parse(row.ingredients_json || '[]') };
 }
 
+// Standardliste av vanlige norske familiemiddager – seedes én gang per
+// familie (lazy, samme mønster som ensureDefaultCategories i
+// financeImportService.js), slik at "velg fra liste" har noe å vise med en
+// gang, uten å være avhengig av Claude/Unsplash.
+const DEFAULT_RECIPES = [
+  ['Taco', '🌮'],
+  ['Spaghetti bolognese', '🍝'],
+  ['Fiskegrateng', '🐟'],
+  ['Kjøttkaker med brun saus', '🍖'],
+  ['Hjemmelaget pizza', '🍕'],
+  ['Ovnsbakt laks med poteter', '🐟'],
+  ['Kylling i karri', '🍛'],
+  ['Pytt i panne', '🥘'],
+  ['Pasta carbonara', '🍝'],
+  ['Hjemmelaget burger', '🍔'],
+  ['Fiskepinner med poteter', '🐟'],
+  ['Kjøttboller i tomatsaus', '🍝'],
+  ['Pølser med potetmos', '🌭'],
+  ['Lasagne', '🍝'],
+  ['Wok med kylling', '🥡'],
+  ['Kyllingfilet med ris', '🍗'],
+  ['Suppe med kjøttboller', '🍲'],
+  ['Grillet kylling', '🍗'],
+  ['Fish and chips', '🐟'],
+  ['Butter chicken', '🍛'],
+  ['Pasta med pesto', '🍝'],
+  ['Chili con carne', '🌶️'],
+  ['Ovnsbakt torsk', '🐟'],
+  ['Reinsdyrgryte', '🍲'],
+  ['Quesadillas', '🫓'],
+  ['Vafler til middag', '🧇'],
+  ['Omelett med grønnsaker', '🍳'],
+  ['Pannekaker', '🥞'],
+  ['Ribbe', '🍖'],
+  ['Fiskesuppe', '🍲'],
+  ['Kyllingwok med nudler', '🍜'],
+  ['Enchiladas', '🌯'],
+];
+
+function ensureDefaultDinnerLibrary(familyId) {
+  const count = db.prepare('SELECT COUNT(*) AS n FROM dinner_recipes WHERE family_id = ?').get(familyId).n;
+  if (count > 0) return;
+  const insert = db.prepare('INSERT INTO dinner_recipes (family_id, title, emoji) VALUES (?, ?, ?)');
+  db.transaction(() => {
+    DEFAULT_RECIPES.forEach(([title, emoji]) => insert.run(familyId, title, emoji));
+  })();
+}
+
 function addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -168,6 +216,30 @@ router.post('/add-ingredients-to-shopping', (req, res) => {
     .all(req.familyId);
   req.app.get('io').to(`family:${req.familyId}`).emit('shopping:update', list);
   res.status(201).json({ added, list });
+});
+
+// Liste å bla i og velge middager fra, uavhengig av dato – seedes med
+// standardutvalget over ved første kall.
+router.get('/library', (req, res) => {
+  ensureDefaultDinnerLibrary(req.familyId);
+  const rows = db.prepare('SELECT * FROM dinner_recipes WHERE family_id = ? ORDER BY title').all(req.familyId);
+  res.json(rows);
+});
+
+router.post('/library', (req, res) => {
+  const { title, emoji } = req.body || {};
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: 'Tittel er påkrevd' });
+  }
+  const info = db
+    .prepare('INSERT INTO dinner_recipes (family_id, title, emoji) VALUES (?, ?, ?)')
+    .run(req.familyId, title.trim(), emoji || '🍽️');
+  res.status(201).json(db.prepare('SELECT * FROM dinner_recipes WHERE id = ?').get(info.lastInsertRowid));
+});
+
+router.delete('/library/:id', (req, res) => {
+  db.prepare('DELETE FROM dinner_recipes WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  res.status(204).end();
 });
 
 router.delete('/:date', (req, res) => {

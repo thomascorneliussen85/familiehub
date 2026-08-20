@@ -117,13 +117,36 @@
   color: var(--text-dim);
   overflow-wrap: anywhere;
 }
-.dinner-planner-card-empty {
+.dinner-planner-card-empty-actions {
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
   justify-content: center;
-  color: var(--text-faint);
-  font-size: 13px;
+}
+.dinner-planner-card-empty-btn {
+  background: var(--panel-bg);
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 8px 6px;
+  min-height: 34px;
+}
+.dinner-planner-card-empty-btn:active {
+  transform: scale(0.97);
+}
+.dinner-planner-library-link {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 0;
+  min-height: 22px;
 }
 .dinner-planner-card-remove {
   position: absolute;
