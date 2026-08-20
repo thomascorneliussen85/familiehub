@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 
-const PROVIDER_LABEL = { google: 'Google', icloud: 'iCloud' };
+const PROVIDER_LABEL = { google: 'Google', icloud: 'iCloud', spond: 'Spond' };
+const PROVIDER_ICON = { google: '🔵', icloud: '☁️', spond: '⚽' };
 
 export default function CalendarConnectionsTab({ adminApi }) {
   const { members } = useFamilyMembers();
@@ -9,6 +10,9 @@ export default function CalendarConnectionsTab({ adminApi }) {
   const [icloudFormFor, setIcloudFormFor] = useState(null);
   const [appleId, setAppleId] = useState('');
   const [appPassword, setAppPassword] = useState('');
+  const [spondFormFor, setSpondFormFor] = useState(null);
+  const [spondEmail, setSpondEmail] = useState('');
+  const [spondPassword, setSpondPassword] = useState('');
   const [message, setMessage] = useState('');
   const [busyId, setBusyId] = useState(null);
 
@@ -44,6 +48,25 @@ export default function CalendarConnectionsTab({ adminApi }) {
       setAppleId('');
       setAppPassword('');
       setIcloudFormFor(null);
+      loadConnections();
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  async function connectSpond(memberId) {
+    if (!spondEmail.trim() || !spondPassword.trim()) return;
+    setMessage('Kobler til…');
+    try {
+      await adminApi.post('/calendar-connections/spond', {
+        memberId,
+        email: spondEmail.trim(),
+        password: spondPassword.trim(),
+      });
+      setMessage('Koblet til ✓');
+      setSpondEmail('');
+      setSpondPassword('');
+      setSpondFormFor(null);
       loadConnections();
     } catch (err) {
       setMessage(err.message);
@@ -95,6 +118,13 @@ export default function CalendarConnectionsTab({ adminApi }) {
                 >
                   + iCloud
                 </button>
+                <button
+                  className="btn btn-icon"
+                  onClick={() => setSpondFormFor(spondFormFor === member.id ? null : member.id)}
+                  aria-label="Koble til Spond"
+                >
+                  + Spond
+                </button>
               </div>
             </div>
 
@@ -118,10 +148,30 @@ export default function CalendarConnectionsTab({ adminApi }) {
               </div>
             )}
 
+            {spondFormFor === member.id && (
+              <div className="settings-pairing-redeem">
+                <input
+                  type="text"
+                  placeholder="E-post (samme som i Spond-appen)"
+                  value={spondEmail}
+                  onChange={(e) => setSpondEmail(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Passord"
+                  value={spondPassword}
+                  onChange={(e) => setSpondPassword(e.target.value)}
+                />
+                <button className="btn btn-accent" onClick={() => connectSpond(member.id)}>
+                  Koble til
+                </button>
+              </div>
+            )}
+
             {memberConnections.map((c) => (
               <div key={c.id} className="settings-location-item">
                 <span>
-                  {c.provider === 'google' ? '🔵' : '☁️'} {PROVIDER_LABEL[c.provider]} · {c.label}
+                  {PROVIDER_ICON[c.provider]} {PROVIDER_LABEL[c.provider]} · {c.label}
                   {c.last_synced_at && (
                     <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>
                       {' '}

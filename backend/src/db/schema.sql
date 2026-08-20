@@ -29,15 +29,17 @@ CREATE TABLE IF NOT EXISTS family_members (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Personlig kalendertilkobling (Google/iCloud) per familiemedlem. Kun manuell
--- synkronisering – ingen automatisk polling i bakgrunnen. Skopes transitivt
--- via member_id -> family_members, trenger ikke egen family_id-kolonne.
+-- Personlig kalendertilkobling (Google/iCloud/Spond) per familiemedlem. Kun
+-- manuell synkronisering – ingen automatisk polling i bakgrunnen. Skopes
+-- transitivt via member_id -> family_members, trenger ikke egen family_id-kolonne.
+-- Spond har ingen offisiell API – bruker samme udokumenterte endepunkter som
+-- Spond-appen selv (se spondSync.js), kan slutte å fungere uten varsel.
 CREATE TABLE IF NOT EXISTS calendar_connections (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id       INTEGER NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
-  provider        TEXT NOT NULL, -- 'google' | 'icloud'
+  provider        TEXT NOT NULL, -- 'google' | 'icloud' | 'spond'
   label           TEXT,           -- e-post/konto-navn, vises i UI
-  credentials     TEXT NOT NULL,  -- JSON: {refresh_token} for google, {appleId, appPassword} for icloud
+  credentials     TEXT NOT NULL,  -- JSON: {refresh_token} google, {appleId, appPassword} icloud, {email, password} spond
   last_synced_at  TEXT,
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -54,7 +56,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   all_day         INTEGER NOT NULL DEFAULT 0,
   location        TEXT,
   notes           TEXT,
-  source          TEXT NOT NULL DEFAULT 'local', -- 'local' | 'google' | 'icloud'
+  source          TEXT NOT NULL DEFAULT 'local', -- 'local' | 'google' | 'icloud' | 'spond'
   google_event_id TEXT,
   recurrence      TEXT NOT NULL DEFAULT 'once', -- 'once' | 'weekly'
   external_id     TEXT,    -- unik id fra Google/iCloud, brukes til å unngå duplikater ved synk

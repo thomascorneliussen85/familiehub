@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { config } from '../config.js';
 import { getAuthUrl, handleGoogleCallback, syncGoogleConnection } from '../services/googleCalendarSync.js';
 import { testICloudConnection, syncICloudConnection } from '../services/icloudCalendarSync.js';
+import { testSpondConnection, syncSpondConnection } from '../services/spondSync.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireFamilyPin } from '../middleware/requireFamilyPin.js';
 
@@ -85,6 +86,25 @@ router.post('/icloud', requireFamilyPin, async (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
+router.post('/spond', requireFamilyPin, async (req, res) => {
+  const { memberId, email, password } = req.body || {};
+  if (!memberId || !email || !password) {
+    return res.status(400).json({ error: 'Familiemedlem, e-post og passord er påkrevd' });
+  }
+  if (!memberBelongsToFamily(memberId, req.familyId)) {
+    return res.status(404).json({ error: 'Fant ikke familiemedlemmet' });
+  }
+  try {
+    await testSpondConnection(email, password);
+  } catch (err) {
+    return res.status(400).json({ error: `Klarte ikke å koble til Spond: ${err.message}` });
+  }
+  const info = db
+    .prepare(`INSERT INTO calendar_connections (member_id, provider, label, credentials) VALUES (?, 'spond', ?, ?)`)
+    .run(memberId, email, JSON.stringify({ email, password }));
+  res.status(201).json({ id: info.lastInsertRowid });
+});
+
 router.post('/:id/sync', requireFamilyPin, async (req, res) => {
   const connection = db
     .prepare(
@@ -97,7 +117,9 @@ router.post('/:id/sync', requireFamilyPin, async (req, res) => {
     const count =
       connection.provider === 'google'
         ? await syncGoogleConnection(connection)
-        : await syncICloudConnection(connection);
+        : connection.provider === 'spond'
+          ? await syncSpondConnection(connection)
+          : await syncICloudConnection(connection);
     req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'synced' });
     res.json({ synced: count });
   } catch (err) {
