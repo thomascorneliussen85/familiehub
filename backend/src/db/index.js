@@ -196,6 +196,12 @@ if (!dinnerPlansColumns.includes('source')) {
 // rydder bort den gamle per-familie-innstillingsraden i settings-tabellen.
 db.exec("DELETE FROM settings WHERE key = 'smart_shopping'");
 
+// Migrering: chores kan finnes fra før lekseskanneren, uten is_homework-kolonnen.
+const choresColumns = db.prepare('PRAGMA table_info(chores)').all().map((c) => c.name);
+if (!choresColumns.includes('is_homework')) {
+  db.exec('ALTER TABLE chores ADD COLUMN is_homework INTEGER NOT NULL DEFAULT 0');
+}
+
 // Migrering: garmin_activities kan finnes fra før, uten de nye detalj-kolonnene
 // for treningscoach-siden (lagt til senere).
 const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)').all().map((c) => c.name);

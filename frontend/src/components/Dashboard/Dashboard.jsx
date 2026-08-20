@@ -20,6 +20,7 @@ import DinnerWeekPlanner from '../DinnerPlan/DinnerWeekPlanner';
 import FinanceWidget from '../Finance/FinanceWidget';
 import BabyCameraTile from './BabyCameraTile';
 import NextEventBanner from './NextEventBanner';
+import HomeworkBanner from './HomeworkBanner';
 import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import VoiceButton from '../VoiceControl/VoiceButton';
 import FeedbackButton from '../Feedback/FeedbackButton';
@@ -179,6 +180,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance }) {
       ) : (
         <div className="dashboard-home">
           <NextEventBanner />
+          <HomeworkBanner />
           <GoodMorningCard />
 
           <div className="dashboard-calendar-hero">

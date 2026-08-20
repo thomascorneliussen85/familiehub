@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS chores (
   due_date     TEXT,                          -- kun relevant for 'once'
   stars        INTEGER NOT NULL DEFAULT 1,
   active       INTEGER NOT NULL DEFAULT 1,
+  is_homework  INTEGER NOT NULL DEFAULT 0,    -- satt av lekseskanneren, brukes til å vise HomeworkBanner
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
