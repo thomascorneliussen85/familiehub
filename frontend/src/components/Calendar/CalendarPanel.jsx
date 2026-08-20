@@ -250,7 +250,7 @@ export default function CalendarPanel({ expanded = false }) {
         >
           {scanning ? '⏳' : '📷'}
         </button>
-        <input type="file" accept="image/*" capture="environment" ref={scanInputRef} onChange={handleScanFile} hidden />
+        <input type="file" accept="image/*" capture="user" ref={scanInputRef} onChange={handleScanFile} hidden />
         <button
           className="btn btn-icon"
           onClick={() => {
