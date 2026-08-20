@@ -180,6 +180,16 @@
 .calendar-day-today {
   outline: 1.5px solid var(--accent);
 }
+.calendar-day-clickable {
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.08s ease;
+}
+.calendar-day-clickable:hover {
+  background: var(--accent-soft);
+}
+.calendar-day-clickable:active {
+  transform: scale(0.98);
+}
 .calendar-day-header {
   display: flex;
   justify-content: space-between;

@@ -123,8 +123,8 @@ export default function CalendarPanel({ expanded = false }) {
     });
   }
 
-  function openAdd() {
-    setForm(emptyForm);
+  function openAdd(date) {
+    setForm({ ...emptyForm, date: date ? toDateInputValue(date) : toDateInputValue(new Date()) });
     setFormMode('add');
   }
 
@@ -350,7 +350,11 @@ export default function CalendarPanel({ expanded = false }) {
               });
               const isToday = day.getTime() === today.getTime();
               return (
-                <div key={i} className={`calendar-day ${isToday ? 'calendar-day-today' : ''}`}>
+                <div
+                  key={i}
+                  className={`calendar-day calendar-day-clickable ${isToday ? 'calendar-day-today' : ''}`}
+                  onClick={() => openAdd(day)}
+                >
                   <div className="calendar-day-header">
                     <span>{DAY_LABELS[i]}</span>
                     <span className="calendar-day-num">{day.getDate()}</span>
@@ -363,7 +367,10 @@ export default function CalendarPanel({ expanded = false }) {
                         className="calendar-event calendar-event-clickable"
                         style={{ borderLeftColor: e.member_color || '#7c9cff' }}
                         title={e.location || ''}
-                        onClick={() => openEdit(e)}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          openEdit(e);
+                        }}
                       >
                         <span className="calendar-event-time">
                           {e.all_day
