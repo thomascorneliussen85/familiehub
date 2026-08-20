@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
-import ScanHomeworkModal from './ScanHomeworkModal';
 import './ChoresPanel.css';
 
 const RECURRENCE_LABELS = {
@@ -50,10 +49,6 @@ export default function ChoresPanel() {
   const [showAdd, setShowAdd] = useState(false);
   const [showDone, setShowDone] = useState(false);
   const [form, setForm] = useState(emptyForm);
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState('');
-  const [scanResults, setScanResults] = useState(null);
-  const scanInputRef = useRef(null);
 
   function loadAll() {
     api.get('/chores').then(setChores).catch(() => {});
@@ -98,27 +93,6 @@ export default function ChoresPanel() {
     setShowAdd(false);
   }
 
-  async function handleScanFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setScanning(true);
-    setScanError('');
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await fetch('/api/chores/scan', { method: 'POST', credentials: 'include', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Klarte ikke å lese bildet');
-      setScanResults(data.items);
-    } catch (err) {
-      setScanError(err.message);
-      setTimeout(() => setScanError(''), 5000);
-    } finally {
-      setScanning(false);
-    }
-  }
-
   const activeChores = chores.filter((c) => !c.done);
   const doneChores = chores.filter((c) => c.done);
 
@@ -135,7 +109,6 @@ export default function ChoresPanel() {
         <div className="chore-info">
           <span className="chore-title">{chore.title}</span>
           <span className="chore-meta">
-            {chore.is_homework && '📚 '}
             {chore.member_avatar} {chore.member_name} · {RECURRENCE_LABELS[chore.recurrence] || chore.recurrence}
             {chore.recurrence === 'once' && chore.due_date &&
               ` · frist ${new Date(chore.due_date).toLocaleDateString('nb-NO')}`}
@@ -157,23 +130,12 @@ export default function ChoresPanel() {
         </div>
         <button
           className="btn btn-icon"
-          onClick={() => scanInputRef.current?.click()}
-          aria-label="Skann lekseplan"
-          title="Ta bilde av en lekseplan – finner leksene automatisk"
-          disabled={scanning}
-        >
-          {scanning ? '⏳' : '📷'}
-        </button>
-        <input type="file" accept="image/*" capture="user" ref={scanInputRef} onChange={handleScanFile} hidden />
-        <button
-          className="btn btn-icon"
           onClick={() => (showAdd ? setShowAdd(false) : openAdd())}
           aria-label="Legg til gjøremål"
         >
           {showAdd ? '✕' : '+'}
         </button>
       </div>
-      {scanError && <div className="chore-scan-error">{scanError}</div>}
       <div className="panel-body">
         {showAdd && (
           <form className="chore-add-form" onSubmit={handleSubmit}>
@@ -296,7 +258,6 @@ export default function ChoresPanel() {
           </div>
         )}
       </div>
-      {scanResults && <ScanHomeworkModal items={scanResults} onClose={() => setScanResults(null)} />}
     </section>
   );
 }

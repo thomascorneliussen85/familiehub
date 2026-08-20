@@ -3,6 +3,14 @@ import { api } from '../../lib/api';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import './ScanHomeworkModal.css';
 
+function dueDateToAllDayRange(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const start = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start_at: start.toISOString(), end_at: end.toISOString() };
+}
+
 export default function ScanHomeworkModal({ items, onClose }) {
   const { members } = useFamilyMembers();
   const [rows, setRows] = useState(items.map((i) => ({ ...i, included: true })));
@@ -23,12 +31,15 @@ export default function ScanHomeworkModal({ items, onClose }) {
     setError('');
     try {
       for (const row of toSave) {
-        await api.post('/chores', {
+        const { start_at, end_at } = dueDateToAllDayRange(row.due_date);
+        await api.post('/calendar/events', {
           title: row.title.trim(),
           member_id: row.member_id || null,
+          start_at,
+          end_at,
+          all_day: true,
           recurrence: 'once',
-          due_date: row.due_date,
-          is_homework: true,
+          source: 'homework',
         });
       }
       onClose();
@@ -46,7 +57,7 @@ export default function ScanHomeworkModal({ items, onClose }) {
           ✕
         </button>
         <div className="homework-scan-title">Fant {rows.length} lekse{rows.length === 1 ? '' : 'r'}</div>
-        <div className="homework-scan-subtitle">Se over og fjern det som ikke stemmer, før du legger dem inn.</div>
+        <div className="homework-scan-subtitle">Se over og fjern det som ikke stemmer, før du legger dem i kalenderen.</div>
 
         {rows.length === 0 && (
           <div className="homework-scan-empty">Fant ingen lekser i bildet. Prøv et tydeligere bilde.</div>

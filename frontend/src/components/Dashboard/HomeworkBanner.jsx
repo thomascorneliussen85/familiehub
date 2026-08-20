@@ -7,13 +7,13 @@ export default function HomeworkBanner() {
   const [items, setItems] = useState([]);
 
   function load() {
-    api.get('/chores/homework-due-soon').then(setItems).catch(() => {});
+    api.get('/calendar/homework-due-soon').then(setItems).catch(() => {});
   }
 
   useEffect(() => {
     load();
-    socket.on('chores:update', load);
-    return () => socket.off('chores:update', load);
+    socket.on('calendar:update', load);
+    return () => socket.off('calendar:update', load);
   }, []);
 
   if (items.length === 0) return null;
@@ -24,8 +24,7 @@ export default function HomeworkBanner() {
       <div className="homework-banner-list">
         {items.map((item) => (
           <span key={item.id} className="homework-banner-item">
-            <strong>{item.member_avatar} {item.member_name || 'Noen'}</strong> har {item.title}{' '}
-            til {item.due_today ? 'i dag' : 'i morgen'}
+            <strong>{item.member_avatar} {item.member_name || 'Noen'}</strong> {item.title.toLowerCase()}
           </span>
         ))}
       </div>

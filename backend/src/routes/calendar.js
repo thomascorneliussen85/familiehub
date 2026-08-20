@@ -3,6 +3,7 @@ import multer from 'multer';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { scanCalendarImage } from '../services/calendarScanService.js';
+import { scanHomeworkImage } from '../services/homeworkScanService.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -101,6 +102,41 @@ router.post('/scan', upload.single('image'), async (req, res) => {
   }
 });
 
+// Tar imot et bilde av en lekseplan og bruker Claude til å finne leksene i
+// det. Oppretter ikke avtalene ennå – frontend viser dem for bekreftelse
+// først, samme mønster som /scan over.
+router.post('/scan-homework', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Ingen bilde mottatt' });
+  }
+  if (!req.file.mimetype?.startsWith('image/')) {
+    return res.status(400).json({ error: 'Filen må være et bilde' });
+  }
+  try {
+    const base64 = req.file.buffer.toString('base64');
+    const items = await scanHomeworkImage(base64, req.file.mimetype, req.familyId);
+    res.json({ items });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Lekseavtaler (source='homework') som forfaller i dag eller i morgen –
+// brukes av HomeworkBanner på forsiden.
+router.get('/homework-due-soon', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const rows = db
+    .prepare(
+      `SELECT e.*, m.name AS member_name, m.avatar AS member_avatar, m.color AS member_color
+       FROM calendar_events e LEFT JOIN family_members m ON m.id = e.member_id
+       WHERE e.family_id = ? AND e.source = 'homework' AND date(e.start_at) IN (?, ?)
+       ORDER BY e.start_at`
+    )
+    .all(req.familyId, today, tomorrow);
+  res.json(rows.map((r) => ({ ...r, due_today: r.start_at.slice(0, 10) === today })));
+});
+
 router.post('/events', (req, res) => {
   const {
     member_id = null,
@@ -111,6 +147,7 @@ router.post('/events', (req, res) => {
     location = null,
     notes = null,
     recurrence = 'once',
+    source = 'local',
   } = req.body;
   if (!title || !start_at || !end_at) {
     return res.status(400).json({ error: 'Tittel, start og slutt er påkrevd' });
@@ -118,9 +155,9 @@ router.post('/events', (req, res) => {
   const info = db
     .prepare(
       `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'local', ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(req.familyId, member_id, title, start_at, end_at, all_day ? 1 : 0, location, notes, recurrence);
+    .run(req.familyId, member_id, title, start_at, end_at, all_day ? 1 : 0, location, notes, source, recurrence);
   const event = db
     .prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?')
     .get(info.lastInsertRowid, req.familyId);

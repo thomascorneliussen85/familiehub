@@ -14,8 +14,10 @@ const REPORT_HOMEWORK_TOOL = {
         items: {
           type: 'object',
           properties: {
-            subject: { type: 'string', description: 'Fag, f.eks. "Matte", "Norsk", "Engelsk"' },
-            task: { type: 'string', description: 'Hva som skal gjøres, f.eks. "s. 45-47" eller "Lese kapittel 3"' },
+            subject: {
+              type: 'string',
+              description: 'Fag, kort – f.eks. "Matte", "Norsk", "Engelsk" (ikke detaljer om hva som skal gjøres)',
+            },
             due_date: { type: 'string', description: 'Dato leksa skal være ferdig til, format YYYY-MM-DD' },
             member_name: {
               type: 'string',
@@ -38,9 +40,10 @@ function findMemberByName(familyId, name) {
 }
 
 // Leser et bilde av en lekseplan/ukeplan fra skolen og finner leksene i det,
-// ved hjelp av Claudes bildeforståelse. Oppretter IKKE gjøremålene selv –
-// returnerer dem til frontend for gjennomsyn/bekreftelse først, siden
-// bildetolkning kan feiltolke ting (feil dag, uklar håndskrift osv.).
+// ved hjelp av Claudes bildeforståelse. Oppretter IKKE avtalene selv –
+// returnerer dem til frontend for gjennomsyn/bekreftelse først. Landet i
+// kalenderen (ikke gjøremål) som heldagsavtaler med kort tittel, slik at de
+// vises sammen med resten av dagens info i stedet for i en egen liste.
 export async function scanHomeworkImage(base64Image, mediaType, familyId) {
   if (!config.anthropicApiKey) {
     throw new Error('Skanning av bilder krever en Claude API-nøkkel i .env (ANTHROPIC_API_KEY)');
@@ -55,10 +58,10 @@ export async function scanHomeworkImage(base64Image, mediaType, familyId) {
     system:
       'Du leser bilder av lekseplaner/ukeplaner fra norske skoler (ofte en tabell med ukedager og fag) og ' +
       'finner alle konkrete lekser i dem, med hvilken dag/dato de skal være ferdig til. Bruk ' +
-      'report_homework-verktøyet til å rapportere det du finner. Ukeplaner viser typisk hvilken uke det ' +
-      'gjelder øverst – bruk det til å regne ut riktig dato for hver ukedag. Hvis årstall mangler, anta ' +
-      'inneværende eller neste år (det som gir en dato nærmest fram i tid). Ikke finn på lekser som ikke ' +
-      'faktisk står i bildet.',
+      'report_homework-verktøyet til å rapportere det du finner. Fag skal være kort (ett ord/uttrykk, f.eks. ' +
+      '"Matte"), ikke detaljene om hva som skal gjøres. Ukeplaner viser typisk hvilken uke det gjelder øverst – ' +
+      'bruk det til å regne ut riktig dato for hver ukedag. Hvis årstall mangler, anta inneværende eller neste ' +
+      'år (det som gir en dato nærmest fram i tid). Ikke finn på lekser som ikke faktisk står i bildet.',
     messages: [
       {
         role: 'user',
@@ -77,9 +80,8 @@ export async function scanHomeworkImage(base64Image, mediaType, familyId) {
 
   return items.map((i) => {
     const member = findMemberByName(familyId, i.member_name);
-    const title = i.task ? `${i.subject}: ${i.task}` : i.subject;
     return {
-      title,
+      title: `Lekse - ${i.subject}`,
       due_date: i.due_date,
       member_id: member?.id ?? null,
       member_name: member?.name ?? i.member_name ?? null,

@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import ScanCalendarModal from './ScanCalendarModal';
+import ScanHomeworkModal from './ScanHomeworkModal';
 import CalendarEventModal from './CalendarEventModal';
 import WeekTimeGrid from './WeekTimeGrid';
 import MemberBoard from './MemberBoard';
@@ -60,6 +61,10 @@ export default function CalendarPanel({ expanded = false }) {
   const [scanError, setScanError] = useState('');
   const [scanResults, setScanResults] = useState(null);
   const scanInputRef = useRef(null);
+  const [homeworkScanning, setHomeworkScanning] = useState(false);
+  const [homeworkScanError, setHomeworkScanError] = useState('');
+  const [homeworkScanResults, setHomeworkScanResults] = useState(null);
+  const homeworkScanInputRef = useRef(null);
 
   // Kun for den utvidede kalenderen (Uke/Tavle/Kalender-visningene).
   const [viewMode, setViewMode] = useState('week');
@@ -201,6 +206,27 @@ export default function CalendarPanel({ expanded = false }) {
     }
   }
 
+  async function handleHomeworkScanFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setHomeworkScanning(true);
+    setHomeworkScanError('');
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/calendar/scan-homework', { method: 'POST', credentials: 'include', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Klarte ikke å lese bildet');
+      setHomeworkScanResults(data.items);
+    } catch (err) {
+      setHomeworkScanError(err.message);
+      setTimeout(() => setHomeworkScanError(''), 5000);
+    } finally {
+      setHomeworkScanning(false);
+    }
+  }
+
   async function handleDelete() {
     if (typeof formMode !== 'number') return;
     await api.delete(`/calendar/events/${formMode}`).catch(() => {});
@@ -253,6 +279,23 @@ export default function CalendarPanel({ expanded = false }) {
         <input type="file" accept="image/*" capture="user" ref={scanInputRef} onChange={handleScanFile} hidden />
         <button
           className="btn btn-icon"
+          onClick={() => homeworkScanInputRef.current?.click()}
+          aria-label="Skann lekseplan"
+          title="Ta bilde av en lekseplan – legger leksene inn i kalenderen"
+          disabled={homeworkScanning}
+        >
+          {homeworkScanning ? '⏳' : '📚'}
+        </button>
+        <input
+          type="file"
+          accept="image/*"
+          capture="user"
+          ref={homeworkScanInputRef}
+          onChange={handleHomeworkScanFile}
+          hidden
+        />
+        <button
+          className="btn btn-icon"
           onClick={() => {
             if (expanded) {
               setModalState({ defaultDate: viewMode === 'week' ? today : cursorDate });
@@ -266,6 +309,7 @@ export default function CalendarPanel({ expanded = false }) {
         </button>
       </div>
       {scanError && <div className="calendar-scan-error">{scanError}</div>}
+      {homeworkScanError && <div className="calendar-scan-error">{homeworkScanError}</div>}
 
       {expanded && (
         <div className="calendar-toolbar">
@@ -528,6 +572,9 @@ export default function CalendarPanel({ expanded = false }) {
       </div>
 
       {scanResults && <ScanCalendarModal events={scanResults} onClose={() => setScanResults(null)} />}
+      {homeworkScanResults && (
+        <ScanHomeworkModal items={homeworkScanResults} onClose={() => setHomeworkScanResults(null)} />
+      )}
       {modalState && (
         <CalendarEventModal
           event={modalState.event}
