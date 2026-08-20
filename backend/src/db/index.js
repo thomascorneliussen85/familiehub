@@ -191,6 +191,9 @@ if (!dinnerPlansColumns.includes('photo_url')) {
 if (!dinnerPlansColumns.includes('source')) {
   db.exec("ALTER TABLE dinner_plans ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
 }
+if (!dinnerPlansColumns.includes('instructions_json')) {
+  db.exec("ALTER TABLE dinner_plans ADD COLUMN instructions_json TEXT NOT NULL DEFAULT '[]'");
+}
 
 // Opprydding: Smart handleliste (Kassalapp-prissammenligning) er fjernet –
 // rydder bort den gamle per-familie-innstillingsraden i settings-tabellen.

@@ -1,14 +1,18 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
-import { generateWeekPlan } from '../services/dinnerSuggestionService.js';
+import { generateWeekPlan, generateRecipeDetails } from '../services/dinnerSuggestionService.js';
 
 const router = Router();
 router.use(requireAuth);
 
 function serializePlan(row) {
   if (!row) return row;
-  return { ...row, ingredients: JSON.parse(row.ingredients_json || '[]') };
+  return {
+    ...row,
+    ingredients: JSON.parse(row.ingredients_json || '[]'),
+    instructions: JSON.parse(row.instructions_json || '[]'),
+  };
 }
 
 // Standardliste av vanlige norske familiemiddager – seedes én gang per
@@ -83,23 +87,35 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { date, title, emoji, notes, description = null, ingredients = null, photo_url = null, source = 'manual' } = req.body || {};
+  const {
+    date,
+    title,
+    emoji,
+    notes,
+    description = null,
+    ingredients = null,
+    instructions = null,
+    photo_url = null,
+    source = 'manual',
+  } = req.body || {};
   if (!date || !title) {
     return res.status(400).json({ error: 'Dato og tittel er påkrevd' });
   }
   const ingredientsJson = JSON.stringify(ingredients || []);
+  const instructionsJson = JSON.stringify(instructions || []);
   db.prepare(
-    `INSERT INTO dinner_plans (family_id, date, title, emoji, notes, description, ingredients_json, photo_url, source)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO dinner_plans (family_id, date, title, emoji, notes, description, ingredients_json, instructions_json, photo_url, source)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(family_id, date) DO UPDATE SET
        title = excluded.title,
        emoji = excluded.emoji,
        notes = excluded.notes,
        description = excluded.description,
        ingredients_json = excluded.ingredients_json,
+       instructions_json = excluded.instructions_json,
        photo_url = excluded.photo_url,
        source = excluded.source`
-  ).run(req.familyId, date, title, emoji || null, notes || null, description, ingredientsJson, photo_url, source);
+  ).run(req.familyId, date, title, emoji || null, notes || null, description, ingredientsJson, instructionsJson, photo_url, source);
 
   const plan = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').get(req.familyId, date);
   req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', serializePlan(plan));
@@ -124,20 +140,30 @@ router.post('/plan-week', async (req, res) => {
     const days = await generateWeekPlan({ startDate, existingTitles: recentTitles });
 
     const insert = db.prepare(
-      `INSERT INTO dinner_plans (family_id, date, title, emoji, notes, description, ingredients_json, photo_url, source)
-       VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 'ai')
+      `INSERT INTO dinner_plans (family_id, date, title, emoji, notes, description, ingredients_json, instructions_json, photo_url, source)
+       VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, 'ai')
        ON CONFLICT(family_id, date) DO UPDATE SET
          title = excluded.title,
          emoji = excluded.emoji,
          description = excluded.description,
          ingredients_json = excluded.ingredients_json,
+         instructions_json = excluded.instructions_json,
          photo_url = excluded.photo_url,
          source = excluded.source`
     );
     const dates = days.map((_, i) => addDays(startDate, i));
     db.transaction(() => {
       days.forEach((day, i) => {
-        insert.run(req.familyId, dates[i], day.title, day.emoji, day.description, JSON.stringify(day.ingredients), day.photo_url);
+        insert.run(
+          req.familyId,
+          dates[i],
+          day.title,
+          day.emoji,
+          day.description,
+          JSON.stringify(day.ingredients),
+          JSON.stringify(day.instructions || []),
+          day.photo_url
+        );
       });
     })();
 
@@ -148,6 +174,26 @@ router.post('/plan-week', async (req, res) => {
 
     req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', { bulk: true });
     res.json(plans);
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Fyller inn ingredienser/fremgangsmåte (+ bilde) for en middag som allerede
+// står på en dag, men mangler oppskriftsdetaljer – f.eks. valgt fra
+// biblioteket (kun tittel+emoji) eller skrevet inn for hånd.
+router.post('/:date/generate-recipe', async (req, res) => {
+  const plan = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').get(req.familyId, req.params.date);
+  if (!plan) return res.status(404).json({ error: 'Fant ingen middag denne dagen' });
+  try {
+    const { ingredients, instructions, photo_url } = await generateRecipeDetails(plan.title);
+    db.prepare(
+      `UPDATE dinner_plans SET ingredients_json = ?, instructions_json = ?, photo_url = COALESCE(?, photo_url)
+       WHERE id = ?`
+    ).run(JSON.stringify(ingredients), JSON.stringify(instructions), photo_url, plan.id);
+    const updated = db.prepare('SELECT * FROM dinner_plans WHERE id = ?').get(plan.id);
+    req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', serializePlan(updated));
+    res.json(serializePlan(updated));
   } catch (err) {
     res.status(502).json({ error: err.message });
   }

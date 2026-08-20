@@ -23,8 +23,13 @@ const PLAN_WEEK_TOOL = {
               items: { type: 'string' },
               description: 'Ingrediensliste med mengde per stykk, f.eks. "500 g kjøttdeig", "2 stk paprika"',
             },
+            instructions: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Fremgangsmåte, ett kort steg per element (f.eks. "Brun kjøttdeigen i en gryte")',
+            },
           },
-          required: ['title', 'emoji', 'description', 'ingredients'],
+          required: ['title', 'emoji', 'description', 'ingredients', 'instructions'],
         },
       },
     },
@@ -78,4 +83,56 @@ export async function generateWeekPlan({ startDate, existingTitles = [] }) {
     : days.map(() => null);
 
   return days.map((d, i) => ({ ...d, photo_url: photos[i] || null }));
+}
+
+const REPORT_RECIPE_TOOL = {
+  name: 'rapporter_oppskrift',
+  description: 'Rapporter ingredienser og fremgangsmåte for retten.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      ingredients: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Ingrediensliste for ca. 4 porsjoner, med mengde, f.eks. "500 g kjøttdeig"',
+      },
+      instructions: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Fremgangsmåte, ett kort steg per element',
+      },
+    },
+    required: ['ingredients', 'instructions'],
+  },
+};
+
+// Fyller inn ingredienser/fremgangsmåte (+ bilde hvis Unsplash er
+// konfigurert) for én enkelt rett i etterkant – brukes når en middag ble
+// valgt fra biblioteket (kun tittel+emoji) eller skrevet inn manuelt uten
+// full oppskrift, og familien senere åpner den og vil se detaljene.
+export async function generateRecipeDetails(title) {
+  if (!config.anthropicApiKey) {
+    throw new Error('Oppskriftsgenerering krever en Claude API-nøkkel i .env (ANTHROPIC_API_KEY)');
+  }
+  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+
+  const response = await client.messages.create({
+    model: 'claude-opus-5',
+    max_tokens: 1024,
+    system:
+      'Du lager enkle, familievennlige oppskrifter for norske hjemmemiddager. Bruk verktøyet ' +
+      'rapporter_oppskrift til å svare. Ingredienser skal være for ca. 4 porsjoner med mengde oppgitt ' +
+      'naturlig på norsk. Fremgangsmåten skal være korte, konkrete steg – ikke for detaljert.',
+    tools: [REPORT_RECIPE_TOOL],
+    tool_choice: { type: 'tool', name: 'rapporter_oppskrift' },
+    messages: [{ role: 'user', content: `Lag en oppskrift for retten "${title}".` }],
+  });
+
+  const toolUse = response.content.find((c) => c.type === 'tool_use');
+  if (!toolUse) {
+    throw new Error('Klarte ikke å lage en oppskrift akkurat nå – prøv igjen');
+  }
+
+  const photo_url = isUnsplashConfigured() ? await searchFoodPhoto(title) : null;
+  return { ingredients: toolUse.input.ingredients || [], instructions: toolUse.input.instructions || [], photo_url };
 }

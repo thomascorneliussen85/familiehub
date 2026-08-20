@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import DinnerLibraryModal from './DinnerLibraryModal';
+import DinnerRecipeModal from './DinnerRecipeModal';
 import './DinnerWeekPlanner.css';
 
 const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -33,7 +34,7 @@ function weekLabel(offset, weekStart) {
   return `${fmt(weekStart)}–${fmt(end)}`;
 }
 
-const emptyForm = { title: '', emoji: '🍽️', description: '', ingredientsText: '' };
+const emptyForm = { title: '', emoji: '🍽️', description: '', ingredientsText: '', instructionsText: '' };
 
 export default function DinnerWeekPlanner() {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -41,6 +42,7 @@ export default function DinnerWeekPlanner() {
   const [editingDate, setEditingDate] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [libraryFor, setLibraryFor] = useState(null);
+  const [recipeFor, setRecipeFor] = useState(null);
   const [planning, setPlanning] = useState(false);
   const [planError, setPlanError] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -114,6 +116,7 @@ export default function DinnerWeekPlanner() {
       emoji: existing?.emoji || '🍽️',
       description: existing?.description || '',
       ingredientsText: (existing?.ingredients || []).join('\n'),
+      instructionsText: (existing?.instructions || []).join('\n'),
     });
     setEditingDate(dateStr);
   }
@@ -125,6 +128,10 @@ export default function DinnerWeekPlanner() {
       .split('\n')
       .map((s) => s.trim())
       .filter(Boolean);
+    const instructions = form.instructionsText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
     await api
       .post('/dinner-plans', {
         date: editingDate,
@@ -132,6 +139,7 @@ export default function DinnerWeekPlanner() {
         emoji: form.emoji || '🍽️',
         description: form.description.trim() || null,
         ingredients,
+        instructions,
       })
       .catch(() => {});
     setEditingDate(null);
@@ -268,6 +276,13 @@ export default function DinnerWeekPlanner() {
                       onChange={(e) => setForm((f) => ({ ...f, ingredientsText: e.target.value }))}
                       rows={4}
                     />
+                    <textarea
+                      className="dinner-planner-ingredients-input"
+                      placeholder={'Fremgangsmåte, ett steg per linje (valgfritt)…'}
+                      value={form.instructionsText}
+                      onChange={(e) => setForm((f) => ({ ...f, instructionsText: e.target.value }))}
+                      rows={4}
+                    />
                     <div className="dinner-planner-edit-actions">
                       <button className="btn" onClick={() => setEditingDate(null)}>
                         Avbryt
@@ -278,7 +293,7 @@ export default function DinnerWeekPlanner() {
                     </div>
                   </div>
                 ) : plan ? (
-                  <button className="dinner-planner-card-body" onClick={() => openEdit(dateStr)}>
+                  <button className="dinner-planner-card-body" onClick={() => setRecipeFor(dateStr)}>
                     {plan.photo_url ? (
                       <img className="dinner-planner-photo" src={plan.photo_url} alt="" />
                     ) : (
@@ -337,6 +352,17 @@ export default function DinnerWeekPlanner() {
         )}
       </div>
       {libraryFor && <DinnerLibraryModal onSelect={selectFromLibrary} onClose={() => setLibraryFor(null)} />}
+      {recipeFor && plans[recipeFor] && (
+        <DinnerRecipeModal
+          plan={plans[recipeFor]}
+          onClose={() => setRecipeFor(null)}
+          onEdit={() => {
+            const date = recipeFor;
+            setRecipeFor(null);
+            openEdit(date);
+          }}
+        />
+      )}
     </section>
   );
 }

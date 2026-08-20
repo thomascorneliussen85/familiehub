@@ -1,0 +1,139 @@
+.dinner-recipe-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 560;
+}
+.dinner-recipe-modal {
+  position: relative;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.dinner-recipe-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  z-index: 2;
+}
+.dinner-recipe-photo {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dinner-recipe-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  flex-shrink: 0;
+}
+.dinner-recipe-body {
+  padding: 22px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dinner-recipe-title {
+  font-size: 24px;
+  font-weight: 700;
+}
+.dinner-recipe-desc {
+  font-size: 15px;
+  color: var(--text-dim);
+  margin-top: -6px;
+}
+.dinner-recipe-sections {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 24px;
+}
+.dinner-recipe-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+.dinner-recipe-ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dinner-recipe-ingredients li {
+  font-size: 14.5px;
+  padding-left: 16px;
+  position: relative;
+}
+.dinner-recipe-ingredients li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.dinner-recipe-instructions {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dinner-recipe-instructions li {
+  font-size: 14.5px;
+  line-height: 1.45;
+  padding-left: 4px;
+}
+.dinner-recipe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.dinner-recipe-error {
+  color: var(--danger);
+  font-size: 13.5px;
+}
+.dinner-recipe-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--panel-border);
+  margin-top: 4px;
+}
+
+@media (max-width: 560px) {
+  .dinner-recipe-sections {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

@@ -281,6 +281,7 @@ CREATE TABLE IF NOT EXISTS dinner_plans (
   notes            TEXT,
   description      TEXT,               -- kort AI-generert beskrivelse av retten
   ingredients_json TEXT NOT NULL DEFAULT '[]', -- JSON-array av tekststrenger, f.eks. "500 g kjøttdeig"
+  instructions_json TEXT NOT NULL DEFAULT '[]', -- JSON-array av fremgangsmåte-steg
   photo_url        TEXT,               -- Unsplash-bilde hvis konfigurert, ellers null (emoji brukes da)
   source           TEXT NOT NULL DEFAULT 'manual', -- 'manual' | 'ai'
   created_at       TEXT NOT NULL DEFAULT (datetime('now')),
