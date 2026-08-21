@@ -44,6 +44,19 @@ CREATE TABLE IF NOT EXISTS calendar_connections (
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Robotstøvsuger(e) koblet til via det lokale miIO/MIoT-protokollen (se
+-- miioProtocol.js/dreameVacuumService.js) – ingen offisiell API finnes, så
+-- IP+token må skaffes manuelt (f.eks. via Xiaomi Cloud Tokens Extractor)
+-- og legges inn her. token er en 32-tegns hex-streng.
+CREATE TABLE IF NOT EXISTS vacuum_devices (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id   INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  ip          TEXT NOT NULL,
+  token       TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- family_id er direkte her (ikke bare via member_id) fordi member_id kan være
 -- NULL for familie-felles avtaler uten ett bestemt medlem.
 CREATE TABLE IF NOT EXISTS calendar_events (

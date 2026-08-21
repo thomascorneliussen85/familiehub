@@ -22,6 +22,13 @@ export default function DevicesTab({ adminApi }) {
   const [newPlugIp, setNewPlugIp] = useState('');
   const [plugError, setPlugError] = useState('');
 
+  const [vacuums, setVacuums] = useState([]);
+  const [newVacuumLabel, setNewVacuumLabel] = useState('');
+  const [newVacuumIp, setNewVacuumIp] = useState('');
+  const [newVacuumToken, setNewVacuumToken] = useState('');
+  const [vacuumError, setVacuumError] = useState('');
+  const [addingVacuum, setAddingVacuum] = useState(false);
+
   function loadCameras() {
     fetch('/api/cameras', { credentials: 'include' }).then((r) => r.json()).then(setCameras).catch(() => {});
   }
@@ -37,6 +44,7 @@ export default function DevicesTab({ adminApi }) {
     loadBridgeStatus();
     loadShellyDevices();
     fetch('/api/smart-plugs', { credentials: 'include' }).then((r) => r.json()).then(setPlugs).catch(() => {});
+    fetch('/api/vacuum', { credentials: 'include' }).then((r) => r.json()).then(setVacuums).catch(() => {});
 
     socket.on('cameras:update', loadCameras);
     socket.on('camera-bridge:status', loadBridgeStatus);
@@ -139,6 +147,32 @@ export default function DevicesTab({ adminApi }) {
   async function removePlug(id) {
     await adminApi.delete(`/smart-plugs/${id}`).catch(() => {});
     setPlugs((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function addVacuum() {
+    setVacuumError('');
+    if (!newVacuumLabel.trim() || !newVacuumIp.trim() || !newVacuumToken.trim()) return;
+    setAddingVacuum(true);
+    try {
+      await adminApi.post('/vacuum', {
+        label: newVacuumLabel.trim(),
+        ip: newVacuumIp.trim(),
+        token: newVacuumToken.trim(),
+      });
+      setNewVacuumLabel('');
+      setNewVacuumIp('');
+      setNewVacuumToken('');
+      fetch('/api/vacuum', { credentials: 'include' }).then((r) => r.json()).then(setVacuums).catch(() => {});
+    } catch (err) {
+      setVacuumError(err.message);
+    } finally {
+      setAddingVacuum(false);
+    }
+  }
+
+  async function removeVacuum(id) {
+    await adminApi.delete(`/vacuum/${id}`).catch(() => {});
+    setVacuums((prev) => prev.filter((v) => v.id !== id));
   }
 
   return (
@@ -302,6 +336,47 @@ export default function DevicesTab({ adminApi }) {
         </button>
       </div>
       {plugError && <div className="settings-message">{plugError}</div>}
+
+      <div className="settings-subtitle">Robotstøvsuger</div>
+      <div className="empty-hint">
+        Ingen offisiell app-tilkobling finnes – IP-adresse og "token" må hentes ut manuelt, f.eks. med det
+        frittstående verktøyet «Xiaomi Cloud Tokens Extractor» (søk det opp), og kun på samme hjemmenettverk.
+      </div>
+      <div className="settings-locations-list">
+        {vacuums.length === 0 && <div className="empty-hint">Ingen støvsuger lagt til ennå.</div>}
+        {vacuums.map((v) => (
+          <div key={v.id} className="settings-location-item">
+            <span>🤖 {v.label} ({v.ip})</span>
+            <button className="btn btn-icon" onClick={() => removeVacuum(v.id)} aria-label="Fjern">
+              🗑️
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="settings-location-add">
+        <input
+          type="text"
+          placeholder="Navn (f.eks. Stuen)"
+          value={newVacuumLabel}
+          onChange={(e) => setNewVacuumLabel(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="IP-adresse"
+          value={newVacuumIp}
+          onChange={(e) => setNewVacuumIp(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Token (32 hex-tegn)"
+          value={newVacuumToken}
+          onChange={(e) => setNewVacuumToken(e.target.value)}
+        />
+        <button className="btn btn-accent" onClick={addVacuum} disabled={addingVacuum}>
+          {addingVacuum ? 'Kobler til…' : 'Legg til'}
+        </button>
+      </div>
+      {vacuumError && <div className="settings-message">{vacuumError}</div>}
 
       <PushNotificationSection />
     </div>
