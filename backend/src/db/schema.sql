@@ -572,6 +572,18 @@ CREATE TABLE IF NOT EXISTS finance_config (
   updated_at                   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ElevenLabs-nøkkel for taleassistenten (VoiceButton) sin stemme, som
+-- erstatter nettleserens robotaktige innebygde talesyntese. Nøkkelen lagres
+-- kryptert (samme financeCrypto.js-hjelper som over, til tross for filnavnet
+-- er den generisk). Uten nøkkel/voice_id faller VoiceButton automatisk
+-- tilbake til nettleserens speechSynthesis, så dette er valgfritt.
+CREATE TABLE IF NOT EXISTS voice_config (
+  family_id                    INTEGER PRIMARY KEY REFERENCES families(id) ON DELETE CASCADE,
+  elevenlabs_api_key_encrypted TEXT,
+  voice_id                     TEXT,
+  updated_at                   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS finance_accounts (
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
   family_id          INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,

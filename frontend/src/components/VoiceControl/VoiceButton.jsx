@@ -24,7 +24,7 @@ const SPEECH_ERROR_MESSAGES = {
   aborted: '',
 };
 
-function speak(text) {
+function speakWithBrowser(text) {
   return new Promise((resolve) => {
     if (!('speechSynthesis' in window)) {
       resolve();
@@ -36,6 +36,35 @@ function speak(text) {
     utter.onerror = resolve;
     window.speechSynthesis.speak(utter);
   });
+}
+
+// Prøver ElevenLabs først for en naturlig stemme – faller stille tilbake til
+// nettleserens robotaktige speechSynthesis hvis familien ikke har satt opp en
+// nøkkel ennå (Innstillinger → Stemme), eller hvis kallet feiler av andre grunner.
+async function speak(text) {
+  try {
+    const res = await fetch('/api/voice/speak', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      await new Promise((resolve) => {
+        const audio = new Audio(url);
+        audio.onended = resolve;
+        audio.onerror = resolve;
+        audio.play().catch(resolve);
+      });
+      URL.revokeObjectURL(url);
+      return;
+    }
+  } catch {
+    // nettverksfeil o.l. – faller tilbake under
+  }
+  await speakWithBrowser(text);
 }
 
 // Kort pip (i stedet for tale) som kvittering på at vekkeordet ble hørt, siden

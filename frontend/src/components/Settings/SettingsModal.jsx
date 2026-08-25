@@ -11,6 +11,7 @@ import RewardsSettingsTab from './RewardsSettingsTab';
 import PhotosSettingsTab from './PhotosSettingsTab';
 import FeedbackTab from './FeedbackTab';
 import RoadmapTab from './RoadmapTab';
+import VoiceSettingsTab from './VoiceSettingsTab';
 import './SettingsModal.css';
 
 const PIN_LENGTH = 4;
@@ -138,6 +139,12 @@ export default function SettingsModal({ onClose }) {
             Bilder
           </button>
           <button
+            className={`settings-tab ${tab === 'voice' ? 'settings-tab-active' : ''}`}
+            onClick={() => setTab('voice')}
+          >
+            Stemme
+          </button>
+          <button
             className={`settings-tab ${tab === 'roadmap' ? 'settings-tab-active' : ''}`}
             onClick={() => setTab('roadmap')}
           >
@@ -160,6 +167,7 @@ export default function SettingsModal({ onClose }) {
         {tab === 'brief' && <BriefSettingsTab adminApi={adminApi} />}
         {tab === 'rewards' && <RewardsSettingsTab adminApi={adminApi} />}
         {tab === 'photos' && <PhotosSettingsTab adminApi={adminApi} />}
+        {tab === 'voice' && <VoiceSettingsTab adminApi={adminApi} />}
         {tab === 'roadmap' && <RoadmapTab adminApi={adminApi} isOwnerFamily={Boolean(user?.isOwnerFamily)} />}
         {tab === 'feedback' && user?.isOwnerFamily && <FeedbackTab adminApi={adminApi} />}
       </div>
