@@ -91,14 +91,15 @@ export async function syncICloudConnection(connection) {
     `DELETE FROM calendar_events WHERE connection_id = ? AND start_at >= ? AND start_at <= ?`
   );
   const insert = db.prepare(
-    `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, location, source, external_id, connection_id)
-     VALUES (?, ?, ?, ?, ?, ?, 'icloud', ?, ?)`
+    `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, source, external_id, connection_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'icloud', ?, ?)`
   );
 
   const importTx = db.transaction(() => {
     clear.run(connection.id, timeMin.toISOString(), timeMax.toISOString());
     for (const e of allEvents) {
       insert.run(
+        connection.family_id,
         connection.member_id,
         e.summary || '(uten tittel)',
         e.start.toISOString(),

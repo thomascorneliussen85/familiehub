@@ -108,7 +108,7 @@ router.post('/spond', requireFamilyPin, async (req, res) => {
 router.post('/:id/sync', requireFamilyPin, async (req, res) => {
   const connection = db
     .prepare(
-      `SELECT cc.* FROM calendar_connections cc JOIN family_members m ON m.id = cc.member_id
+      `SELECT cc.*, m.family_id AS family_id FROM calendar_connections cc JOIN family_members m ON m.id = cc.member_id
        WHERE cc.id = ? AND m.family_id = ?`
     )
     .get(req.params.id, req.familyId);

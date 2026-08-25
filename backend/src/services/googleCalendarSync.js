@@ -70,8 +70,8 @@ export async function syncGoogleConnection(connection) {
     `DELETE FROM calendar_events WHERE connection_id = ? AND start_at >= ? AND start_at <= ?`
   );
   const insert = db.prepare(
-    `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, location, source, external_id, connection_id)
-     VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?)`
+    `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, source, external_id, connection_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'google', ?, ?)`
   );
 
   const importTx = db.transaction(() => {
@@ -81,6 +81,7 @@ export async function syncGoogleConnection(connection) {
       const startAt = allDay ? new Date(`${e.start.date}T00:00:00`).toISOString() : e.start.dateTime;
       const endAt = allDay ? new Date(`${e.end.date}T00:00:00`).toISOString() : e.end.dateTime;
       insert.run(
+        connection.family_id,
         connection.member_id,
         e.summary || '(uten tittel)',
         startAt,

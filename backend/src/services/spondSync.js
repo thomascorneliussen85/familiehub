@@ -106,14 +106,24 @@ export async function syncSpondConnection(connection) {
 
   const clear = db.prepare(`DELETE FROM calendar_events WHERE connection_id = ? AND start_at >= ? AND start_at <= ?`);
   const insert = db.prepare(
-    `INSERT INTO calendar_events (member_id, title, start_at, end_at, all_day, location, notes, source, external_id, connection_id)
-     VALUES (?, ?, ?, ?, 0, ?, ?, 'spond', ?, ?)`
+    `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, notes, source, external_id, connection_id)
+     VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'spond', ?, ?)`
   );
 
   const importTx = db.transaction(() => {
     clear.run(connection.id, timeMin.toISOString(), timeMax.toISOString());
     for (const e of allEvents) {
-      insert.run(connection.member_id, e.title, e.start.toISOString(), e.end.toISOString(), e.location, e.notes, e.id, connection.id);
+      insert.run(
+        connection.family_id,
+        connection.member_id,
+        e.title,
+        e.start.toISOString(),
+        e.end.toISOString(),
+        e.location,
+        e.notes,
+        e.id,
+        connection.id
+      );
     }
   });
   importTx();
