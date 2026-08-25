@@ -9,21 +9,32 @@ const API_BASE = 'https://api.spond.com/core/v1/';
 const SYNC_DAYS_BACK = 7;
 const SYNC_DAYS_AHEAD = 90;
 
+// Spond svarer ofte 200 OK selv ved feil innlogging, med feilen i selve
+// JSON-kroppen i stedet for HTTP-statusen (bekreftet mot Olen/Spond, som
+// alltid parser body-en før den sjekker om et token faktisk kom med) – å
+// bare sjekke res.ok slik denne funksjonen gjorde før, ga alltid samme
+// "feil e-post eller passord"-melding uansett faktisk årsak. Spond-kontoer
+// med 2FA/to-trinns-verifisering slår uansett aldri gjennom her ennå, siden
+// dette uoffisielle API-et ikke støtter TOTP-steget – dukker typisk opp som
+// en errorKey som nevner verifisering/kode i stedet for feil passord.
 async function login(email, password) {
   const res = await fetch(`${API_BASE}auth2/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    throw new Error('Feil e-post eller passord for Spond');
-  }
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
   const token = data?.accessToken?.token;
-  if (!token) {
-    throw new Error('Fikk ikke pålogging fra Spond');
+  if (token) return token;
+  const detail = data?.errorKey || data?.error || data?.message;
+  if (detail) {
+    throw new Error(`Spond avviste innloggingen: ${detail}`);
   }
-  return token;
+  throw new Error(
+    res.ok
+      ? 'Fikk ikke pålogging fra Spond (uventet svar)'
+      : `Spond avviste innloggingen (status ${res.status})`
+  );
 }
 
 function authHeaders(token) {
