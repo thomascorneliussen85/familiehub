@@ -61,8 +61,10 @@ async function speak(text) {
       URL.revokeObjectURL(url);
       return;
     }
-  } catch {
-    // nettverksfeil o.l. – faller tilbake under
+    const detail = await res.json().catch(() => ({}));
+    console.warn('ElevenLabs-tale feilet, bruker nettleserens tale i stedet:', res.status, detail.error);
+  } catch (err) {
+    console.warn('ElevenLabs-tale feilet, bruker nettleserens tale i stedet:', err);
   }
   await speakWithBrowser(text);
 }
