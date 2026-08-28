@@ -1,30 +1,31 @@
 import garminConnectPkg from 'garmin-connect';
 const { GarminConnect } = garminConnectPkg;
-import { config } from '../config.js';
 import { db } from '../db/index.js';
 
-let client = null;
-let loggedIn = false;
+// Én innlogget garmin-connect-klient per familie (ikke global lenger, siden
+// hver familie nå kan ha sin egen konto) – kartlagt på familyId slik at to
+// familier som synkroniserer samtidig på samme installasjon ikke deler økt.
+const clientsByFamily = new Map();
 
-function getClient() {
-  if (!client) {
-    client = new GarminConnect({
-      username: config.garmin.username,
-      password: config.garmin.password,
-    });
+function getClient(familyId, username, password) {
+  let entry = clientsByFamily.get(familyId);
+  if (!entry) {
+    entry = { client: new GarminConnect({ username, password }), loggedIn: false };
+    clientsByFamily.set(familyId, entry);
   }
-  return client;
+  return entry;
 }
 
 const upsertActivity = db.prepare(`
   INSERT INTO garmin_activities
-    (garmin_activity_id, name, activity_type, start_time, duration_seconds, distance_m, calories, avg_hr, max_hr, elevation_gain_m,
+    (family_id, garmin_activity_id, name, activity_type, start_time, duration_seconds, distance_m, calories, avg_hr, max_hr, elevation_gain_m,
      elapsed_seconds, moving_seconds, elevation_loss_m, min_elevation_m, avg_speed_mps, max_speed_mps,
      avg_cadence, max_cadence, vo2max, aerobic_effect, anaerobic_effect, avg_stride_length_m, lap_count, device_name, raw_json, synced_at)
-  VALUES (@garminActivityId, @name, @activityType, @startTime, @durationSeconds, @distanceM, @calories, @avgHr, @maxHr, @elevationGainM,
+  VALUES (@familyId, @garminActivityId, @name, @activityType, @startTime, @durationSeconds, @distanceM, @calories, @avgHr, @maxHr, @elevationGainM,
           @elapsedSeconds, @movingSeconds, @elevationLossM, @minElevationM, @avgSpeedMps, @maxSpeedMps,
           @avgCadence, @maxCadence, @vo2max, @aerobicEffect, @anaerobicEffect, @avgStrideLengthM, @lapCount, @deviceName, @rawJson, datetime('now'))
   ON CONFLICT(garmin_activity_id) DO UPDATE SET
+    family_id = excluded.family_id,
     name = excluded.name,
     activity_type = excluded.activity_type,
     start_time = excluded.start_time,
@@ -52,9 +53,10 @@ const upsertActivity = db.prepare(`
     synced_at = datetime('now')
 `);
 
-const insertActivities = db.transaction((activities) => {
+const insertActivities = db.transaction((familyId, activities) => {
   for (const a of activities) {
     upsertActivity.run({
+      familyId,
       garminActivityId: a.activityId,
       name: a.activityName || 'Treningsøkt',
       activityType: a.activityType?.typeKey || 'other',
@@ -84,22 +86,26 @@ const insertActivities = db.transaction((activities) => {
   }
 });
 
-export async function syncGarminActivities(limit = 20) {
-  if (!config.garmin.username || !config.garmin.password) {
-    throw new Error('Garmin er ikke konfigurert i .env');
-  }
-  const gc = getClient();
-  if (!loggedIn) {
+// Logger inn (kaster ved feil brukernavn/passord) – brukes både til å teste
+// en tilkobling før den lagres, og som første steg i en vanlig synk.
+export async function testGarminConnection(username, password) {
+  const gc = new GarminConnect({ username, password });
+  await gc.login();
+  return true;
+}
+
+export async function syncGarminActivities(familyId, username, password, limit = 20) {
+  const entry = getClient(familyId, username, password);
+  if (!entry.loggedIn) {
     try {
-      await gc.login();
-      loggedIn = true;
+      await entry.client.login();
+      entry.loggedIn = true;
     } catch (err) {
-      client = null;
-      loggedIn = false;
+      clientsByFamily.delete(familyId);
       throw err;
     }
   }
-  const activities = await gc.getActivities(0, limit);
-  insertActivities(activities);
+  const activities = await entry.client.getActivities(0, limit);
+  insertActivities(familyId, activities);
   return activities.length;
 }

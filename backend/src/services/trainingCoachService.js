@@ -59,20 +59,22 @@ async function callClaude(systemPrompt, userText, maxTokens) {
 }
 
 // Analyserer én treningsøkt opp mot de siste øktene av samme type, og cacher
-// resultatet i training_coach_notes.
-export async function analyzeActivity(garminActivityId) {
+// resultatet i training_coach_notes. familyId sjekkes mot øktens egen
+// family_id slik at én familie aldri kan be om en coach-kommentar for en
+// annen families treningsdata via en gjettet garmin_activity_id.
+export async function analyzeActivity(garminActivityId, familyId) {
   const activity = db
-    .prepare('SELECT * FROM garmin_activities WHERE garmin_activity_id = ?')
-    .get(garminActivityId);
+    .prepare('SELECT * FROM garmin_activities WHERE garmin_activity_id = ? AND family_id = ?')
+    .get(garminActivityId, familyId);
   if (!activity) throw new Error('Treningsøkt ikke funnet');
 
   const history = db
     .prepare(
       `SELECT * FROM garmin_activities
-       WHERE activity_type = ? AND garmin_activity_id != ?
+       WHERE family_id = ? AND activity_type = ? AND garmin_activity_id != ?
        ORDER BY start_time DESC LIMIT 6`
     )
-    .all(activity.activity_type, garminActivityId);
+    .all(familyId, activity.activity_type, garminActivityId);
 
   let commentary;
   if (config.anthropicApiKey) {
@@ -102,8 +104,17 @@ export async function analyzeActivity(garminActivityId) {
   return db.prepare('SELECT * FROM training_coach_notes WHERE garmin_activity_id = ?').get(garminActivityId);
 }
 
-export function getCoachNote(garminActivityId) {
-  return db.prepare('SELECT * FROM training_coach_notes WHERE garmin_activity_id = ?').get(garminActivityId);
+// training_coach_notes har ingen egen family_id – eierskap sjekkes via
+// garmin_activities (som har family_id) i samme spørring, slik at et
+// gjettet garmin_activity_id fra en annen familie aldri gir treff.
+export function getCoachNote(garminActivityId, familyId) {
+  return db
+    .prepare(
+      `SELECT n.* FROM training_coach_notes n
+       JOIN garmin_activities a ON a.garmin_activity_id = n.garmin_activity_id
+       WHERE n.garmin_activity_id = ? AND a.family_id = ?`
+    )
+    .get(garminActivityId, familyId);
 }
 
 function buildDemoCommentary(activity, history) {
@@ -131,10 +142,10 @@ function buildDemoCommentary(activity, history) {
 // Genererer en fremtidsrettet treningsplan basert på nylig treningshistorikk
 // (siste 30 øktene). Regenereres på forespørsel; hver kjøring lagres som en
 // ny rad, nyeste rad er gjeldende plan.
-export async function generateTrainingPlan() {
+export async function generateTrainingPlan(familyId) {
   const activities = db
-    .prepare('SELECT * FROM garmin_activities ORDER BY start_time DESC LIMIT 30')
-    .all();
+    .prepare('SELECT * FROM garmin_activities WHERE family_id = ? ORDER BY start_time DESC LIMIT 30')
+    .all(familyId);
 
   let content;
   if (activities.length === 0) {
@@ -155,13 +166,13 @@ export async function generateTrainingPlan() {
   }
 
   const info = db
-    .prepare('INSERT INTO training_plans (content, activity_count) VALUES (?, ?)')
-    .run(content, activities.length);
+    .prepare('INSERT INTO training_plans (family_id, content, activity_count) VALUES (?, ?, ?)')
+    .run(familyId, content, activities.length);
   return db.prepare('SELECT * FROM training_plans WHERE id = ?').get(info.lastInsertRowid);
 }
 
-export function getLatestTrainingPlan() {
-  return db.prepare('SELECT * FROM training_plans ORDER BY id DESC LIMIT 1').get();
+export function getLatestTrainingPlan(familyId) {
+  return db.prepare('SELECT * FROM training_plans WHERE family_id = ? ORDER BY id DESC LIMIT 1').get(familyId);
 }
 
 function buildDemoPlan(activities) {

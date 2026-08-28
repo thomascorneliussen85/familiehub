@@ -106,10 +106,7 @@ export default function GarminPanel() {
       </div>
       <div className="panel-body garmin-body">
         {loaded && !configured && (
-          <div className="empty-hint">
-            Garmin er ikke koblet til ennå. Legg til GARMIN_USERNAME og GARMIN_PASSWORD i .env på
-            serveren for å koble til klokken din.
-          </div>
+          <div className="empty-hint">Garmin er ikke koblet til ennå. Gå til ⚙️ → Enheter for å koble til klokken din.</div>
         )}
         {error && <div className="garmin-error">{error}</div>}
         {configured && loaded && activities.length === 0 && !error && (

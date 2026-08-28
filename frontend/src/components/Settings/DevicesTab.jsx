@@ -29,6 +29,12 @@ export default function DevicesTab({ adminApi }) {
   const [vacuumError, setVacuumError] = useState('');
   const [addingVacuum, setAddingVacuum] = useState(false);
 
+  const [garminStatus, setGarminStatus] = useState(null);
+  const [garminUsername, setGarminUsername] = useState('');
+  const [garminPassword, setGarminPassword] = useState('');
+  const [garminError, setGarminError] = useState('');
+  const [connectingGarmin, setConnectingGarmin] = useState(false);
+
   function loadCameras() {
     fetch('/api/cameras', { credentials: 'include' }).then((r) => r.json()).then(setCameras).catch(() => {});
   }
@@ -45,6 +51,7 @@ export default function DevicesTab({ adminApi }) {
     loadShellyDevices();
     fetch('/api/smart-plugs', { credentials: 'include' }).then((r) => r.json()).then(setPlugs).catch(() => {});
     fetch('/api/vacuum', { credentials: 'include' }).then((r) => r.json()).then(setVacuums).catch(() => {});
+    fetch('/api/garmin/status', { credentials: 'include' }).then((r) => r.json()).then(setGarminStatus).catch(() => {});
 
     socket.on('cameras:update', loadCameras);
     socket.on('camera-bridge:status', loadBridgeStatus);
@@ -173,6 +180,27 @@ export default function DevicesTab({ adminApi }) {
   async function removeVacuum(id) {
     await adminApi.delete(`/vacuum/${id}`).catch(() => {});
     setVacuums((prev) => prev.filter((v) => v.id !== id));
+  }
+
+  async function connectGarmin() {
+    setGarminError('');
+    if (!garminUsername.trim() || !garminPassword.trim()) return;
+    setConnectingGarmin(true);
+    try {
+      await adminApi.post('/garmin/connect', { username: garminUsername.trim(), password: garminPassword.trim() });
+      setGarminUsername('');
+      setGarminPassword('');
+      fetch('/api/garmin/status', { credentials: 'include' }).then((r) => r.json()).then(setGarminStatus).catch(() => {});
+    } catch (err) {
+      setGarminError(err.message);
+    } finally {
+      setConnectingGarmin(false);
+    }
+  }
+
+  async function disconnectGarmin() {
+    await adminApi.delete('/garmin/connect').catch(() => {});
+    setGarminStatus({ configured: false, lastSyncAt: null });
   }
 
   return (
@@ -377,6 +405,47 @@ export default function DevicesTab({ adminApi }) {
         </button>
       </div>
       {vacuumError && <div className="settings-message">{vacuumError}</div>}
+
+      <div className="settings-subtitle">Garmin-klokke</div>
+      <div className="empty-hint">
+        Samme innlogging som Garmin Connect-appen din. Ingen offisiell tilkobling – dette bruker det uoffisielle
+        API-et Garmin Connect-appen selv snakker med.
+      </div>
+      <div className="settings-locations-list">
+        {garminStatus?.configured ? (
+          <div className="settings-location-item">
+            <span>
+              ⌚ Koblet til
+              {garminStatus.lastSyncAt && ` · sist synket ${new Date(garminStatus.lastSyncAt.replace(' ', 'T') + 'Z').toLocaleString('nb-NO')}`}
+            </span>
+            <button className="btn btn-icon" onClick={disconnectGarmin} aria-label="Koble fra">
+              🗑️
+            </button>
+          </div>
+        ) : (
+          <div className="empty-hint">Ingen Garmin-konto koblet til ennå.</div>
+        )}
+      </div>
+      {!garminStatus?.configured && (
+        <div className="settings-location-add">
+          <input
+            type="text"
+            placeholder="Brukernavn/e-post"
+            value={garminUsername}
+            onChange={(e) => setGarminUsername(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Passord"
+            value={garminPassword}
+            onChange={(e) => setGarminPassword(e.target.value)}
+          />
+          <button className="btn btn-accent" onClick={connectGarmin} disabled={connectingGarmin}>
+            {connectingGarmin ? 'Kobler til…' : 'Koble til'}
+          </button>
+        </div>
+      )}
+      {garminError && <div className="settings-message">{garminError}</div>}
 
       <PushNotificationSection />
     </div>

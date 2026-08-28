@@ -231,6 +231,39 @@ const garminActivitiesColumns = db.prepare('PRAGMA table_info(garmin_activities)
   }
 });
 
+// Migrering: Garmin gikk fra én delt konto for hele installasjonen (.env)
+// til én tilkobling per familie (garmin_connections). garmin_activities og
+// training_plans kan finnes fra før uten family_id – all eksisterende
+// treningsdata knyttes til hovedfamilien (den som satte opp installasjonen),
+// siden det var den eneste som kunne bruke Garmin-modulen før dette.
+const ownerFamilyIdForGarmin = db.prepare('SELECT id FROM families ORDER BY id LIMIT 1').get()?.id ?? null;
+if (!garminActivitiesColumns.includes('family_id')) {
+  db.exec('ALTER TABLE garmin_activities ADD COLUMN family_id INTEGER REFERENCES families(id) ON DELETE CASCADE');
+  if (ownerFamilyIdForGarmin) {
+    db.prepare('UPDATE garmin_activities SET family_id = ? WHERE family_id IS NULL').run(ownerFamilyIdForGarmin);
+  }
+}
+const trainingPlansColumns = db.prepare('PRAGMA table_info(training_plans)').all().map((c) => c.name);
+if (!trainingPlansColumns.includes('family_id')) {
+  db.exec('ALTER TABLE training_plans ADD COLUMN family_id INTEGER REFERENCES families(id) ON DELETE CASCADE');
+  if (ownerFamilyIdForGarmin) {
+    db.prepare('UPDATE training_plans SET family_id = ? WHERE family_id IS NULL').run(ownerFamilyIdForGarmin);
+  }
+}
+// Var Garmin allerede konfigurert via .env (den gamle måten), flyttes den
+// automatisk over til en ekte garmin_connections-rad for hovedfamilien, slik
+// at et eksisterende oppsett fortsetter å virke uten at noen må gjøre noe.
+if (ownerFamilyIdForGarmin && config.garmin.username && config.garmin.password) {
+  const existingGarminConn = db.prepare('SELECT 1 FROM garmin_connections WHERE family_id = ?').get(ownerFamilyIdForGarmin);
+  if (!existingGarminConn) {
+    db.prepare('INSERT INTO garmin_connections (family_id, username, password) VALUES (?, ?, ?)').run(
+      ownerFamilyIdForGarmin,
+      config.garmin.username,
+      config.garmin.password
+    );
+  }
+}
+
 // Migrering: cameras kan finnes fra før kamera-bro-støtten (auto-oppdagelse
 // via en lokal Raspberry Pi-bro), uten disse kolonnene.
 const camerasColumns = db.prepare('PRAGMA table_info(cameras)').all().map((c) => c.name);

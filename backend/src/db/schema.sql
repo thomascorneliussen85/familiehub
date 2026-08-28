@@ -318,8 +318,22 @@ CREATE INDEX IF NOT EXISTS idx_dinner_recipes_family ON dinner_recipes(family_id
 -- Garmin er foreløpig én delt konto for hele installasjonen (satt opp via
 -- .env av installasjonens eier), ikke per-familie – se README. Ingen
 -- family_id her ennå; egen kreditiv-lagring per familie er en senere jobb.
+-- Garmin-tilkobling, én per familie – erstatter det tidligere globale
+-- GARMIN_USERNAME/PASSWORD-oppsettet i .env (delt for hele installasjonen),
+-- slik at hver familie kan koble til sin egen konto. Passord lagres i
+-- klartekst, samme bevisste forenkling som calendar_connections bruker for
+-- iCloud/Spond-passord.
+CREATE TABLE IF NOT EXISTS garmin_connections (
+  family_id       INTEGER PRIMARY KEY REFERENCES families(id) ON DELETE CASCADE,
+  username        TEXT NOT NULL,
+  password        TEXT NOT NULL,
+  last_synced_at  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS garmin_activities (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id           INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   garmin_activity_id  INTEGER NOT NULL UNIQUE,
   name                TEXT NOT NULL,
   activity_type       TEXT,
@@ -361,6 +375,7 @@ CREATE TABLE IF NOT EXISTS training_coach_notes (
 -- Regenereres på forespørsel; nyeste rad er gjeldende plan.
 CREATE TABLE IF NOT EXISTS training_plans (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   content        TEXT NOT NULL,
   activity_count INTEGER NOT NULL DEFAULT 0,
   generated_at   TEXT NOT NULL DEFAULT (datetime('now'))
