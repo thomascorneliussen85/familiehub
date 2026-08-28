@@ -28,19 +28,17 @@ export async function handleGoogleCallback(code, memberId) {
         'myaccount.google.com/permissions og prøv å koble til på nytt.'
     );
   }
-  oauth2Client.setCredentials(tokens);
-  const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-  const { data: userInfo } = await oauth2.userinfo.get();
 
+  // Henter IKKE kontoens e-post via oauth2.userinfo.get() lenger – det krevde
+  // et eget scope (e-post/profil) i tillegg til calendar.readonly, som appen
+  // aldri ba om samtykke for, og som derfor alltid feilet med "missing
+  // required authentication credential". E-posten var uansett bare til pynt
+  // i tilkoblings-etiketten, så heller be minst mulig om enn å utvide scopet.
   const info = db
     .prepare(
       `INSERT INTO calendar_connections (member_id, provider, label, credentials) VALUES (?, 'google', ?, ?)`
     )
-    .run(
-      memberId,
-      userInfo.email || 'Google-kalender',
-      JSON.stringify({ refresh_token: tokens.refresh_token })
-    );
+    .run(memberId, 'Google-kalender', JSON.stringify({ refresh_token: tokens.refresh_token }));
   return db.prepare('SELECT * FROM calendar_connections WHERE id = ?').get(info.lastInsertRowid);
 }
 
