@@ -373,6 +373,47 @@ CREATE TABLE IF NOT EXISTS training_coach_notes (
 
 -- AI-generert fremtidsrettet treningsplan basert på nylig treningshistorikk.
 -- Regenereres på forespørsel; nyeste rad er gjeldende plan.
+-- Strava-tilkobling per familie – i motsetning til Garmin/Spond/iCloud har
+-- Strava et offisielt, offentlig OAuth-API, så dette lagrer et
+-- access/refresh-token-par (fra www.strava.com/oauth/token) i stedet for
+-- brukernavn/passord. Tokens lagres i klartekst, samme bevisste forenkling
+-- som resten av tilkoblingene i denne fila.
+CREATE TABLE IF NOT EXISTS strava_connections (
+  family_id       INTEGER PRIMARY KEY REFERENCES families(id) ON DELETE CASCADE,
+  athlete_id      INTEGER,
+  access_token    TEXT NOT NULL,
+  refresh_token   TEXT NOT NULL,
+  expires_at      INTEGER NOT NULL, -- unix-tidsstempel (sekunder) for når access_token utløper
+  last_synced_at  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Egen tabell i stedet for å gjenbruke garmin_activities – en familie som
+-- har begge kan ellers få dobbelt opp om Garmin-klokken deres allerede
+-- auto-laster opp til Strava (vanlig oppsett). Egne, separate lister unngår
+-- den kollisjonen; UI-et viser to atskilte paneler.
+CREATE TABLE IF NOT EXISTS strava_activities (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id           INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  strava_activity_id  INTEGER NOT NULL UNIQUE,
+  name                TEXT NOT NULL,
+  activity_type       TEXT,
+  start_time          TEXT NOT NULL,
+  duration_seconds    REAL,
+  elapsed_seconds     REAL,
+  distance_m          REAL,
+  calories            REAL,
+  avg_hr              REAL,
+  max_hr              REAL,
+  elevation_gain_m    REAL,
+  avg_speed_mps       REAL,
+  max_speed_mps       REAL,
+  avg_cadence         REAL,
+  device_name         TEXT,
+  raw_json            TEXT,
+  synced_at           TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS training_plans (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   family_id      INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,

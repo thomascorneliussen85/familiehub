@@ -38,12 +38,17 @@ function AppShell() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const result = params.get('calendar_connect');
+    const stravaResult = params.get('strava_connect');
     if (result === 'ok') {
       setCalendarConnectMsg('Kalender koblet til ✓');
     } else if (result === 'error') {
       setCalendarConnectMsg('Klarte ikke å koble til kalenderen. Prøv igjen fra ⚙️ → Kalendere.');
+    } else if (stravaResult === 'ok') {
+      setCalendarConnectMsg('Strava koblet til ✓');
+    } else if (stravaResult === 'error') {
+      setCalendarConnectMsg('Klarte ikke å koble til Strava. Prøv igjen fra ⚙️ → Enheter.');
     }
-    if (result) {
+    if (result || stravaResult) {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => setCalendarConnectMsg(''), 6000);
     }

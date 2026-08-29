@@ -31,6 +31,12 @@ export const config = {
     photosRedirectUri: process.env.GOOGLE_PHOTOS_REDIRECT_URI || '',
   },
 
+  strava: {
+    clientId: process.env.STRAVA_CLIENT_ID || '',
+    clientSecret: process.env.STRAVA_CLIENT_SECRET || '',
+    redirectUri: process.env.STRAVA_REDIRECT_URI || '',
+  },
+
   traccar: {
     url: process.env.TRACCAR_URL || '',
     username: process.env.TRACCAR_USERNAME || '',

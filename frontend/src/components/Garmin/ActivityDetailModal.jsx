@@ -67,18 +67,22 @@ function Stat({ label, value }) {
   );
 }
 
-export default function ActivityDetailModal({ activityId, onClose }) {
+// basePath/showCoach lar Strava-panelet gjenbruke denne modalen – begge
+// tjenestene lagrer aktiviteter i praksis identisk form, men Strava har
+// (foreløpig) ingen AI-treningscoach koblet til.
+export default function ActivityDetailModal({ activityId, onClose, basePath = '/garmin', showCoach = true }) {
   const [activity, setActivity] = useState(null);
   const [coach, setCoach] = useState(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const [error, setError] = useState('');
 
   const loadCoach = useCallback(async (generate) => {
+    if (!showCoach) return;
     setCoachLoading(true);
     try {
       const note = generate
-        ? await api.post(`/garmin/activities/${activityId}/coach`)
-        : await api.get(`/garmin/activities/${activityId}/coach`);
+        ? await api.post(`${basePath}/activities/${activityId}/coach`)
+        : await api.get(`${basePath}/activities/${activityId}/coach`);
       if (!note && !generate) {
         await loadCoach(true);
         return;
@@ -90,16 +94,16 @@ export default function ActivityDetailModal({ activityId, onClose }) {
       setCoachLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId]);
+  }, [activityId, basePath, showCoach]);
 
   useEffect(() => {
     api
-      .get(`/garmin/activities/${activityId}`)
+      .get(`${basePath}/activities/${activityId}`)
       .then(setActivity)
       .catch((err) => setError(err.message));
     loadCoach(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId]);
+  }, [activityId, basePath]);
 
   if (!activity && !error) {
     return (
@@ -148,21 +152,23 @@ export default function ActivityDetailModal({ activityId, onClose }) {
               <Stat label="Enhet" value={activity.device_name || null} />
             </div>
 
-            <div className="activity-coach">
-              <div className="activity-coach-header">
-                <span className="activity-coach-title">🧑‍🏫 Treningscoach</span>
-                <button
-                  className="btn btn-icon"
-                  onClick={() => loadCoach(true)}
-                  disabled={coachLoading}
-                  aria-label="Oppdater kommentar"
-                >
-                  {coachLoading ? '⏳' : '🔄'}
-                </button>
+            {showCoach && (
+              <div className="activity-coach">
+                <div className="activity-coach-header">
+                  <span className="activity-coach-title">🧑‍🏫 Treningscoach</span>
+                  <button
+                    className="btn btn-icon"
+                    onClick={() => loadCoach(true)}
+                    disabled={coachLoading}
+                    aria-label="Oppdater kommentar"
+                  >
+                    {coachLoading ? '⏳' : '🔄'}
+                  </button>
+                </div>
+                {coachLoading && !coach && <div className="activity-loading">Analyserer økten…</div>}
+                {coach && <p className="activity-coach-text">{coach.commentary}</p>}
               </div>
-              {coachLoading && !coach && <div className="activity-loading">Analyserer økten…</div>}
-              {coach && <p className="activity-coach-text">{coach.commentary}</p>}
-            </div>
+            )}
           </>
         )}
       </div>

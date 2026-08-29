@@ -8,6 +8,7 @@ import TimerPanel from '../Timer/TimerPanel';
 import MiniTimerBadge from '../Timer/MiniTimerBadge';
 import CameraPanel from '../Cameras/CameraPanel';
 import GarminPanel from '../Garmin/GarminPanel';
+import StravaPanel from '../Strava/StravaPanel';
 import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
 import RewardsPanel from '../Rewards/RewardsPanel';
@@ -55,6 +56,7 @@ const MORE_PANELS = [
   { key: 'timer', icon: '⏱️', label: 'Timer', Component: TimerPanel },
   { key: 'cameras', icon: '📹', label: 'Kameraer', Component: CameraPanel },
   { key: 'garmin', icon: '⌚', label: 'Garmin', Component: GarminPanel },
+  { key: 'strava', icon: '🟠', label: 'Strava', Component: StravaPanel },
   { key: 'play-outside', icon: '🛝', label: 'Ut og leke', Component: PlayOutsidePanel },
   { key: 'telemedicine', icon: '🩺', label: 'DoktorNå', Component: TelemedicinePanel },
   { key: 'rewards', icon: '🏆', label: 'Belønninger', Component: RewardsPanel },

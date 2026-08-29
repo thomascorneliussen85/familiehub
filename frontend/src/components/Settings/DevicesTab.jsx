@@ -35,6 +35,9 @@ export default function DevicesTab({ adminApi }) {
   const [garminError, setGarminError] = useState('');
   const [connectingGarmin, setConnectingGarmin] = useState(false);
 
+  const [stravaStatus, setStravaStatus] = useState(null);
+  const [stravaError, setStravaError] = useState('');
+
   function loadCameras() {
     fetch('/api/cameras', { credentials: 'include' }).then((r) => r.json()).then(setCameras).catch(() => {});
   }
@@ -52,6 +55,7 @@ export default function DevicesTab({ adminApi }) {
     fetch('/api/smart-plugs', { credentials: 'include' }).then((r) => r.json()).then(setPlugs).catch(() => {});
     fetch('/api/vacuum', { credentials: 'include' }).then((r) => r.json()).then(setVacuums).catch(() => {});
     fetch('/api/garmin/status', { credentials: 'include' }).then((r) => r.json()).then(setGarminStatus).catch(() => {});
+    fetch('/api/strava/status', { credentials: 'include' }).then((r) => r.json()).then(setStravaStatus).catch(() => {});
 
     socket.on('cameras:update', loadCameras);
     socket.on('camera-bridge:status', loadBridgeStatus);
@@ -201,6 +205,21 @@ export default function DevicesTab({ adminApi }) {
   async function disconnectGarmin() {
     await adminApi.delete('/garmin/connect').catch(() => {});
     setGarminStatus({ configured: false, lastSyncAt: null });
+  }
+
+  async function connectStrava() {
+    setStravaError('');
+    try {
+      const { url } = await adminApi.get('/strava/auth-url');
+      window.location.href = url;
+    } catch (err) {
+      setStravaError(err.message);
+    }
+  }
+
+  async function disconnectStrava() {
+    await adminApi.delete('/strava/connect').catch(() => {});
+    setStravaStatus({ configured: false, lastSyncAt: null });
   }
 
   return (
@@ -446,6 +465,33 @@ export default function DevicesTab({ adminApi }) {
         </div>
       )}
       {garminError && <div className="settings-message">{garminError}</div>}
+
+      <div className="settings-subtitle">Strava</div>
+      <div className="empty-hint">
+        Har dere en Garmin-klokke som allerede laster opp til Strava automatisk, koble kun til én av dem her –
+        ellers dukker samme treningsøkt opp to ganger.
+      </div>
+      <div className="settings-locations-list">
+        {stravaStatus?.configured ? (
+          <div className="settings-location-item">
+            <span>
+              🟠 Koblet til
+              {stravaStatus.lastSyncAt && ` · sist synket ${new Date(stravaStatus.lastSyncAt.replace(' ', 'T') + 'Z').toLocaleString('nb-NO')}`}
+            </span>
+            <button className="btn btn-icon" onClick={disconnectStrava} aria-label="Koble fra">
+              🗑️
+            </button>
+          </div>
+        ) : (
+          <div className="empty-hint">Ingen Strava-konto koblet til ennå.</div>
+        )}
+      </div>
+      {!stravaStatus?.configured && (
+        <button className="btn btn-accent" onClick={connectStrava}>
+          Koble til Strava
+        </button>
+      )}
+      {stravaError && <div className="settings-message">{stravaError}</div>}
 
       <PushNotificationSection />
     </div>
