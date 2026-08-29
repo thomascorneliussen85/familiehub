@@ -65,6 +65,7 @@ export default function CalendarPanel({ expanded = false }) {
   const [homeworkScanError, setHomeworkScanError] = useState('');
   const [homeworkScanResults, setHomeworkScanResults] = useState(null);
   const homeworkScanInputRef = useRef(null);
+  const homeworkUploadInputRef = useRef(null);
 
   // Kun for den utvidede kalenderen (Uke/Tavle/Kalender-visningene).
   const [viewMode, setViewMode] = useState('week');
@@ -280,7 +281,7 @@ export default function CalendarPanel({ expanded = false }) {
         <button
           className="btn btn-icon"
           onClick={() => homeworkScanInputRef.current?.click()}
-          aria-label="Skann lekseplan"
+          aria-label="Ta bilde av lekseplan"
           title="Ta bilde av en lekseplan – legger leksene inn i kalenderen"
           disabled={homeworkScanning}
         >
@@ -291,6 +292,22 @@ export default function CalendarPanel({ expanded = false }) {
           accept="image/*"
           capture="user"
           ref={homeworkScanInputRef}
+          onChange={handleHomeworkScanFile}
+          hidden
+        />
+        <button
+          className="btn btn-icon"
+          onClick={() => homeworkUploadInputRef.current?.click()}
+          aria-label="Last opp lekseplan"
+          title="Last opp en lekseplan du har fått på e-post (bilde eller PDF) – legger leksene inn i kalenderen"
+          disabled={homeworkScanning}
+        >
+          {homeworkScanning ? '⏳' : '📤'}
+        </button>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          ref={homeworkUploadInputRef}
           onChange={handleHomeworkScanFile}
           hidden
         />

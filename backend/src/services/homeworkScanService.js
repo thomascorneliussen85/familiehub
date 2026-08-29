@@ -39,35 +39,41 @@ function findMemberByName(familyId, name) {
   return members.find((m) => m.name.toLowerCase().includes(lower) || lower.includes(m.name.toLowerCase())) || null;
 }
 
-// Leser et bilde av en lekseplan/ukeplan fra skolen og finner leksene i det,
-// ved hjelp av Claudes bildeforståelse. Oppretter IKKE avtalene selv –
-// returnerer dem til frontend for gjennomsyn/bekreftelse først. Landet i
-// kalenderen (ikke gjøremål) som heldagsavtaler med kort tittel, slik at de
-// vises sammen med resten av dagens info i stedet for i en egen liste.
-export async function scanHomeworkImage(base64Image, mediaType, familyId) {
+// Leser et bilde ELLER en PDF av en lekseplan/ukeplan fra skolen (f.eks.
+// lastet ned fra en e-post i stedet for fotografert) og finner leksene i
+// det, ved hjelp av Claudes bilde-/dokumentforståelse. Oppretter IKKE
+// avtalene selv – returnerer dem til frontend for gjennomsyn/bekreftelse
+// først. Landet i kalenderen (ikke gjøremål) som heldagsavtaler med kort
+// tittel, slik at de vises sammen med resten av dagens info i stedet for i
+// en egen liste.
+export async function scanHomeworkImage(base64Data, mediaType, familyId) {
   if (!config.anthropicApiKey) {
-    throw new Error('Skanning av bilder krever en Claude API-nøkkel i .env (ANTHROPIC_API_KEY)');
+    throw new Error('Skanning krever en Claude API-nøkkel i .env (ANTHROPIC_API_KEY)');
   }
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   const today = new Date().toISOString().slice(0, 10);
+  const isPdf = mediaType === 'application/pdf';
+  const contentBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } };
 
   const response = await client.messages.create({
     model: 'claude-opus-5',
     max_tokens: 2048,
     system:
-      'Du leser bilder av lekseplaner/ukeplaner fra norske skoler (ofte en tabell med ukedager og fag) og ' +
-      'finner alle konkrete lekser i dem, med hvilken dag/dato de skal være ferdig til. Bruk ' +
+      'Du leser bilder eller PDF-er av lekseplaner/ukeplaner fra norske skoler (ofte en tabell med ukedager og ' +
+      'fag) og finner alle konkrete lekser i dem, med hvilken dag/dato de skal være ferdig til. Bruk ' +
       'report_homework-verktøyet til å rapportere det du finner. Fag skal være kort (ett ord/uttrykk, f.eks. ' +
       '"Matte"), ikke detaljene om hva som skal gjøres. Ukeplaner viser typisk hvilken uke det gjelder øverst – ' +
       'bruk det til å regne ut riktig dato for hver ukedag. Hvis årstall mangler, anta inneværende eller neste ' +
-      'år (det som gir en dato nærmest fram i tid). Ikke finn på lekser som ikke faktisk står i bildet.',
+      'år (det som gir en dato nærmest fram i tid). Ikke finn på lekser som ikke faktisk står i dokumentet.',
     messages: [
       {
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } },
-          { type: 'text', text: `Dagens dato er ${today}. Finn alle lekser i bildet av lekseplanen.` },
+          contentBlock,
+          { type: 'text', text: `Dagens dato er ${today}. Finn alle lekser i lekseplanen.` },
         ],
       },
     ],

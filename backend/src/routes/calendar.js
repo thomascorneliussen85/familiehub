@@ -102,15 +102,16 @@ router.post('/scan', upload.single('image'), async (req, res) => {
   }
 });
 
-// Tar imot et bilde av en lekseplan og bruker Claude til å finne leksene i
-// det. Oppretter ikke avtalene ennå – frontend viser dem for bekreftelse
-// først, samme mønster som /scan over.
+// Tar imot et bilde ELLER en PDF av en lekseplan (fotografert, eller lastet
+// opp direkte – f.eks. et vedlegg lastet ned fra en e-post fra skolen) og
+// bruker Claude til å finne leksene i det. Oppretter ikke avtalene ennå –
+// frontend viser dem for bekreftelse først, samme mønster som /scan over.
 router.post('/scan-homework', upload.single('image'), async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'Ingen bilde mottatt' });
+    return res.status(400).json({ error: 'Ingen fil mottatt' });
   }
-  if (!req.file.mimetype?.startsWith('image/')) {
-    return res.status(400).json({ error: 'Filen må være et bilde' });
+  if (!req.file.mimetype?.startsWith('image/') && req.file.mimetype !== 'application/pdf') {
+    return res.status(400).json({ error: 'Filen må være et bilde eller en PDF' });
   }
   try {
     const base64 = req.file.buffer.toString('base64');
