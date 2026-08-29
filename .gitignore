@@ -9,6 +9,10 @@ backend/data/*.db-wal
 backend/data/*.db-shm
 backend/data/*.db.*
 backend/data/*.db-*.*
+fleet/backend/data/*.db
+fleet/backend/data/*.db-journal
+fleet/backend/data/*.db-wal
+fleet/backend/data/*.db-shm
 
 # Bilder til fotoramme (lokalt innhold, ikke del av repo)
 photos/*
@@ -25,6 +29,7 @@ certs/*.cnf
 # Build
 frontend/dist/
 backend/dist/
+fleet/frontend/dist/
 
 # Logs
 *.log
