@@ -12,9 +12,6 @@ const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRec
 // blokkeres mikrofonen stille uten noen tydelig feilmelding fra nettleseren.
 const isInsecureContext = !window.isSecureContext;
 
-const WAKE_WORD_RE = /familie\s*hub/i;
-const WAKE_ENABLED_KEY = 'familiehub-wake-enabled';
-
 const SPEECH_ERROR_MESSAGES = {
   'not-allowed': 'Fikk ikke tilgang til mikrofonen. Sjekk mikrofon-tillatelsen for denne siden i nettleseren.',
   'service-not-allowed': 'Nettleseren tillater ikke talegjenkjenning her – dette skjer ofte når siden ikke åpnes over https.',
@@ -69,43 +66,15 @@ async function speak(text) {
   await speakWithBrowser(text);
 }
 
-// Kort pip (i stedet for tale) som kvittering på at vekkeordet ble hørt, siden
-// det er raskere og mindre forstyrrende enn å vente på en talesyntese-frase
-// før mikrofonen begynner å lytte etter selve kommandoen.
-function playBeep() {
-  return new Promise((resolve) => {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.18);
-      osc.onended = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
-}
-
+// Trykk-og-snakk: ingen kontinuerlig lytting i bakgrunnen lenger (fjernet
+// vekkeord-funksjonen på ønske) – mikrofonen aktiveres kun ved klikk.
 export default function VoiceButton() {
   const [listening, setListening] = useState(false);
-  const [wakeActive, setWakeActive] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [feedback, setFeedback] = useState('');
-  // Av som standard: kontinuerlig mikrofonlytting gjør at nettleseren/Android
-  // viser et vedvarende "mikrofonen er i bruk"-varsel (og kan gi en varsellyd
-  // hver gang gjenkjenningen restarter) – det kan bare unngås ved å ikke
-  // lytte kontinuerlig, så brukeren må selv slå det på med 👂-knappen.
-  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem(WAKE_ENABLED_KEY) === '1');
   const recognitionRef = useRef(null);
-  // 'wake' | 'command' | 'suspended' | 'idle' – hva den aktive/planlagte gjenkjenningen er for.
+  // 'command' | 'suspended' | 'idle' – hva den aktive/planlagte gjenkjenningen er for.
   const modeRef = useRef('idle');
-  const wakeEnabledRef = useRef(wakeEnabled);
   // Sikkerhetsnett for mobil, der gjenkjenningen av og til bare henger uten å
   // noensinne fyre onresult/onend/onerror (sett på rødt for alltid, ingen
   // respons) – tvinger den til å gi opp etter en stund i stedet.
@@ -114,20 +83,11 @@ export default function VoiceButton() {
   const { openPanel } = usePanelNavigation();
 
   useEffect(() => {
-    wakeEnabledRef.current = wakeEnabled;
-  }, [wakeEnabled]);
-
-  useEffect(() => {
-    if (!SpeechRecognitionImpl || isInsecureContext) return () => {};
-    if (wakeEnabledRef.current) {
-      startRecognition('wake');
-    }
     return () => {
       modeRef.current = 'idle';
       recognitionRef.current?.abort();
       clearCommandTimeout();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!SpeechRecognitionImpl) {
@@ -141,37 +101,32 @@ export default function VoiceButton() {
     }
   }
 
-  function createRecognition(mode) {
+  function createRecognition() {
     const recognition = new SpeechRecognitionImpl();
     recognition.lang = 'nb-NO';
-    recognition.continuous = mode === 'wake';
+    recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.onresult = (event) => handleResult(mode, recognition, event);
-    recognition.onend = () => handleEnd(mode, recognition);
-    recognition.onerror = (event) => handleError(mode, recognition, event);
+    recognition.onresult = (event) => handleResult(recognition, event);
+    recognition.onend = () => handleEnd(recognition);
+    recognition.onerror = (event) => handleError(recognition, event);
     return recognition;
   }
 
-  function startRecognition(mode, isRetry) {
-    modeRef.current = mode;
-    const recognition = createRecognition(mode);
+  function startRecognition(isRetry) {
+    modeRef.current = 'command';
+    const recognition = createRecognition();
     recognitionRef.current = recognition;
     try {
       recognition.start();
-      if (mode === 'wake') {
-        setWakeActive(true);
-      } else {
-        setListening(true);
-        clearCommandTimeout();
-        commandTimeoutRef.current = setTimeout(() => {
-          if (recognitionRef.current !== recognition) return;
-          recognition.abort();
-          modeRef.current = 'idle';
-          setListening(false);
-          setFeedback('Hørte ingenting. Prøv igjen.');
-          resumeWakeIfEnabled();
-        }, 8000);
-      }
+      setListening(true);
+      clearCommandTimeout();
+      commandTimeoutRef.current = setTimeout(() => {
+        if (recognitionRef.current !== recognition) return;
+        recognition.abort();
+        modeRef.current = 'idle';
+        setListening(false);
+        setFeedback('Hørte ingenting. Prøv igjen.');
+      }, 8000);
     } catch (err) {
       // Kan skje hvis en annen gjenkjenning fortsatt er i ferd med å stoppe
       // (spesielt på Android, der bare én gjenkjenning kan være aktiv om
@@ -179,22 +134,13 @@ export default function VoiceButton() {
       // mikrofon-knappen så ut til ikke å reagere i det hele tatt – nå
       // prøver vi én gang til, og viser en tydelig feilmelding hvis det
       // fortsatt ikke går.
-      if (mode === 'wake') setWakeActive(false);
-      else setListening(false);
+      setListening(false);
       if (isRetry) {
         modeRef.current = 'idle';
         setFeedback(`Klarte ikke å starte mikrofonen: ${err?.message || 'ukjent feil'}`);
         return;
       }
-      setTimeout(() => startRecognition(mode, true), 300);
-    }
-  }
-
-  function resumeWakeIfEnabled() {
-    if (wakeEnabledRef.current && SpeechRecognitionImpl && !isInsecureContext) {
-      startRecognition('wake');
-    } else {
-      modeRef.current = 'idle';
+      setTimeout(() => startRecognition(true), 300);
     }
   }
 
@@ -219,80 +165,32 @@ export default function VoiceButton() {
       await speak('Beklager, jeg fikk ikke gjort det akkurat nå.');
     } finally {
       setThinking(false);
-      resumeWakeIfEnabled();
+      modeRef.current = 'idle';
     }
   }
 
-  async function listenForCommand() {
-    modeRef.current = 'suspended';
-    setFeedback('🎤 Si kommandoen din...');
-    await playBeep();
-    if (modeRef.current !== 'suspended') return; // slått av eller avbrutt i mellomtiden
-    startRecognition('command');
-  }
-
-  function handleResult(mode, recognitionInstance, event) {
+  function handleResult(recognitionInstance, event) {
     if (recognitionRef.current !== recognitionInstance) return; // gjenkjenning fra en instans som ikke lenger er aktiv
-    if (mode === 'wake') {
-      if (modeRef.current !== 'wake') return;
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const transcript = event.results[i][0].transcript;
-        const match = WAKE_WORD_RE.exec(transcript);
-        if (match) {
-          const remainder = transcript.slice(match.index + match[0].length).trim();
-          recognitionInstance.abort();
-          if (remainder.length > 2) {
-            runCommand(remainder);
-          } else {
-            listenForCommand();
-          }
-          return;
-        }
-      }
-    } else {
-      if (modeRef.current !== 'command') return;
-      clearCommandTimeout();
-      const text = event.results[0][0].transcript;
-      runCommand(text);
-    }
+    if (modeRef.current !== 'command') return;
+    clearCommandTimeout();
+    const text = event.results[0][0].transcript;
+    runCommand(text);
   }
 
-  function handleEnd(mode, recognitionInstance) {
+  function handleEnd(recognitionInstance) {
     if (recognitionRef.current !== recognitionInstance) return;
-    if (mode !== 'wake') clearCommandTimeout();
-    if (mode === 'wake') {
-      setWakeActive(false);
-      // Kontinuerlig gjenkjenning stopper av seg selv (f.eks. etter en stund
-      // uten lyd) – start den på nytt automatisk så lenge vi fortsatt skal lytte.
-      if (modeRef.current === 'wake') {
-        setTimeout(() => {
-          if (modeRef.current === 'wake') startRecognition('wake');
-        }, 300);
-      }
-    } else {
-      setListening(false);
-    }
+    clearCommandTimeout();
+    setListening(false);
   }
 
-  function handleError(mode, recognitionInstance, event) {
+  function handleError(recognitionInstance, event) {
     if (recognitionRef.current !== recognitionInstance) return;
-    if (mode === 'wake') {
-      // Stille feil (ingen lyd, nettverksglipp o.l.) ignoreres – onend
-      // starter gjenkjenningen på nytt. Ved varige feil (ingen mikrofontilgang)
-      // gir vi opp bakgrunnslyttingen og viser en tydelig melding.
-      if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)) {
-        modeRef.current = 'idle';
-        setWakeActive(false);
-        setFeedback(SPEECH_ERROR_MESSAGES[event.error] || `Talegjenkjenning feilet: ${event.error}`);
-      }
-      return;
-    }
     clearCommandTimeout();
     setListening(false);
     const message = SPEECH_ERROR_MESSAGES[event.error];
     if (message) setFeedback(message);
     else if (event.error) setFeedback(`Talegjenkjenning feilet: ${event.error}`);
-    resumeWakeIfEnabled();
+    modeRef.current = 'idle';
   }
 
   function handleMicClick() {
@@ -306,48 +204,19 @@ export default function VoiceButton() {
       modeRef.current = 'idle';
       setListening(false);
       setFeedback('');
-      resumeWakeIfEnabled();
       return;
     }
     clearCommandTimeout();
     recognitionRef.current?.abort();
     setFeedback('');
-    startRecognition('command');
-  }
-
-  function toggleWakeEnabled() {
-    setWakeEnabled((prev) => {
-      const next = !prev;
-      localStorage.setItem(WAKE_ENABLED_KEY, next ? '1' : '0');
-      wakeEnabledRef.current = next;
-      if (next) {
-        if (modeRef.current === 'idle') startRecognition('wake');
-      } else if (modeRef.current === 'wake') {
-        recognitionRef.current?.abort();
-        modeRef.current = 'idle';
-        setWakeActive(false);
-      }
-      return next;
-    });
+    startRecognition();
   }
 
   return (
     <div className="voice-control">
       {feedback && <div className="voice-feedback">{feedback}</div>}
-      {!isInsecureContext && (
-        <button
-          className="voice-mute-btn"
-          onClick={toggleWakeEnabled}
-          aria-label={wakeEnabled ? 'Skru av automatisk lytting etter «familiehub»' : 'Skru på automatisk lytting etter «familiehub»'}
-          title={wakeEnabled ? 'Lytter etter «familiehub»' : 'Automatisk lytting er av'}
-        >
-          {wakeEnabled ? '👂' : '🔇'}
-        </button>
-      )}
       <button
-        className={`voice-btn ${listening ? 'voice-btn-active' : ''} ${thinking ? 'voice-btn-thinking' : ''} ${
-          wakeActive && !listening && !thinking ? 'voice-btn-wake' : ''
-        }`}
+        className={`voice-btn ${listening ? 'voice-btn-active' : ''} ${thinking ? 'voice-btn-thinking' : ''}`}
         onClick={handleMicClick}
         aria-label="Stemmestyring"
       >
