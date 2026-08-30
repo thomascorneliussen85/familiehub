@@ -231,6 +231,75 @@
   color: var(--text-dim);
   font-family: monospace;
 }
+.vikar-btn {
+  font-size: 11px;
+  padding: 4px 8px;
+  color: var(--rod);
+  border-color: var(--rod);
+}
+
+/* Vikarmodal */
+.vikar-modal {
+  max-width: 520px;
+}
+.vikar-subtitle {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+.vikar-section {
+  margin-bottom: 18px;
+}
+.vikar-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.vikar-kandidat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.vikar-kandidat-navn {
+  flex: 1;
+  font-size: 14px;
+  min-width: 100px;
+}
+.vikar-kandidat-butikk {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.vikar-sendt {
+  color: var(--gronn);
+  font-size: 12px;
+  font-weight: 600;
+}
+.vikar-marker-toggle {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.vikar-marker-toggle summary {
+  cursor: pointer;
+}
+.vikar-marker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-left: 8px;
+}
+.vikar-add-row {
+  margin-top: 8px;
+}
 
 /* Oppgaver */
 .oppgave-list {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, withPin } from '../lib/api';
 import { useAnsatt } from '../context/AnsattContext';
 import PinModal from './PinModal';
+import VikarModal from './VikarModal';
 
 const TYPE_LABEL = { apne: 'Åpner', lukke: 'Stenger', normal: 'Normal' };
 
@@ -50,6 +51,7 @@ export default function TurnusPanel() {
   }
 
   const [slettId, setSlettId] = useState(null);
+  const [vikarSkift, setVikarSkift] = useState(null);
 
   async function slettMedPin(pin) {
     if (slettId == null) return;
@@ -117,6 +119,9 @@ export default function TurnusPanel() {
                     {s.start_tid}–{s.slutt_tid}
                   </span>
                   <span className="pill">{TYPE_LABEL[s.type]}</span>
+                  <button className="btn vikar-btn" onClick={() => setVikarSkift(s)}>
+                    🤒 Meld syk
+                  </button>
                   <button className="turnus-slett" onClick={() => setSlettId(s.id)} aria-label="Slett skift">
                     🗑️
                   </button>
@@ -129,6 +134,7 @@ export default function TurnusPanel() {
 
       {showPin && <PinModal onSuccess={submitWithPin} onClose={() => setShowPin(false)} />}
       {slettId != null && <PinModal onSuccess={slettMedPin} onClose={() => setSlettId(null)} />}
+      {vikarSkift && <VikarModal skift={vikarSkift} onClose={() => setVikarSkift(null)} />}
     </div>
   );
 }
