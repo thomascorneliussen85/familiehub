@@ -277,6 +277,28 @@
 }
 
 /* Temperatur */
+.temp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.temp-shelly-btn {
+  font-size: 12px;
+  padding: 8px 12px;
+  color: var(--text-dim);
+}
+.temp-shelly-info {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.temp-shelly-info p {
+  margin: 6px 0 10px;
+  color: var(--text-dim);
+}
 .temp-list {
   display: flex;
   flex-direction: column;

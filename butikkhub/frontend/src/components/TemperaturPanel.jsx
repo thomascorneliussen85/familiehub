@@ -21,6 +21,7 @@ export default function TemperaturPanel() {
   const [nyMin, setNyMin] = useState('');
   const [nyMax, setNyMax] = useState('');
   const [showPin, setShowPin] = useState(false);
+  const [showShellyInfo, setShowShellyInfo] = useState(false);
 
   function load() {
     api
@@ -66,11 +67,30 @@ export default function TemperaturPanel() {
     <div className="panel">
       <div className="panel-header">
         <div className="panel-title">🌡️ Temperaturkontroll</div>
-        <button className="btn btn-icon" onClick={() => setShowAdd((v) => !v)}>
-          {showAdd ? '✕' : '+'}
-        </button>
+        <div className="temp-header-actions">
+          <button className="btn temp-shelly-btn" onClick={() => setShowShellyInfo((v) => !v)}>
+            🔌 Koble til sensor
+          </button>
+          <button className="btn btn-icon" onClick={() => setShowAdd((v) => !v)}>
+            {showAdd ? '✕' : '+'}
+          </button>
+        </div>
       </div>
       {error && <div className="error-text">{error}</div>}
+
+      {showShellyInfo && (
+        <div className="temp-shelly-info">
+          <strong>Kommer snart: automatisk logging med Shelly-sensor</strong>
+          <p>
+            Koble en Shelly Plus Add-On med en DS18B20-temperaturprobe til en av enhetene over, så logges
+            temperaturen automatisk – ingen manuell «Logg måling» nødvendig. Ikke tilgjengelig ennå, si ifra når
+            dere har en sensor klar.
+          </p>
+          <button className="btn" onClick={() => setShowShellyInfo(false)}>
+            Lukk
+          </button>
+        </div>
+      )}
 
       {showAdd && (
         <div className="turnus-add">
