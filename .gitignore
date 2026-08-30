@@ -13,6 +13,10 @@ fleet/backend/data/*.db
 fleet/backend/data/*.db-journal
 fleet/backend/data/*.db-wal
 fleet/backend/data/*.db-shm
+butikkhub/backend/data/*.db
+butikkhub/backend/data/*.db-journal
+butikkhub/backend/data/*.db-wal
+butikkhub/backend/data/*.db-shm
 
 # Bilder til fotoramme (lokalt innhold, ikke del av repo)
 photos/*
@@ -30,6 +34,7 @@ certs/*.cnf
 frontend/dist/
 backend/dist/
 fleet/frontend/dist/
+butikkhub/frontend/dist/
 
 # Logs
 *.log

@@ -1,0 +1,415 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-box {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-box h1 {
+  font-size: 19px;
+  margin: 0 0 4px;
+}
+.auth-switch {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.shell-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+.shell-title {
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ansatt-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.ansatt-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.ansatt-chip-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #14151a;
+}
+.ansatt-chip.active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dashboard-grid {
+  flex: 1;
+  padding: 24px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.dashboard-grid-wide {
+  grid-column: 1 / -1;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal-box {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+}
+
+.pin-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0;
+}
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+.pin-dot-filled {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pin-keypad button {
+  padding: 16px;
+  font-size: 18px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+/* Delt "legg til"-skjema-stil brukt av flere paneler */
+.turnus-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.turnus-add-row {
+  display: flex;
+  gap: 8px;
+}
+.turnus-slett {
+  background: none;
+  border: none;
+  font-size: 14px;
+  opacity: 0.6;
+  margin-left: auto;
+}
+.turnus-slett:hover {
+  opacity: 1;
+}
+
+/* Turnusliste */
+.turnus-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.turnus-dag {
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.turnus-dag-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: capitalize;
+  margin-bottom: 8px;
+}
+.turnus-tomt {
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.turnus-rad {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 0;
+  flex-wrap: wrap;
+}
+.turnus-tid {
+  color: var(--text-dim);
+  font-family: monospace;
+}
+
+/* Oppgaver */
+.oppgave-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.oppgave-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.oppgave-fullfort {
+  opacity: 0.55;
+}
+.oppgave-fullfort .oppgave-checkbox span {
+  text-decoration: line-through;
+}
+.oppgave-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.oppgave-checkbox input {
+  width: 20px;
+  height: 20px;
+}
+.oppgave-av {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Beskjedtavle */
+.beskjed-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.beskjed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.beskjed-item {
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.beskjed-item-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.beskjed-item-time {
+  color: var(--text-faint);
+}
+
+/* Temperatur */
+.temp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.temp-item {
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.temp-avvik {
+  border: 1px solid var(--rod);
+}
+.temp-item-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.temp-range {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+.temp-item-body {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.temp-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+.temp-value-avvik {
+  color: var(--rod);
+}
+.temp-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.temp-warning {
+  color: var(--rod);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+/* Kalender */
+.kalender-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kalender-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.kalender-dato {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+.kalender-info {
+  flex: 1;
+  font-size: 14px;
+}
+.kalender-notat {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Bestillinger */
+.bestilling-notat-input {
+  flex: 1;
+}
+.bestilling-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bestilling-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+.bestilling-info {
+  flex: 1;
+  min-width: 160px;
+  font-size: 14px;
+}
+.bestilling-notat {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.bestilling-meta {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.pill-meldt { color: var(--gul); border-color: var(--gul); }
+.pill-bestilt { color: var(--accent); border-color: var(--accent); }
+.pill-mottatt { color: var(--gronn); border-color: var(--gronn); }
+
+/* Ansatte-modal */
+.ansatte-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.ansatte-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+.ansatte-item-info {
+  flex: 1;
+}
+.ansatte-item-rolle {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: capitalize;
+}
