@@ -26,7 +26,8 @@ export default function SignupPage() {
   return (
     <div className="auth-page">
       <form className="auth-box panel" onSubmit={handleSubmit}>
-        <h1>🏪 Opprett ButikkHub</h1>
+        <img src="/bunnpris-logo.png" alt="Bunnpris" className="auth-logo" />
+        <h1>Opprett lagerhub</h1>
         <input placeholder="Butikknavn" value={butikknavn} onChange={(e) => setButikknavn(e.target.value)} autoFocus />
         <input type="email" placeholder="E-post" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input

@@ -10,9 +10,20 @@
   flex-direction: column;
   gap: 14px;
 }
+.auth-logo {
+  height: 44px;
+  width: auto;
+  display: block;
+  margin: 0 auto 4px;
+}
 .auth-box h1 {
-  font-size: 19px;
-  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0 0 8px;
 }
 .auth-switch {
   font-size: 13px;
@@ -35,9 +46,22 @@
   flex-wrap: wrap;
 }
 .shell-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.shell-logo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+.shell-title-store {
   font-weight: 700;
   font-size: 16px;
-  flex-shrink: 0;
+  color: var(--text-dim);
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
 }
 .ansatt-picker {
   display: flex;

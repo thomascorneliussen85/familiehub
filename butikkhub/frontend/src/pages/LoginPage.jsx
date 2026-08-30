@@ -25,7 +25,8 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <form className="auth-box panel" onSubmit={handleSubmit}>
-        <h1>🏪 ButikkHub</h1>
+        <img src="/bunnpris-logo.png" alt="Bunnpris" className="auth-logo" />
+        <h1>Lagerhub</h1>
         <input type="email" placeholder="E-post" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
         <input type="password" placeholder="Passord" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className="btn btn-accent" type="submit" disabled={busy}>

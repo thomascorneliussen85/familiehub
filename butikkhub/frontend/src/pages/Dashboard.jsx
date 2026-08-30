@@ -19,7 +19,10 @@ export default function Dashboard() {
   return (
     <div className="shell">
       <header className="shell-header">
-        <div className="shell-title">🏪 {user?.butikknavn}</div>
+        <div className="shell-title">
+          <img src="/bunnpris-logo.png" alt="Bunnpris" className="shell-logo" />
+          <span className="shell-title-store">{user?.butikknavn}</span>
+        </div>
         <div className="ansatt-picker">
           {ansatte.map((a) => (
             <button
