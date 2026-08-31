@@ -85,6 +85,17 @@ export default function Sidebar({ onOpenSettings }) {
             {item.label}
           </button>
         ))}
+        {/* Vises KUN på smale skjermer (via CSS), der .sidebar-foot skjules –
+            Innstillinger må alltid være nåbart, uansett skjermbredde/skalering.
+            Se Sidebar.css: dette er skjult som standard, .sidebar-foot skjult
+            i @media-blokken, aldri begge samtidig. */}
+        <button className="sidebar-nav-item sidebar-nav-item-mobile-settings" onClick={onOpenSettings}>
+          <Icon name="gear" />
+          Innstillinger
+        </button>
+        <div className="sidebar-nav-item-mobile-fullscreen">
+          <FullscreenButton />
+        </div>
       </nav>
 
       <div className="sidebar-spacer" />
