@@ -1,3 +1,29 @@
+.fullscreen-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.fullscreen-wrap-row {
+  position: relative;
+}
+.fullscreen-error {
+  color: var(--danger, #e5484d);
+  font-size: 12px;
+  padding: 4px 8px;
+  overflow-wrap: anywhere;
+}
+.fullscreen-wrap .fullscreen-error {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max-content;
+  max-width: 240px;
+  background: var(--panel-bg-alt);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+  z-index: 20;
+}
+
 .fullscreen-trigger {
   background: none;
   border: none;

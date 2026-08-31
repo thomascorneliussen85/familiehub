@@ -9,6 +9,7 @@ import './FullscreenButton.css';
 export default function FullscreenButton({ showLabel = false }) {
   const [supported, setSupported] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!document.documentElement.requestFullscreen) {
@@ -23,29 +24,38 @@ export default function FullscreenButton({ showLabel = false }) {
   }, []);
 
   async function toggle() {
+    setError('');
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else {
         await document.documentElement.requestFullscreen();
       }
-    } catch {
-      // Krever ofte at brukeren nettopp har trykket på noe (en "user gesture")
-      // – hvis nettleseren avviser forespørselen er det stort sett derfor.
+    } catch (err) {
+      // Skjer oftest hvis kallet ikke regnes som direkte utløst av et
+      // brukertrykk ("user gesture"), eller hvis nettleseren/enheten har
+      // fullskjerm avslått via retningslinjer (f.eks. enkelte kiosk-/MDM-
+      // oppsett på Windows). Viser den faktiske feilen i stedet for å
+      // svelge den stille, slik at årsaken faktisk kan leses av på skjermen.
+      setError(err?.message || err?.name || 'Ukjent feil');
+      setTimeout(() => setError(''), 8000);
     }
   }
 
   if (!supported) return null;
 
   return (
-    <button
-      className={showLabel ? 'fullscreen-trigger fullscreen-trigger-row' : 'fullscreen-trigger'}
-      onClick={toggle}
-      aria-label={isFullscreen ? 'Avslutt fullskjerm' : 'Fullskjerm'}
-      title={isFullscreen ? 'Avslutt fullskjerm' : 'Vis i fullskjerm'}
-    >
-      {isFullscreen ? '🗗' : '⛶'}
-      {showLabel && (isFullscreen ? 'Avslutt fullskjerm' : 'Fullskjerm')}
-    </button>
+    <div className={showLabel ? 'fullscreen-wrap-row' : 'fullscreen-wrap'}>
+      <button
+        className={showLabel ? 'fullscreen-trigger fullscreen-trigger-row' : 'fullscreen-trigger'}
+        onClick={toggle}
+        aria-label={isFullscreen ? 'Avslutt fullskjerm' : 'Fullskjerm'}
+        title={isFullscreen ? 'Avslutt fullskjerm' : 'Vis i fullskjerm'}
+      >
+        {isFullscreen ? '🗗' : '⛶'}
+        {showLabel && (isFullscreen ? 'Avslutt fullskjerm' : 'Fullskjerm')}
+      </button>
+      {error && <div className="fullscreen-error">Fullskjerm feilet: {error}</div>}
+    </div>
   );
 }
