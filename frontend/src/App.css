@@ -1,5 +1,7 @@
 .app-shell {
+  /* Se index.css sin #root-kommentar – samme dvh-fiks, samme grunn. */
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: row;
 }

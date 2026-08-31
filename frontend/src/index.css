@@ -69,7 +69,16 @@ html, body {
 
 #root {
   width: 100%;
+  /* 100vh regner ut fra viewporten som om nettleserens adressefelt/UI var
+     skjult – på Android Chrome (og andre mobilnettlesere) med adressefeltet
+     synlig gir det #root en høyde STØRRE enn det som faktisk er synlig, og
+     bunnen av siden (Innstillinger/Fullskjerm i sidepanelet) havner utenfor
+     skjermen til man skroller/zoomer og nettleseren skjuler adressefeltet.
+     100dvh følger den faktiske, synlige viewporten i sanntid i stedet – en
+     installert PWA har ingen adressefelt og rammes derfor aldri av dette.
+     100vh står igjen som reserveløsning for eldre nettlesere uten dvh-støtte. */
   height: 100vh;
+  height: 100dvh;
   min-height: 100svh;
 }
 
