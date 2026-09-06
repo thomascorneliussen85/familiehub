@@ -33,7 +33,7 @@ function toDateInputValue(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-const emptyForm = { title: '', date: toDateInputValue(new Date()), time: '', repeatWeekly: false };
+const emptyForm = { title: '', memberId: '', date: toDateInputValue(new Date()), time: '', repeatWeekly: false };
 
 function weekLabel(offset, weekStart) {
   if (offset === 0) return 'Kalender – denne uken';
@@ -138,6 +138,7 @@ export default function CalendarPanel({ expanded = false }) {
     const start = new Date(event.start_at);
     setForm({
       title: event.title,
+      memberId: event.member_id || '',
       date: toDateInputValue(start),
       time: event.all_day
         ? ''
@@ -173,6 +174,7 @@ export default function CalendarPanel({ expanded = false }) {
     }
     const payload = {
       title,
+      member_id: form.memberId || null,
       start_at: start.toISOString(),
       end_at: end.toISOString(),
       all_day: allDay,
@@ -369,6 +371,19 @@ export default function CalendarPanel({ expanded = false }) {
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               required
             />
+            <div className="calendar-add-form-member-row">
+              {members.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`calendar-add-form-member-chip ${form.memberId === m.id ? 'calendar-add-form-member-chip-active' : ''}`}
+                  style={{ borderColor: m.color }}
+                  onClick={() => setForm((f) => ({ ...f, memberId: f.memberId === m.id ? '' : m.id }))}
+                >
+                  {m.avatar} {m.name}
+                </button>
+              ))}
+            </div>
             <input
               type="date"
               value={form.date}
@@ -425,7 +440,7 @@ export default function CalendarPanel({ expanded = false }) {
                     {dayEvents.map((e) => (
                       <div
                         key={e.id}
-                        className="calendar-event calendar-event-clickable"
+                        className={`calendar-event calendar-event-clickable ${formMode === e.id ? 'calendar-event-selected' : ''}`}
                         style={{ borderLeftColor: e.member_color || '#7c9cff' }}
                         title={e.location || ''}
                         onClick={(ev) => {
