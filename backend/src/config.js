@@ -120,6 +120,11 @@ export const config = {
 
   rewardsImagesDir: path.resolve(backendRoot, process.env.REWARDS_IMAGES_DIR || 'data/reward-images'),
 
+  // Familiens egne opplastede fargeleggingsark (i tillegg til det faste settet
+  // som ligger statisk i frontend/public/coloring-sheets) – samme
+  // per-familie-mappe-mønster som rewardsImagesDir over.
+  coloringSheetsDir: path.resolve(backendRoot, process.env.COLORING_SHEETS_DIR || 'data/coloring-sheets'),
+
   brief: {
     defaultRssFeeds: (process.env.BRIEF_RSS_FEEDS || 'https://www.nrk.no/toppsaker.rss')
       .split(',')

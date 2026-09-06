@@ -1,0 +1,15 @@
+<svg width="400" height="520" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+<g fill="none" stroke="#2b2f36" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+<line x1="20" y1="480" x2="380" y2="480"/>
+<ellipse cx="120" cy="160" rx="60" ry="75"/>
+<path d="M120,235 L110,300"/>
+<ellipse cx="220" cy="110" rx="55" ry="70"/>
+<path d="M220,180 L235,300"/>
+<ellipse cx="300" cy="190" rx="50" ry="64"/>
+<path d="M300,254 L305,300"/>
+<path d="M110,300 Q170,320 235,300 Q270,290 305,300"/>
+<polygon points="120,225 110,245 130,245"/>
+<polygon points="220,240 210,260 230,260"/>
+<polygon points="300,244 290,262 308,262"/>
+</g>
+</svg>

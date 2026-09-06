@@ -27,6 +27,7 @@ export default defineConfig({
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/photos': { target: 'http://localhost:4000', changeOrigin: true },
       '/reward-images': { target: 'http://localhost:4000', changeOrigin: true },
+      '/coloring-sheets': { target: 'http://localhost:4000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:4000', changeOrigin: true, ws: true },
     },
   },

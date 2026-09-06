@@ -38,6 +38,7 @@ import vacuumRouter from './routes/vacuum.js';
 import briefRouter from './routes/brief.js';
 import telemedicineRouter from './routes/telemedicine.js';
 import rewardsRouter from './routes/rewards.js';
+import coloringSheetsRouter from './routes/coloringSheets.js';
 import familyGoalsRouter from './routes/familyGoals.js';
 import assistantRouter from './routes/assistant.js';
 import voiceConfigRouter from './routes/voiceConfig.js';
@@ -112,6 +113,7 @@ function serveFamilyFile(baseDir) {
 }
 app.get('/photos/:familyId/:filename', requireAuth, serveFamilyFile(config.photos.dir));
 app.get('/reward-images/:familyId/:filename', requireAuth, serveFamilyFile(config.rewardsImagesDir));
+app.get('/coloring-sheets/:familyId/:filename', requireAuth, serveFamilyFile(config.coloringSheetsDir));
 
 const backendRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
@@ -168,6 +170,7 @@ app.use('/api/vacuum', vacuumRouter);
 app.use('/api/brief', briefRouter);
 app.use('/api/telemedicine', telemedicineRouter);
 app.use('/api/rewards', rewardsRouter);
+app.use('/api/coloring-sheets', coloringSheetsRouter);
 app.use('/api/family-goals', familyGoalsRouter);
 app.use('/api/assistant', assistantRouter);
 app.use('/api/voice', voiceConfigRouter);

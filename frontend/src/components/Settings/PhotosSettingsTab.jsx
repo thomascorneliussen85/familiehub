@@ -10,6 +10,11 @@ export default function PhotosSettingsTab({ adminApi }) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const pollRef = useRef(null);
 
+  const [sheets, setSheets] = useState([]);
+  const [sheetUploading, setSheetUploading] = useState(false);
+  const [sheetMessage, setSheetMessage] = useState('');
+  const sheetInputRef = useRef(null);
+
   function loadPhotos() {
     fetch('/api/photos', { credentials: 'include' })
       .then((r) => r.json())
@@ -17,10 +22,42 @@ export default function PhotosSettingsTab({ adminApi }) {
       .catch(() => {});
   }
 
+  function loadSheets() {
+    fetch('/api/coloring-sheets', { credentials: 'include' })
+      .then((r) => r.json())
+      .then(setSheets)
+      .catch(() => {});
+  }
+
   useEffect(() => {
     loadPhotos();
+    loadSheets();
     return () => clearInterval(pollRef.current);
   }, []);
+
+  async function handleSheetFileChange(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    setSheetUploading(true);
+    setSheetMessage('');
+    try {
+      const formData = new FormData();
+      for (const file of files) formData.append('sheets', file);
+      const saved = await adminApi.postForm('/coloring-sheets', formData);
+      setSheetMessage(`${saved.length} ark lastet opp ✓`);
+      loadSheets();
+    } catch (err) {
+      setSheetMessage(err.message);
+    } finally {
+      setSheetUploading(false);
+    }
+  }
+
+  async function removeSheet(name) {
+    setSheets((prev) => prev.filter((s) => s.name !== name));
+    await adminApi.delete(`/coloring-sheets/${encodeURIComponent(name)}`).catch(() => loadSheets());
+  }
 
   async function handleFileChange(e) {
     const files = Array.from(e.target.files || []);
@@ -127,6 +164,39 @@ export default function PhotosSettingsTab({ adminApi }) {
         {googleBusy ? 'Venter…' : '📷 Koble til Google Photos'}
       </button>
       {googleMessage && <div className="settings-message">{googleMessage}</div>}
+
+      <div className="settings-subtitle" style={{ marginTop: 18 }}>
+        Egne fargeleggingsark
+      </div>
+      <p className="empty-hint" style={{ padding: 0 }}>
+        Last opp egne strektegninger/fargeleggingsark – de dukker opp sammen med det faste settet
+        i 🎨 Fargelegging (under "Mer"), som barna kan velge mellom uten PIN.
+      </p>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        ref={sheetInputRef}
+        onChange={handleSheetFileChange}
+        hidden
+      />
+      <button className="btn btn-accent" onClick={() => sheetInputRef.current?.click()} disabled={sheetUploading}>
+        {sheetUploading ? 'Laster opp…' : '📤 Last opp ark'}
+      </button>
+      {sheetMessage && <div className="settings-message">{sheetMessage}</div>}
+
+      {sheets.length > 0 && (
+        <div className="settings-photo-grid">
+          {sheets.map((s) => (
+            <div key={s.name} className="settings-photo-item">
+              <img src={s.url} alt="" style={{ background: '#fff' }} />
+              <button className="btn btn-icon settings-photo-remove" onClick={() => removeSheet(s.name)} aria-label="Fjern">
+                🗑️
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
