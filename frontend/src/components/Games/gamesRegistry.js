@@ -2,6 +2,7 @@ import ConnectFour from './ConnectFour/ConnectFour';
 import Ludo from './Ludo/Ludo';
 import SnakesAndLadders from './SnakesAndLadders/SnakesAndLadders';
 import Yatzy from './Yatzy/Yatzy';
+import UltimateTicTacToe from './UltimateTicTacToe/UltimateTicTacToe';
 
 // Ett sted å registrere nye spill – legg til en rad her når et nytt spill
 // bygges (Stigespill, Yatzy, ...), resten av GameShell (meny,
@@ -38,5 +39,13 @@ export const GAMES = [
     minPlayers: 2,
     maxPlayers: 2,
     Component: ConnectFour,
+  },
+  {
+    key: 'ultimate-tic-tac-toe',
+    name: 'Utvidet tre-på-rad',
+    icon: '⭕',
+    minPlayers: 2,
+    maxPlayers: 2,
+    Component: UltimateTicTacToe,
   },
 ];
