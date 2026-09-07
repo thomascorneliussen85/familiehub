@@ -1,5 +1,6 @@
 import ConnectFour from './ConnectFour/ConnectFour';
 import Ludo from './Ludo/Ludo';
+import SnakesAndLadders from './SnakesAndLadders/SnakesAndLadders';
 
 // Ett sted å registrere nye spill – legg til en rad her når et nytt spill
 // bygges (Stigespill, Yatzy, ...), resten av GameShell (meny,
@@ -12,6 +13,14 @@ export const GAMES = [
     minPlayers: 2,
     maxPlayers: 4,
     Component: Ludo,
+  },
+  {
+    key: 'snakes-and-ladders',
+    name: 'Stigespill',
+    icon: '🪜',
+    minPlayers: 2,
+    maxPlayers: 4,
+    Component: SnakesAndLadders,
   },
   {
     key: 'connect-four',
