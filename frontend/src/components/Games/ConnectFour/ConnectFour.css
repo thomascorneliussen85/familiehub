@@ -1,0 +1,81 @@
+.c4-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  height: 100%;
+  padding: 16px;
+}
+.c4-turn-banner {
+  background: var(--panel-bg-alt);
+  border-left: 8px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px 22px;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.c4-turn-avatar {
+  font-size: 26px;
+}
+.c4-board {
+  display: flex;
+  gap: 6px;
+  background: #2255c7;
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: 7 / 6;
+  max-height: 100%;
+}
+.c4-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  min-width: 44px;
+  transition: background 0.1s ease;
+}
+.c4-col:not(:disabled):active {
+  background: rgba(255, 255, 255, 0.12);
+}
+.c4-cell {
+  flex: 1;
+  min-height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+.c4-cell-filled {
+  background: var(--piece-color);
+  box-shadow: inset 0 -4px 8px rgba(0, 0, 0, 0.2), inset 0 3px 4px rgba(255, 255, 255, 0.35);
+}
+.c4-cell-drop {
+  animation: c4-drop 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.c4-cell-win {
+  outline: 4px solid #ffd23f;
+  outline-offset: -2px;
+}
+@keyframes c4-drop {
+  from {
+    transform: translateY(-260%) scale(0.9);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c4-cell-drop {
+    animation: none;
+  }
+}

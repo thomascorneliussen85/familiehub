@@ -1,0 +1,11 @@
+.panel-games {
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.panel-games:active {
+  transform: scale(0.98);
+}
+.games-widget-hint {
+  color: var(--text-dim);
+  font-size: 15px;
+}

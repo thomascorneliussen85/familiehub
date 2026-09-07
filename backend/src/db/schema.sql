@@ -755,3 +755,30 @@ CREATE TABLE IF NOT EXISTS family_join_requests (
 -- shopping_items, users) opprettes i JS i db/index.js, ETTER en ev. migrering –
 -- de kan ikke stå her siden kolonnen ikke finnes ennå på en database som
 -- migreres fra før flerfamilie-støtten fantes.
+
+-- Spillmodulen ("Spill" i hovedmenyen). Ett parti = én game_sessions-rad;
+-- game_results holder én rad per deltaker i det partiet. member_id er
+-- NULL-bar fordi en spiller kan være en "gjest" uten familieprofil (venner
+-- på besøk) – da brukes guest_name i stedet. score er valgfri (Yatzy-poeng
+-- e.l.), NULL for spill uten tallskåre (Fire på rad, Dam, ...). placement
+-- 1 = vant, 2 = tapte osv. – for spill med kun vinner/taper er dette nok
+-- til å regne ut en enkel "flest seiere"-toppliste per spill.
+CREATE TABLE IF NOT EXISTS game_sessions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  family_id  INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  game_key   TEXT NOT NULL, -- 'connect-four', 'ludo', 'yatzy', ...
+  played_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS game_results (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id  INTEGER NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+  member_id   INTEGER REFERENCES family_members(id) ON DELETE SET NULL,
+  guest_name  TEXT, -- kun satt når member_id er NULL (spiller uten familieprofil)
+  placement   INTEGER NOT NULL, -- 1 = vant, 2 = tapte, osv.
+  score       INTEGER, -- valgfri tallskåre, NULL for spill uten poengsum
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_game_results_session ON game_results(session_id);
+CREATE INDEX IF NOT EXISTS idx_game_results_member ON game_results(member_id);
+CREATE INDEX IF NOT EXISTS idx_game_sessions_family_game ON game_sessions(family_id, game_key);

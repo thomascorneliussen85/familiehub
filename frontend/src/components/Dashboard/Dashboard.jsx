@@ -20,6 +20,7 @@ import CalendarPanel from '../Calendar/CalendarPanel';
 import DinnerPlanPanel from '../DinnerPlan/DinnerPlanPanel';
 import DinnerWeekPlanner from '../DinnerPlan/DinnerWeekPlanner';
 import FinanceWidget from '../Finance/FinanceWidget';
+import GamesWidget from '../Games/GamesWidget';
 import BabyCameraTile from './BabyCameraTile';
 import NextEventBanner from './NextEventBanner';
 import HomeworkBanner from './HomeworkBanner';
@@ -87,7 +88,7 @@ function RemainingChoresStatus() {
   return <div className="dashboard-status-bar">☀️ Du har {remaining} gjøremål igjen</div>;
 }
 
-export default function Dashboard({ onOpenSettings, onOpenFinance }) {
+export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }) {
   const { expandedKey, openPanel, closePanel } = usePanelNavigation();
   const [coverUrl, setCoverUrl] = useState(null);
   const fileInputRef = useRef(null);
@@ -199,6 +200,8 @@ export default function Dashboard({ onOpenSettings, onOpenFinance }) {
           <DinnerPlanPanel />
 
           <FinanceWidget onOpen={onOpenFinance} />
+
+          <GamesWidget onOpen={onOpenGames} />
 
           <RemainingChoresStatus />
 
