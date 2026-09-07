@@ -63,10 +63,32 @@
   gap: 8px;
   flex-shrink: 0;
 }
+.coloring-tool-row {
+  display: flex;
+  gap: 4px;
+  background: var(--panel-bg-alt);
+  border-radius: 999px;
+  padding: 3px;
+}
 .coloring-palette {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
+}
+.coloring-swatch-custom {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+}
+.coloring-swatch-custom::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 50%;
+}
+.coloring-swatch-custom::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
 }
 .coloring-swatch {
   width: 34px;
@@ -133,4 +155,9 @@
 }
 .coloring-lineart {
   pointer-events: none;
+  /* Multiply gjør hvite/lyse piksler i strekbildet usynlige, slik at bare
+     selve blekket (mørke piksler) dekker over fargelaget under - dette er det
+     som lar et opplastet FOTO/SKANN av et ark (med ugjennomsiktig hvit
+     bakgrunn) fungere like bra som SVG-arkene med gjennomsiktig bakgrunn. */
+  mix-blend-mode: multiply;
 }
