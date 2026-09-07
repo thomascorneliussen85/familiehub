@@ -4,6 +4,7 @@ import SnakesAndLadders from './SnakesAndLadders/SnakesAndLadders';
 import Yatzy from './Yatzy/Yatzy';
 import UltimateTicTacToe from './UltimateTicTacToe/UltimateTicTacToe';
 import Checkers from './Checkers/Checkers';
+import AirHockey from './AirHockey/AirHockey';
 
 // Ett sted å registrere nye spill – legg til en rad her når et nytt spill
 // bygges (Stigespill, Yatzy, ...), resten av GameShell (meny,
@@ -40,6 +41,14 @@ export const GAMES = [
     minPlayers: 2,
     maxPlayers: 2,
     Component: ConnectFour,
+  },
+  {
+    key: 'air-hockey',
+    name: 'Airhockey',
+    icon: '🏒',
+    minPlayers: 2,
+    maxPlayers: 2,
+    Component: AirHockey,
   },
   {
     key: 'checkers',
