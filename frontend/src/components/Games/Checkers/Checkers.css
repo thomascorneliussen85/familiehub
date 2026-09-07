@@ -1,0 +1,88 @@
+.ck-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  height: 100%;
+  padding: 16px;
+}
+.ck-turn-banner {
+  background: var(--panel-bg-alt);
+  border-left: 8px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px 22px;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.ck-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  aspect-ratio: 1 / 1;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-panel);
+}
+.ck-square {
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.ck-square-dark {
+  background: #7a5636;
+}
+.ck-square-light {
+  background: #f0dcb8;
+}
+.ck-square-selected {
+  outline: 3px solid #ffd23f;
+  outline-offset: -3px;
+}
+.ck-square-dest {
+  cursor: pointer;
+}
+
+.ck-piece {
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.25), inset 0 3px 4px rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(12px, 3vw, 22px);
+  color: rgba(255, 255, 255, 0.9);
+}
+.ck-piece-selectable {
+  animation: ck-pulse 1s ease-in-out infinite;
+}
+@keyframes ck-pulse {
+  0%, 100% { box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(255, 255, 255, 0.8); }
+  50% { box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.25), 0 0 0 6px rgba(255, 255, 255, 0.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-piece-selectable {
+    animation: none;
+    outline: 2px solid #fff;
+  }
+}
+.ck-dest-dot {
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(255, 210, 63, 0.85);
+}
