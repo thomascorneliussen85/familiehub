@@ -5,6 +5,7 @@ import Yatzy from './Yatzy/Yatzy';
 import UltimateTicTacToe from './UltimateTicTacToe/UltimateTicTacToe';
 import Checkers from './Checkers/Checkers';
 import AirHockey from './AirHockey/AirHockey';
+import Memory from './Memory/Memory';
 
 // Ett sted å registrere nye spill – legg til en rad her når et nytt spill
 // bygges (Stigespill, Yatzy, ...), resten av GameShell (meny,
@@ -41,6 +42,14 @@ export const GAMES = [
     minPlayers: 2,
     maxPlayers: 2,
     Component: ConnectFour,
+  },
+  {
+    key: 'memory',
+    name: 'Memory',
+    icon: '🍎',
+    minPlayers: 2,
+    maxPlayers: 4,
+    Component: Memory,
   },
   {
     key: 'air-hockey',
