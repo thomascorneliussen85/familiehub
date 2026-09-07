@@ -1,9 +1,18 @@
 import ConnectFour from './ConnectFour/ConnectFour';
+import Ludo from './Ludo/Ludo';
 
 // Ett sted å registrere nye spill – legg til en rad her når et nytt spill
-// bygges (Ludo, Stigespill, Yatzy, ...), resten av GameShell (meny,
+// bygges (Stigespill, Yatzy, ...), resten av GameShell (meny,
 // spilleroppsett, resultat/highscore) trenger ingen endring.
 export const GAMES = [
+  {
+    key: 'ludo',
+    name: 'Ludo',
+    icon: '🎲',
+    minPlayers: 2,
+    maxPlayers: 4,
+    Component: Ludo,
+  },
   {
     key: 'connect-four',
     name: 'Fire på rad',
