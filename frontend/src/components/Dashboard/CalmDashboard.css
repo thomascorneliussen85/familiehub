@@ -1,0 +1,79 @@
+/* The daily overview has natural-height cards. Detailed panels keep their own layout. */
+.dashboard-root { gap: 22px; padding: 26px; }
+.dashboard-greeting-title { font-size: clamp(24px, 2.5vw, 34px); white-space: normal; line-height: 1.2; font-weight: 600; letter-spacing: -.035em; }
+.dashboard-top-row { align-items: center; flex-wrap: wrap; }
+.dashboard-top-right { flex-wrap: wrap; }
+.dashboard-mobile-fullscreen { display: none; }
+.dashboard-greeting-eyebrow { color: var(--text-dim); margin-bottom: 7px; }
+.dashboard-home { gap: 18px; padding: 2px 3px 16px; }
+.dashboard-home .panel { box-shadow: none; border-radius: 20px; }
+.dashboard-daily-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.dashboard-daily-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.dashboard-shopping-wide { grid-column: 1 / -1; min-width: 0; }
+.dashboard-daily-grid .panel { height: auto; min-height: 0; }
+.dashboard-daily-grid .panel-body { overflow: visible; }
+.dashboard-daily-grid .panel-title { font-size: 19px; letter-spacing: -.025em; }
+.dashboard-daily-grid .panel-icon { display: none; }
+.dashboard-home .good-morning-card { background: transparent; border: 0; padding: 0 4px; flex-wrap: wrap; overflow: visible; }
+.dashboard-home .good-morning-label { color: var(--text-dim); font-size: 12px; }
+.dashboard-home .good-morning-profiles { flex-wrap: wrap; flex-shrink: 1; }
+.dashboard-home .good-morning-profile { min-height: 40px; }
+.dashboard-home .next-event-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 22px; background: #294c3e; color: #f6f7ee; padding: 24px 28px; border: 0; box-shadow: none; border-radius: 20px; }
+.dashboard-home .next-event-label { color: #d4e4d4; grid-column: 1; letter-spacing: .1em; }
+.dashboard-home .next-event-info { grid-column: 1; grid-row: 2; gap: 6px; }
+.dashboard-home .next-event-title { font-size: clamp(21px, 2.1vw, 29px); white-space: normal; line-height: 1.25; font-weight: 500; }
+.dashboard-home .next-event-meta, .dashboard-home .next-event-empty-text { color: #d4e4d4; font-size: 13px; }
+.next-event-time-block { grid-column: 2; grid-row: 1 / 3; text-align: right; align-self: center; }
+.next-event-start { font-size: clamp(28px, 3.2vw, 42px); letter-spacing: -.05em; }
+.dashboard-home .next-event-countdown { font-size: 12px; color: #d4e4d4; font-weight: 400; }
+.dashboard-home .next-event-banner-empty { display: flex; flex-wrap: wrap; }
+.agenda-link { background: none; border: 0; color: var(--accent); font-size: 13px; min-height: 44px; padding: 5px; }
+.today-agenda .panel-header { flex-wrap: wrap; }
+.agenda-week-nav { display: flex; align-items: center; justify-content: space-between; }
+.agenda-week-nav button { min-width: 44px; min-height: 44px; color: var(--text-dim); background: transparent; border: 0; font-size: 16px; }
+.agenda-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding-bottom: 16px; border-bottom: 1px solid var(--panel-border); }
+.agenda-days button { min-width: 0; min-height: 64px; border: 0; border-radius: 13px; color: var(--text-dim); background: transparent; padding: 8px 1px; font-size: 12px; text-transform: capitalize; }
+.agenda-days strong { display: block; font-size: 20px; font-weight: 500; }
+.agenda-days button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); }
+.agenda-events { min-height: 90px; }
+.agenda-event { display: grid; grid-template-columns: 62px minmax(0, 1fr); width: 100%; gap: 12px; padding: 19px 0; background: none; border: 0; border-bottom: 1px solid var(--panel-border); text-align: left; color: var(--text); }
+.agenda-event:last-child { border-bottom: 0; }
+.agenda-time { font-size: 12px; color: var(--text-dim); padding-top: 2px; }
+.agenda-details { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.agenda-details strong { font-size: 16px; line-height: 1.4; font-weight: 500; overflow-wrap: anywhere; }
+.agenda-location { color: var(--text-dim); font-size: 13px; overflow-wrap: anywhere; }
+.agenda-member { display: inline-block; padding: 3px 9px; font-size: 12px; background: var(--accent-soft); border-radius: 6px; border-left: 3px solid var(--accent); }
+.agenda-add { width: 100%; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 12px; padding: 12px; min-height: 46px; margin-top: 12px; }
+.dashboard-daily-side .dinner-today { flex-wrap: wrap; background: none; padding: 8px 0 16px; }
+.dashboard-daily-side .dinner-today-label { width: 100%; font-size: 12px; color: var(--text-dim); }
+.dashboard-daily-side .dinner-today-emoji { display: none; }
+.dashboard-daily-side .dinner-today-title { font: 26px/1.3 var(--serif); }
+.dashboard-daily-side .dinner-upcoming-label { display: none; }
+.dashboard-daily-side .dinner-upcoming-row { min-height: 48px; border-top: 1px solid var(--panel-border); border-bottom: 0; }
+.dashboard-daily-side .dinner-upcoming-day { width: 68px; font-size: 13px; }
+.dashboard-daily-side .dinner-upcoming-title { white-space: normal; }
+.dashboard-daily-side .chore-item { min-height: 48px; }
+.dashboard-daily-side .chore-title { font-size: 15px; }
+.dashboard-daily-side .chore-meta { font-size: 12px; }
+.dashboard-shopping-wide .quick-item { min-height: 40px; font-size: 13px; }
+.dashboard-shopping-wide .shopping-item { min-height: 48px; }
+.dashboard-root button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+@media(max-width:1100px) { .dashboard-root { padding: 22px; } .dashboard-daily-grid { gap: 16px; } }
+@media(max-width:900px) {
+  .dashboard-root { padding-bottom: calc(94px + env(safe-area-inset-bottom)); }
+  .dashboard-mobile-settings { display: flex; }
+  .dashboard-mobile-fullscreen { display: inline-flex; }
+  .sidebar .sidebar-nav-item-mobile-settings,
+  .sidebar .sidebar-nav-item-mobile-fullscreen { display: none; }
+  .dashboard-greeting-title { font-size: 28px; }
+}
+@media(max-width:700px) {
+  .dashboard-daily-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-root { padding: 20px 14px calc(94px + env(safe-area-inset-bottom)); overflow: hidden; }
+  .dashboard-top-row { gap: 14px; }
+  .dashboard-home-photo-wrap { flex: 1 1 210px; }
+  .dashboard-top-right { gap: 8px; }
+  .dashboard-home .next-event-banner { padding: 21px 18px; gap: 7px 12px; }
+  .dashboard-daily-grid .panel-header { padding: 16px 18px 8px; }
+  .dashboard-daily-grid .panel-body { padding: 4px 18px 18px; }
+}

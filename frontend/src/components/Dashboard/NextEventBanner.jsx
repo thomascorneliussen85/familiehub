@@ -13,7 +13,7 @@ function formatCountdown(ms) {
   const totalMin = Math.max(0, Math.round(ms / 60000));
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}`;
+  if (h > 0) return `${h} t ${m} min`;
   return `${m} min`;
 }
 
@@ -69,7 +69,10 @@ export default function NextEventBanner() {
   return (
     <div className="next-event-banner">
       <span className="next-event-label">{isTomorrow ? 'I morgen først' : 'Neste'}</span>
-      <span className="next-event-countdown">{formatCountdown(diff)}</span>
+      <div className="next-event-time-block">
+        <span className="next-event-start">{start.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span className="next-event-countdown">om {formatCountdown(diff)}</span>
+      </div>
       <div className="next-event-info">
         <span className="next-event-title">{target.title}</span>
         <span className="next-event-meta">

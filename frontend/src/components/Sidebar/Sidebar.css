@@ -1,5 +1,5 @@
 .sidebar {
-  width: 220px;
+  width: 184px;
   flex-shrink: 0;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--panel-border);
@@ -133,7 +133,7 @@
   height: 16px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .sidebar {
     position: fixed;
     left: 0;

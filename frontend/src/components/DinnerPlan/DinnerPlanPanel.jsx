@@ -15,7 +15,7 @@ function toDateStr(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export default function DinnerPlanPanel() {
+export default function DinnerPlanPanel({ compact = false }) {
   const { openPanel } = usePanelNavigation();
   const [plans, setPlans] = useState({});
   const [editingDate, setEditingDate] = useState(null);
@@ -145,7 +145,7 @@ export default function DinnerPlanPanel() {
                 onOpen={openDay}
                 onRemove={remove}
               />
-              {rest.map((d) => (
+              {!compact && rest.map((d) => (
                 <DinnerUpcomingRow
                   key={toDateStr(d)}
                   label={DAY_LABELS[d.getDay()]}

@@ -28,11 +28,14 @@ import GoodMorningCard from '../MorningBrief/GoodMorningCard';
 import VoiceButton from '../VoiceControl/VoiceButton';
 import FeedbackButton from '../Feedback/FeedbackButton';
 import Clock from '../Clock/Clock';
+import TodayAgenda from './TodayAgenda';
+import FullscreenButton from '../Fullscreen/FullscreenButton';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
 import { usePanelNavigation } from '../../context/PanelNavigationContext';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import './Dashboard.css';
+import './CalmDashboard.css';
 
 // Den utvidede kalenderen (Uke/Tavle/Kalender-visninger) er kun tilgjengelig
 // når panelet er åpnet i fullskjerm – den kompakte kortet på "I dag"-siden
@@ -153,6 +156,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
           <VoiceButton />
           <FeedbackButton />
           <Clock />
+          <span className="dashboard-mobile-fullscreen"><FullscreenButton /></span>
           <button className="dashboard-mobile-settings" onClick={onOpenSettings} aria-label="Innstillinger">
             <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.5-2-3.4-2.3.9a7.6 7.6 0 00-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.3-.9-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.5 2 3.4 2.3-.9a7.6 7.6 0 001.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 001.7-1l2.3.9 2-3.4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
           </button>
@@ -188,16 +192,14 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
           <HomeworkBanner />
           <GoodMorningCard />
 
-          <div className="dashboard-calendar-hero">
-            <CalendarPanel />
+          <div className="dashboard-daily-grid">
+            <TodayAgenda />
+            <div className="dashboard-daily-side">
+              <DinnerPlanPanel compact />
+              <ChoresPanel />
+            </div>
+            <div className="dashboard-shopping-wide"><ShoppingPanel /></div>
           </div>
-
-          <div className="dashboard-fixed-grid">
-            <ShoppingPanel />
-            <ChoresPanel />
-          </div>
-
-          <DinnerPlanPanel />
 
           <FinanceWidget onOpen={onOpenFinance} />
 
