@@ -22,6 +22,8 @@ export default function DinnerPlanPanel({ compact = false }) {
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🍽️');
   const [recipeFor, setRecipeFor] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   function loadPlans() {
     const today = new Date();
@@ -37,7 +39,7 @@ export default function DinnerPlanPanel({ compact = false }) {
         });
         setPlans(byDate);
       })
-      .catch(() => {});
+      .catch(() => setError('Kunne ikke hente middagsplanen.'));
   }
 
   useEffect(() => {
@@ -70,8 +72,9 @@ export default function DinnerPlanPanel({ compact = false }) {
 
   async function save() {
     if (!title.trim()) return;
-    await api.post('/dinner-plans', { date: editingDate, title: title.trim(), emoji }).catch(() => {});
-    setEditingDate(null);
+    if (saving) return; setSaving(true);
+    try { await api.post('/dinner-plans', { date: editingDate, title: title.trim(), emoji }); setEditingDate(null); setError(''); loadPlans(); }
+    catch (err) { setError(err.message); } finally { setSaving(false); }
   }
 
   async function remove(dateStr) {
@@ -93,6 +96,7 @@ export default function DinnerPlanPanel({ compact = false }) {
         </button>
       </div>
       <div className="panel-body dinner-body">
+        {error && <p role="alert">{error}</p>}
         {editingDate ? (
           <div className="dinner-edit-form">
             <div className="dinner-edit-title">
@@ -117,7 +121,7 @@ export default function DinnerPlanPanel({ compact = false }) {
               <button className="btn" onClick={() => setEditingDate(null)}>
                 Avbryt
               </button>
-              <button className="btn btn-accent" onClick={save}>
+              <button className="btn btn-accent" onClick={save} disabled={saving}>
                 Lagre
               </button>
             </div>

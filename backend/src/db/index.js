@@ -409,3 +409,40 @@ if (briefSettingsCount === 0) {
     }
   }
 }
+
+const routineColumns = db.prepare('PRAGMA table_info(chores)').all().map(c => c.name);
+// SQLite's online backup includes committed WAL data. Keep the first snapshot
+// when retrying a deployment, before applying any everyday-planning migration.
+if (!routineColumns.includes('routine_group') && !fs.existsSync(`${config.dbPath}.before-everyday.db`)) {
+  await db.backup(`${config.dbPath}.before-everyday.db`);
+}
+if (!routineColumns.includes('routine_group')) db.exec("ALTER TABLE chores ADD COLUMN routine_group TEXT");
+
+// Additive everyday-planning migration; preserve existing rows and identifiers.
+db.transaction(() => {
+  const columns = db.prepare('PRAGMA table_info(calendar_events)').all().map(c => c.name);
+  for (const [name, type] of Object.entries({
+    responsible_id: 'INTEGER REFERENCES family_members(id) ON DELETE SET NULL',
+    driver_id: 'INTEGER REFERENCES family_members(id) ON DELETE SET NULL',
+    pickup_id: 'INTEGER REFERENCES family_members(id) ON DELETE SET NULL',
+    bring_list: "TEXT NOT NULL DEFAULT ''",
+    time_zone: "TEXT NOT NULL DEFAULT 'Europe/Oslo'",
+  })) if (!columns.includes(name)) db.exec(`ALTER TABLE calendar_events ADD COLUMN ${name} ${type}`);
+  db.exec(`CREATE TABLE IF NOT EXISTS calendar_imports (
+    family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+    request_id TEXT NOT NULL, payload TEXT NOT NULL, result TEXT NOT NULL,
+    PRIMARY KEY (family_id, request_id)
+  );
+  CREATE TABLE IF NOT EXISTS undo_actions (
+    token TEXT PRIMARY KEY, family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+    table_name TEXT NOT NULL, rows_json TEXT NOT NULL, expires_at INTEGER NOT NULL
+  );`);
+})();
+
+db.exec(`CREATE TABLE IF NOT EXISTS calendar_packing (
+  event_id INTEGER NOT NULL REFERENCES calendar_events(id) ON DELETE CASCADE,
+  date TEXT NOT NULL, item TEXT NOT NULL,
+  PRIMARY KEY (event_id, date, item)
+);`);
+
+if (!db.prepare('PRAGMA table_info(users)').all().some(c => c.name === 'session_version')) db.exec('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0');

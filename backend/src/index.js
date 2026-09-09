@@ -12,6 +12,7 @@ import { registerSockets } from './sockets/index.js';
 import { registerCameraBridgeSockets } from './sockets/cameraBridge.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import authRouter from './routes/auth.js';
+import undoRouter from './routes/undo.js';
 import familyMembersRouter from './routes/familyMembers.js';
 import calendarRouter from './routes/calendar.js';
 import choresRouter from './routes/chores.js';
@@ -93,6 +94,7 @@ app.set('io', io);
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
+app.use('/api/undo', undoRouter);
 
 // Bilder/belønningsbilder ligger i mapper per familie (photos/<familyId>/...,
 // data/reward-images/<familyId>/...) – servert via en innlogget rute i stedet

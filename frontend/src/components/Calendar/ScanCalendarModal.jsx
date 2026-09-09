@@ -28,6 +28,7 @@ export default function ScanCalendarModal({ events, onClose }) {
   const [items, setItems] = useState(
     events.map((e) => ({ ...e, included: true, time: e.time || '' }))
   );
+  const [requestId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,18 +45,14 @@ export default function ScanCalendarModal({ events, onClose }) {
     setSaving(true);
     setError('');
     try {
-      for (const item of toSave) {
-        const { start_at, end_at, all_day } = toStartEnd(item.date, item.time);
-        await api.post('/calendar/events', {
-          title: item.title.trim(),
-          member_id: item.member_id || null,
-          start_at,
-          end_at,
-          all_day,
-          location: item.location || null,
-          recurrence: 'once',
-        });
-      }
+      await api.post('/calendar/events/import', {
+        requestId,
+        events: toSave.map(item => ({
+          title: item.title.trim(), member_id: item.member_id || null,
+          ...toStartEnd(item.date, item.time), location: item.location || null,
+          recurrence: 'once', time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        })),
+      });
       onClose();
     } catch (err) {
       setError(err.message);

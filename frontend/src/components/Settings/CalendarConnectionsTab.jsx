@@ -17,7 +17,7 @@ export default function CalendarConnectionsTab({ adminApi }) {
   const [busyId, setBusyId] = useState(null);
 
   function loadConnections() {
-    adminApi.get('/calendar-connections').then(setConnections).catch(() => {});
+    adminApi.get('/calendar-connections').then(setConnections).catch(() => setMessage('Kunne ikke hente kalendertilkoblinger.'));
   }
 
   useEffect(() => {
@@ -175,12 +175,12 @@ export default function CalendarConnectionsTab({ adminApi }) {
                   {c.last_synced_at && (
                     <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>
                       {' '}
-                      · sist synket {new Date(c.last_synced_at.replace(' ', 'T') + 'Z').toLocaleString('nb-NO')}
+                      · sist synket {new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(c.last_synced_at) ? c.last_synced_at : c.last_synced_at.replace(' ', 'T') + 'Z').toLocaleString('nb-NO')}
                     </span>
                   )}
                 </span>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="btn btn-icon" onClick={() => syncNow(c.id)} disabled={busyId === c.id}>
+                  <button className="btn btn-icon" onClick={() => syncNow(c.id)} aria-label={`Synkroniser ${PROVIDER_LABEL[c.provider]} nå`} disabled={busyId === c.id}>
                     {busyId === c.id ? '⏳' : '🔄'}
                   </button>
                   <button className="btn btn-icon" onClick={() => disconnect(c.id)} aria-label="Koble fra">

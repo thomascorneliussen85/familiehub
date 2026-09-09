@@ -29,6 +29,8 @@ import VoiceButton from '../VoiceControl/VoiceButton';
 import FeedbackButton from '../Feedback/FeedbackButton';
 import Clock from '../Clock/Clock';
 import TodayAgenda from './TodayAgenda';
+import ModulePicker from './ModulePicker';
+import { useAuth } from '../../context/AuthContext';
 import FullscreenButton from '../Fullscreen/FullscreenButton';
 import { useTimeOfDay } from '../../hooks/useTimeOfDay';
 import { usePanelNavigation } from '../../context/PanelNavigationContext';
@@ -36,6 +38,7 @@ import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import './Dashboard.css';
 import './CalmDashboard.css';
+import './EverydayDashboard.css';
 
 // Den utvidede kalenderen (Uke/Tavle/Kalender-visninger) er kun tilgjengelig
 // når panelet er åpnet i fullskjerm – den kompakte kortet på "I dag"-siden
@@ -77,7 +80,7 @@ function RemainingChoresStatus() {
   const [remaining, setRemaining] = useState(null);
 
   function load() {
-    api.get('/chores').then((chores) => setRemaining(chores.filter((c) => !c.done).length)).catch(() => {});
+    api.get('/chores').then((chores) => setRemaining(chores.filter((c) => !c.done && !c.routine_group).length)).catch(() => {});
   }
 
   useEffect(() => {
@@ -88,7 +91,7 @@ function RemainingChoresStatus() {
 
   if (remaining === null) return null;
   if (remaining === 0) return <div className="dashboard-status-bar">🎉 Alle gjøremål er gjort!</div>;
-  return <div className="dashboard-status-bar">☀️ Du har {remaining} gjøremål igjen</div>;
+  return <div className="dashboard-status-bar">☀️ Familien har {remaining} gjøremål igjen</div>;
 }
 
 export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }) {
@@ -96,6 +99,19 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
   const [coverUrl, setCoverUrl] = useState(null);
   const fileInputRef = useRef(null);
   const { period } = useTimeOfDay();
+  const { user } = useAuth();
+  const preferenceKey = `hub-menu:${user?.email || ''}`;
+  const [preferences, setPreferences] = useState(() => {
+    try { const value = JSON.parse(localStorage.getItem(preferenceKey)); return { hidden: Array.isArray(value?.hidden) ? value.hidden : [], favorites: Array.isArray(value?.favorites) ? value.favorites : [] }; }
+    catch { return { hidden: [], favorites: [] }; }
+  });
+  const [kitchen, setKitchen] = useState(() => localStorage.getItem('hub-kitchen') === 'true');
+  function savePreferences(next) { setPreferences(next); try { localStorage.setItem(preferenceKey, JSON.stringify(next)); } catch { /* Keep session preferences if storage is unavailable. */ } }
+  function toggleKitchen() {
+    const next = !kitchen; setKitchen(next);
+    try { localStorage.setItem('hub-kitchen', String(next)); } catch { /* Session still works. */ }
+    window.dispatchEvent(new CustomEvent('hub:kitchen', { detail: next }));
+  }
 
   useEffect(() => {
     fetch('/api/photos/cover', { credentials: 'include' })
@@ -133,7 +149,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
   });
 
   return (
-    <div className="dashboard-root">
+    <div className={`dashboard-root ${kitchen ? 'dashboard-kitchen' : ''}`}>
       <div className="dashboard-top-row">
         <div className="dashboard-home-photo-wrap">
           <button
@@ -152,6 +168,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
           </div>
         </div>
         <div className="dashboard-top-right">
+          <button className="btn kitchen-switch" aria-pressed={kitchen} onClick={toggleKitchen}>{kitchen ? 'Vanlig visning' : 'Kjøkkenskjerm'}</button>
           <MiniTimerBadge />
           <VoiceButton />
           <FeedbackButton />
@@ -177,17 +194,11 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
           <button className="panel-back-btn" onClick={closePanel}>
             ← Tilbake
           </button>
-          <div className="dashboard-more-grid">
-            {MORE_PANELS.map(({ key, icon, label }) => (
-              <button key={key} className="dashboard-more-item" onClick={() => openPanel(key)}>
-                <span className="dashboard-more-item-icon">{icon}</span>
-                {label}
-              </button>
-            ))}
-          </div>
+          <ModulePicker panels={MORE_PANELS} preferences={preferences} onChange={savePreferences} openPanel={openPanel} />
         </div>
       ) : (
         <div className="dashboard-home">
+          {preferences.favorites.some(key => !preferences.hidden.includes(key)) && <nav className="dashboard-favorites" aria-label="Favoritter">{preferences.favorites.filter(key => !preferences.hidden.includes(key) && ALL_PANELS[key]).map(key => <button className="btn" key={key} onClick={() => openPanel(key)}>{ALL_PANELS[key].icon} {ALL_PANELS[key].label}</button>)}</nav>}
           <NextEventBanner />
           <HomeworkBanner />
           <GoodMorningCard />
@@ -196,7 +207,7 @@ export default function Dashboard({ onOpenSettings, onOpenFinance, onOpenGames }
             <TodayAgenda />
             <div className="dashboard-daily-side">
               <DinnerPlanPanel compact />
-              <ChoresPanel />
+              <ChoresPanel compact />
             </div>
             <div className="dashboard-shopping-wide"><ShoppingPanel /></div>
           </div>

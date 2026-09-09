@@ -14,6 +14,7 @@ import { useConnectionWatchdog } from './hooks/useConnectionWatchdog';
 import ConnectionOverlay from './components/ConnectionOverlay/ConnectionOverlay';
 import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
+import SaveStatus from './components/Dashboard/SaveStatus';
 import PhotoFrame from './components/PhotoFrame/PhotoFrame';
 import FriendPlayToast from './components/PlayOutside/FriendPlayToast';
 import SettingsModal from './components/Settings/SettingsModal';
@@ -27,6 +28,12 @@ const PHOTO_MODE_IDLE_MINUTES = 5;
 
 function AppShell() {
   const idle = useIdleTimer(PHOTO_MODE_IDLE_MINUTES);
+  const [kitchen, setKitchen] = useState(() => localStorage.getItem('hub-kitchen') === 'true');
+  useEffect(() => {
+    const update = event => setKitchen(event.detail);
+    window.addEventListener('hub:kitchen', update);
+    return () => window.removeEventListener('hub:kitchen', update);
+  }, []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [financeOpen, setFinanceOpen] = useState(false);
   const [gamesOpen, setGamesOpen] = useState(false);
@@ -56,13 +63,14 @@ function AppShell() {
     }
   }, []);
 
-  if (idle) {
+  if (idle && !kitchen) {
     return <PhotoFrame />;
   }
 
   return (
     <div className="app-shell">
       <FriendPlayToast />
+      <SaveStatus />
       {calendarConnectMsg && <div className="calendar-connect-toast">{calendarConnectMsg}</div>}
       {!settingsOpen && <PairingPendingBanner onOpenSettings={() => setSettingsOpen(true)} />}
       <Sidebar onOpenSettings={() => setSettingsOpen(true)} />

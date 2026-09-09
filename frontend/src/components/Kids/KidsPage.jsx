@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import './KidsPage.css';
+import DailyRoutines from './DailyRoutines';
 
 const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 const WEEKDAYS = [
@@ -16,7 +17,7 @@ const WEEKDAYS = [
 ];
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('sv-SE');
 }
 
 const emptyChoreForm = { title: '', type: 'daily', weekday: 'mon', stars: 1 };
@@ -203,6 +204,7 @@ export default function KidsPage() {
           ))}
         </div>
 
+        {selectedId && <DailyRoutines key={selectedId} memberId={selectedId} />}
         {selectedBalance && (
           <div className="kids-stats">
             <div className="kids-stat-card">

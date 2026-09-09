@@ -1,5 +1,9 @@
 import { Router } from 'express';
+import { archiveDeletion } from '../services/undoService.js';
 import multer from 'multer';
+import { DateTime } from 'luxon';
+import { createEvent, validateEvent } from '../services/calendarEvents.js';
+import { expandWeeklyOccurrences, familyDate } from '../services/calendarTime.js';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { scanCalendarImage } from '../services/calendarScanService.js';
@@ -13,38 +17,12 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-// Utvider ukentlig gjentakende avtaler til faktiske forekomster innenfor [from, to).
-function expandWeeklyOccurrences(events, fromIso, toIso) {
-  const fromMs = new Date(fromIso).getTime();
-  const toMs = new Date(toIso).getTime();
-  const result = [];
-  for (const e of events) {
-    const originalStart = new Date(e.start_at).getTime();
-    const duration = new Date(e.end_at).getTime() - originalStart;
-    let occStart = originalStart;
-    if (occStart < fromMs) {
-      const weeksToShift = Math.ceil((fromMs - occStart) / WEEK_MS);
-      occStart += weeksToShift * WEEK_MS;
-    }
-    while (occStart < toMs) {
-      if (occStart + duration > fromMs) {
-        result.push({
-          ...e,
-          start_at: new Date(occStart).toISOString(),
-          end_at: new Date(occStart + duration).toISOString(),
-        });
-      }
-      occStart += WEEK_MS;
-    }
-  }
-  return result;
-}
-
 // GET /api/calendar/events?from=ISO&to=ISO
 router.get('/events', (req, res) => {
   const { from, to } = req.query;
+  if ((from || to) && (!Number.isFinite(Date.parse(from)) || !Number.isFinite(Date.parse(to)) || Date.parse(to) <= Date.parse(from) || Date.parse(to) - Date.parse(from) > 370 * 86400000)) {
+    return res.status(400).json({ error: 'Velg et gyldig datointervall på maksimalt ett år.' });
+  }
   if (!from || !to) {
     const rows = db
       .prepare(
@@ -125,43 +103,67 @@ router.post('/scan-homework', upload.single('image'), async (req, res) => {
 // Lekseavtaler (source='homework') som forfaller i dag eller i morgen –
 // brukes av HomeworkBanner på forsiden.
 router.get('/homework-due-soon', (req, res) => {
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const today = familyDate();
+  const tomorrow = familyDate(1);
   const rows = db
     .prepare(
       `SELECT e.*, m.name AS member_name, m.avatar AS member_avatar, m.color AS member_color
        FROM calendar_events e LEFT JOIN family_members m ON m.id = e.member_id
-       WHERE e.family_id = ? AND e.source = 'homework' AND date(e.start_at) IN (?, ?)
+       WHERE e.family_id = ? AND e.source = 'homework' AND e.start_at >= ? AND e.start_at < ?
        ORDER BY e.start_at`
     )
-    .all(req.familyId, today, tomorrow);
-  res.json(rows.map((r) => ({ ...r, due_today: r.start_at.slice(0, 10) === today })));
+    .all(req.familyId, DateTime.fromISO(today, { zone: 'Europe/Oslo' }).toUTC().toISO(), DateTime.fromISO(tomorrow, { zone: 'Europe/Oslo' }).plus({ days: 1 }).toUTC().toISO());
+  res.json(rows.map((r) => ({ ...r, due_today: DateTime.fromISO(r.start_at, { zone: 'Europe/Oslo' }).toISODate() === today })));
+});
+
+// A stable client request id makes retries safe even if the response was lost.
+router.get('/events/:id/packing', (req, res) => {
+  if (!db.prepare('SELECT id FROM calendar_events WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId)) return res.status(404).json({ error: 'Avtale ikke funnet' });
+  res.json(db.prepare('SELECT item FROM calendar_packing WHERE event_id = ? AND date = ?').all(req.params.id, req.query.date || '').map(row => row.item));
+});
+router.put('/events/:id/packing', (req, res) => {
+  const event = db.prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?').get(req.params.id, req.familyId);
+  if (!event) return res.status(404).json({ error: 'Avtale ikke funnet' });
+  const { date, item, checked } = req.body;
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || typeof checked !== 'boolean' || !(event.bring_list || '').split('\n').map(value => value.trim()).includes(item)) return res.status(400).json({ error: 'Ugyldig sjekklistepunkt.' });
+  if (checked) db.prepare('INSERT OR IGNORE INTO calendar_packing (event_id, date, item) VALUES (?, ?, ?)').run(event.id, date, item);
+  else db.prepare('DELETE FROM calendar_packing WHERE event_id = ? AND date = ? AND item = ?').run(event.id, date, item);
+  req.app.get('io').to(`family:${req.familyId}`).emit('packing:update');
+  res.json(db.prepare('SELECT item FROM calendar_packing WHERE event_id = ? AND date = ?').all(event.id, date).map(row => row.item));
+});
+
+router.post('/events/import', (req, res) => {
+  const { requestId, events } = req.body;
+  if (typeof requestId !== 'string' || requestId.length < 8 || requestId.length > 100 || !Array.isArray(events) || !events.length || events.length > 200) return res.status(400).json({ error: 'Ugyldig import.' });
+  const payload = JSON.stringify(events);
+  const existing = db.prepare('SELECT * FROM calendar_imports WHERE family_id = ? AND request_id = ?').get(req.familyId, requestId);
+  if (existing) {
+    if (existing.payload !== payload) return res.status(409).json({ error: 'Denne importen er allerede lagret med et annet innhold. Lukk vinduet og kontroller kalenderen.' });
+    return res.json(JSON.parse(existing.result));
+  }
+  for (const event of events) {
+    const error = validateEvent(event, req.familyId);
+    if (error) return res.status(400).json({ error });
+  }
+  const result = db.transaction(() => {
+    const created = events.map(event => createEvent(event, req.familyId));
+    db.prepare('INSERT INTO calendar_imports (family_id, request_id, payload, result) VALUES (?, ?, ?, ?)').run(req.familyId, requestId, payload, JSON.stringify(created));
+    return created;
+  })();
+  req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'imported' });
+  res.status(201).json(result);
+});
+
+router.get('/sync-status', (req, res) => {
+  res.json(db.prepare(`SELECT c.id, c.provider, c.last_synced_at, m.name AS member_name
+    FROM calendar_connections c JOIN family_members m ON m.id = c.member_id
+    WHERE m.family_id = ?`).all(req.familyId));
 });
 
 router.post('/events', (req, res) => {
-  const {
-    member_id = null,
-    title,
-    start_at,
-    end_at,
-    all_day = 0,
-    location = null,
-    notes = null,
-    recurrence = 'once',
-    source = 'local',
-  } = req.body;
-  if (!title || !start_at || !end_at) {
-    return res.status(400).json({ error: 'Tittel, start og slutt er påkrevd' });
-  }
-  const info = db
-    .prepare(
-      `INSERT INTO calendar_events (family_id, member_id, title, start_at, end_at, all_day, location, notes, source, recurrence)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(req.familyId, member_id, title, start_at, end_at, all_day ? 1 : 0, location, notes, source, recurrence);
-  const event = db
-    .prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?')
-    .get(info.lastInsertRowid, req.familyId);
+  const error = validateEvent(req.body, req.familyId);
+  if (error) return res.status(400).json({ error });
+  const event = createEvent(req.body, req.familyId);
   req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'created', event });
   res.status(201).json(event);
 });
@@ -172,8 +174,10 @@ router.put('/events/:id', (req, res) => {
     .get(req.params.id, req.familyId);
   if (!existing) return res.status(404).json({ error: 'Avtale ikke funnet' });
   const merged = { ...existing, ...req.body };
+  const error = validateEvent(merged, req.familyId);
+  if (error) return res.status(400).json({ error });
   db.prepare(
-    `UPDATE calendar_events SET member_id = ?, title = ?, start_at = ?, end_at = ?, all_day = ?, location = ?, notes = ?, recurrence = ?
+    `UPDATE calendar_events SET member_id = ?, title = ?, start_at = ?, end_at = ?, all_day = ?, location = ?, notes = ?, recurrence = ?, responsible_id = ?, driver_id = ?, pickup_id = ?, bring_list = ?, time_zone = ?
      WHERE id = ? AND family_id = ?`
   ).run(
     merged.member_id,
@@ -184,6 +188,7 @@ router.put('/events/:id', (req, res) => {
     merged.location,
     merged.notes,
     merged.recurrence,
+    merged.responsible_id ?? null, merged.driver_id ?? null, merged.pickup_id ?? null, merged.bring_list || '', merged.time_zone || 'Europe/Oslo',
     req.params.id,
     req.familyId
   );
@@ -193,9 +198,10 @@ router.put('/events/:id', (req, res) => {
 });
 
 router.delete('/events/:id', (req, res) => {
-  db.prepare('DELETE FROM calendar_events WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  const rows = db.prepare('SELECT * FROM calendar_events WHERE id = ? AND family_id = ?').all(req.params.id, req.familyId);
+  const undo = archiveDeletion(req, 'calendar_events', rows, () => db.prepare('DELETE FROM calendar_events WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId));
   req.app.get('io').to(`family:${req.familyId}`).emit('calendar:update', { type: 'deleted', id: Number(req.params.id) });
-  res.status(204).end();
+  res.json(undo);
 });
 
 export default router;

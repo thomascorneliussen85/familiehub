@@ -1,0 +1,70 @@
+.hub-save-status { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10050; display: grid; gap: 8px; width: min(92vw, 580px); max-height: 45vh; overflow: auto; pointer-events: none; }
+.hub-notice { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; color: var(--text); background: var(--panel-bg, #fff); border: 1px solid var(--panel-border); box-shadow: 0 6px 30px #0002; pointer-events: auto; }
+.hub-notice span { flex: 1; }
+.hub-notice button { min-height: 44px; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 8px; padding: 8px 12px; }
+.hub-notice-error, .hub-inline-warning { border-left: 4px solid #bb7625; }
+.hub-inline-warning { background: var(--accent-soft); color: var(--text); padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.5; }
+.event-modal { max-height: 90dvh; overflow-y: auto; }
+.event-modal label { display: grid; gap: 6px; font-size: 14px; }
+.event-modal .event-modal-repeat { display: flex; }
+.event-logistics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.event-logistics select { min-width: 0; width: 100%; }
+.event-modal textarea, .routine-editor textarea { width: 100%; box-sizing: border-box; font: inherit; color: var(--text); background: var(--input-bg, var(--panel-bg)); border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px; }
+.dashboard-favorites { display: flex; gap: 8px; flex-wrap: wrap; }
+.module-picker { display: grid; gap: 18px; }
+.module-picker h2 { margin: 10px 0; font-size: 19px; }
+.module-card { border: 1px solid var(--panel-border); border-radius: 16px; overflow: hidden; }
+.module-card .dashboard-more-item { width: 100%; border: 0; }
+.module-options { display: flex; gap: 10px; padding: 8px; justify-content: space-between; align-items: center; }
+.module-options label { display: flex; align-items: center; gap: 6px; }
+.daily-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.routine-card { background: var(--accent-soft); border: 1px solid var(--panel-border); border-radius: 18px; padding: 18px; }
+.routine-card h3 { margin: 0 0 8px; }
+.routine-card p { font-size: 13px; color: var(--text-dim); }
+.routine-step { display: flex; gap: 12px; align-items: center; padding: 12px 0; font-size: 17px; }
+.routine-step input, .dinner-recipe-ingredients input { width: 22px; height: 22px; accent-color: var(--accent); flex-shrink: 0; }
+.routine-step:has(input:checked) span { text-decoration: line-through; color: var(--text-dim); }
+.routine-editor { grid-column: 1 / -1; }
+.routine-editor label { display: grid; gap: 8px; margin-bottom: 12px; }
+.servings-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.servings-row label { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.servings-row input { width: 60px; min-height: 44px; }
+.dinner-recipe-ingredients label { display: flex; align-items: center; gap: 10px; }
+.shopping-group { list-style: none; }
+.shopping-group h3 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
+.shopping-group ul { padding: 0; }
+.shopping-checkbox { accent-color: var(--accent); }
+.agenda-updated { color: var(--text-dim); font-size: 11px; margin: 8px 0; }
+.agenda-past { border-top: 1px solid var(--panel-border); padding-top: 12px; }
+.agenda-past summary { cursor: pointer; min-height: 36px; color: var(--text-dim); font-size: 13px; }
+.agenda-past .agenda-event { opacity: .75; }
+.agenda-logistics { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.tomorrow-preparation { padding: 14px; margin-top: 14px; border-radius: 12px; background: var(--accent-soft); }
+.tomorrow-preparation h3 { margin: 0 0 12px; font-size: 16px; }
+.tomorrow-preparation p { font-size: 14px; margin: 8px 0; }
+.packing-checklist { display: grid; gap: 8px; margin: 8px 0 16px; }
+.packing-checklist label { display: flex; gap: 10px; align-items: center; font-size: 14px; min-height: 32px; }
+.packing-checklist input { width: 20px; height: 20px; accent-color: var(--accent); }
+.calendar-sync-details { font-size: 12px; color: var(--text-dim); padding: 8px 0; }
+.calendar-sync-details summary { cursor: pointer; min-height: 32px; }
+.calendar-sync-details p { margin: 6px 0; }
+@media(min-width:1100px) {
+  .dashboard-kitchen { padding: 16px; gap: 12px; }
+  .dashboard-kitchen .dashboard-home { gap: 12px; }
+  .dashboard-kitchen .dashboard-daily-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .dashboard-kitchen .dashboard-shopping-wide { grid-column: auto; }
+  .dashboard-kitchen .dashboard-daily-side { gap: 12px; }
+  .dashboard-kitchen .panel-header { padding: 12px 16px 4px; }
+  .dashboard-kitchen .panel-body { padding: 4px 16px 14px; }
+  .dashboard-kitchen .next-event-banner { padding: 14px 20px; }
+  .dashboard-kitchen .agenda-event { padding: 12px 0; }
+  .dashboard-kitchen .agenda-days { padding-bottom: 8px; }
+  .dashboard-kitchen .agenda-days button { min-height: 50px; }
+  .dashboard-kitchen .agenda-events { max-height: 34vh; overflow-y: auto; }
+  .dashboard-kitchen .panel-shopping > .panel-body { max-height: 62vh; overflow-y: auto; }
+  .dashboard-kitchen .chore-list { max-height: 27vh; overflow-y: auto; }
+  .dashboard-kitchen .quick-items { display: none; }
+  .dashboard-kitchen .agenda-details strong, .dashboard-kitchen .shopping-name, .dashboard-kitchen .chore-title { font-size: 17px; }
+}
+@media(max-width:900px) { .hub-save-status { bottom: 94px; } }
+@media(max-width:600px) { .event-logistics, .daily-routines { grid-template-columns: 1fr; } .module-options { flex-wrap: wrap; } .kitchen-switch { font-size: 12px; } }

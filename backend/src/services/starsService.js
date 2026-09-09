@@ -1,12 +1,7 @@
 import { db } from '../db/index.js';
+import { DateTime } from 'luxon';
 
-function mondayOfThisWeek() {
-  const now = new Date();
-  const currentIdx = (now.getDay() + 6) % 7;
-  const d = new Date(now);
-  d.setDate(d.getDate() - currentIdx);
-  return d.toISOString().slice(0, 10);
-}
+function mondayOfThisWeek() { return DateTime.now().setZone('Europe/Oslo').startOf('week').toISODate(); }
 
 const totalStmt = db.prepare(
   `SELECT COALESCE(SUM(cc.stars_awarded), 0) AS total

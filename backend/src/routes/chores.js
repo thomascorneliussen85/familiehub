@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { DateTime } from 'luxon';
+import { FAMILY_ZONE } from '../services/calendarTime.js';
+import { archiveDeletion } from '../services/undoService.js';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { getStarsBalance } from '../services/starsService.js';
@@ -8,38 +11,28 @@ router.use(requireAuth);
 
 const WEEKDAY_INDEX = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
 
-function todayStr(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
-}
-
-// Returnerer datoen (YYYY-MM-DD) som representerer "inneværende periode"
-// for et gjøremål, basert på gjentakelsesregelen. For et engangs-gjøremål
-// uten frist ("bare må gjøres") brukes en fast nøkkel, slik at avkrysning
-// ikke nullstilles neste dag.
+function todayStr(offsetDays = 0) { return DateTime.now().setZone(FAMILY_ZONE).plus({ days: offsetDays }).toISODate(); }
 function currentPeriodKey(recurrence, dueDate) {
   if (recurrence === 'once') return dueDate || 'anytime';
-  if (recurrence === 'daily') return todayStr();
-  if (recurrence.startsWith('weekly:')) {
-    const targetIdx = WEEKDAY_INDEX[recurrence.split(':')[1]] ?? 0;
-    const now = new Date();
-    const currentIdx = (now.getDay() + 6) % 7; // man=0..søn=6
-    const diff = targetIdx - currentIdx;
-    const d = new Date(now);
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
+  if (recurrence.startsWith('weekly:')) return DateTime.now().setZone(FAMILY_ZONE).startOf('week').plus({ days: WEEKDAY_INDEX[recurrence.split(':')[1]] ?? 0 }).toISODate();
   return todayStr();
 }
+function mondayOfThisWeek() { return DateTime.now().setZone(FAMILY_ZONE).startOf('week'); }
 
-function mondayOfThisWeek() {
-  const now = new Date();
-  const currentIdx = (now.getDay() + 6) % 7;
-  const d = new Date(now);
-  d.setDate(d.getDate() - currentIdx);
-  return d;
-}
+router.post('/routines', (req, res) => {
+  const { member_id, group, titles } = req.body;
+  if (!['morning', 'evening'].includes(group) || !Array.isArray(titles) || !titles.length || titles.length > 20 || titles.some(title => typeof title !== 'string' || !title.trim() || title.length > 200)) return res.status(400).json({ error: 'Velg rutine og mellom 1 og 20 korte trinn.' });
+  if (!db.prepare("SELECT id FROM family_members WHERE id = ? AND family_id = ? AND role = 'barn'").get(member_id, req.familyId)) return res.status(400).json({ error: 'Velg et barn i din familie.' });
+  db.transaction(() => {
+    for (const raw of titles) {
+      const title = raw.trim();
+      const exists = db.prepare('SELECT id FROM chores WHERE family_id = ? AND member_id = ? AND routine_group = ? AND title = ? AND active = 1').get(req.familyId, member_id, group, title);
+      if (!exists) db.prepare("INSERT INTO chores (family_id, member_id, title, recurrence, stars, routine_group) VALUES (?, ?, ?, 'daily', 1, ?)").run(req.familyId, member_id, title, group);
+    }
+  })();
+  req.app.get('io').to(`family:${req.familyId}`).emit('chores:update');
+  res.status(201).json({ saved: true });
+});
 
 function listChores(familyId) {
   const chores = db
@@ -66,7 +59,8 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const { member_id = null, title, recurrence = 'once', due_date = null, stars = 1 } = req.body;
-  if (!title) return res.status(400).json({ error: 'Tittel er påkrevd' });
+  if (typeof title !== 'string' || !title.trim()) return res.status(400).json({ error: 'Tittel er påkrevd' });
+  if (member_id != null && !db.prepare('SELECT id FROM family_members WHERE id = ? AND family_id = ?').get(member_id, req.familyId)) return res.status(400).json({ error: 'Ugyldig familiemedlem' });
   const info = db
     .prepare(
       'INSERT INTO chores (family_id, member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?, ?)'
@@ -104,9 +98,10 @@ router.post('/:id/toggle', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  db.prepare('UPDATE chores SET active = 0 WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  const rows = db.prepare('SELECT * FROM chores WHERE id = ? AND family_id = ? AND active = 1').all(req.params.id, req.familyId);
+  const undo = archiveDeletion(req, 'chores', rows, () => db.prepare('UPDATE chores SET active = 0 WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId));
   req.app.get('io').to(`family:${req.familyId}`).emit('chores:update');
-  res.status(204).end();
+  res.json(undo);
 });
 
 // Uketavle: for hvert daglige gjøremål (kun 'daily' – et ukentlig gjøremål
@@ -123,9 +118,7 @@ router.get('/weekly-grid', (req, res) => {
 
   const monday = mondayOfThisWeek();
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    return d.toISOString().slice(0, 10);
+    return monday.plus({ days: i }).toISODate();
   });
 
   const completionStmt = db.prepare(

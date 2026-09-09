@@ -2,18 +2,23 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import './ShoppingPanel.css';
+import { groceryCategory } from '../../lib/groceries';
 
 export default function ShoppingPanel() {
   const [items, setItems] = useState([]);
   const [quickItems, setQuickItems] = useState([]);
   const [newItem, setNewItem] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/shopping').then(setItems).catch(() => {});
+    api.get('/shopping').then(data => { setItems(data); setError(''); }).catch(() => setError('Kunne ikke hente handlelisten. Prøv å åpne siden igjen.')).finally(() => setLoading(false));
     api.get('/shopping/quick-items').then(setQuickItems).catch(() => {});
 
     function onUpdate(updated) {
       setItems(updated);
+      setError(''); setLoading(false);
     }
     socket.on('shopping:update', onUpdate);
     return () => socket.off('shopping:update', onUpdate);
@@ -22,20 +27,26 @@ export default function ShoppingPanel() {
   async function addItem(name) {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setNewItem('');
-    await api.post('/shopping', { name: trimmed }).catch(() => {});
+    if (busy) return;
+    setBusy(true);
+    try { setItems(await api.post('/shopping', { name: trimmed })); setNewItem(value => value.trim() === trimmed ? '' : value); setError(''); }
+    catch (err) { setError(err.message); }
+    finally { setBusy(false); }
   }
 
   async function toggle(id) {
-    await api.patch(`/shopping/${id}/toggle`).catch(() => {});
+    if (busy) return;
+    setBusy(true);
+    try { setItems(await api.patch(`/shopping/${id}/toggle`)); setError(''); }
+    catch (err) { setError(err.message); } finally { setBusy(false); }
   }
 
   async function remove(id) {
-    await api.delete(`/shopping/${id}`).catch(() => {});
+    try { await api.delete(`/shopping/${id}`); setItems(await api.get('/shopping')); } catch (err) { setError(err.message); }
   }
 
   async function clearChecked() {
-    await api.delete('/shopping').catch(() => {});
+    try { await api.delete('/shopping'); setItems(await api.get('/shopping')); } catch (err) { setError(err.message); }
   }
 
   const uncheckedCount = items.filter((i) => !i.checked).length;
@@ -68,7 +79,7 @@ export default function ShoppingPanel() {
             onChange={(e) => setNewItem(e.target.value)}
             autoComplete="off"
           />
-          <button type="submit" className="btn btn-accent">
+          <button type="submit" className="btn btn-accent" disabled={busy}>
             Legg til
           </button>
         </form>
@@ -81,16 +92,16 @@ export default function ShoppingPanel() {
           ))}
         </div>
 
-        {items.length === 0 && <div className="empty-hint">Handlelisten er tom</div>}
+        {error && <p role="alert">{error}</p>}
+        {loading ? <p role="status">Henter handleliste…</p> : !error && items.length === 0 && <div className="empty-hint">Handlelisten er tom</div>}
 
         <ul className="shopping-list">
-          {items.map((item) => (
+          {[...new Set(items.map(item => item.checked ? 'Kjøpt' : groceryCategory(item.name)))].sort((a, b) => a === 'Kjøpt' ? 1 : b === 'Kjøpt' ? -1 : a.localeCompare(b, 'nb')).map(category => <li key={category} className="shopping-group"><h3>{category}</h3><ul className="shopping-list">{items.filter(item => (item.checked ? 'Kjøpt' : groceryCategory(item.name)) === category).map((item) => (
             <li
               key={item.id}
               className={`shopping-item ${item.checked ? 'shopping-item-checked' : ''}`}
-              onClick={() => toggle(item.id)}
             >
-              <span className="shopping-checkbox">{item.checked ? '✔' : ''}</span>
+              <input type="checkbox" className="shopping-checkbox" checked={Boolean(item.checked)} onChange={() => toggle(item.id)} disabled={busy} aria-label={`Kjøpt ${item.name}`} />
               <span className="shopping-name">{item.name}</span>
               <button
                 className="shopping-remove"
@@ -103,7 +114,7 @@ export default function ShoppingPanel() {
                 ✕
               </button>
             </li>
-          ))}
+          ))}</ul></li>)}
         </ul>
       </div>
     </section>

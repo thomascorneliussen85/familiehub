@@ -3,7 +3,6 @@ import { api } from '../../lib/api';
 import { socket } from '../../lib/socket';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import './ChoresPanel.css';
-
 const RECURRENCE_LABELS = {
   once: 'Engangs',
   daily: 'Hver dag',
@@ -42,17 +41,18 @@ const emptyForm = {
   stars: 1,
 };
 
-export default function ChoresPanel() {
+export default function ChoresPanel({ compact = false }) {
   const { members } = useFamilyMembers();
   const [chores, setChores] = useState([]);
-  const [stars, setStars] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [showDone, setShowDone] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   function loadAll() {
-    api.get('/chores').then(setChores).catch(() => {});
-    api.get('/chores/stars').then(setStars).catch(() => {});
+    api.get('/chores').then(data => { setChores(data); setError(''); }).catch(() => setError('Kunne ikke hente gjøremål.'));
+
   }
 
   useEffect(() => {
@@ -62,7 +62,8 @@ export default function ChoresPanel() {
   }, []);
 
   async function toggle(id) {
-    await api.post(`/chores/${id}/toggle`).catch(() => {});
+    if (busy) return; setBusy(true);
+    try { await api.post(`/chores/${id}/toggle`); loadAll(); } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
 
   async function remove(id, e) {
@@ -81,7 +82,8 @@ export default function ChoresPanel() {
     if (!title) return;
     const recurrence = form.type === 'weekly' ? `weekly:${form.weekday}` : 'once';
     const due_date = form.type === 'date' ? form.date : null;
-    await api
+    setBusy(true);
+    try { await api
       .post('/chores', {
         title,
         member_id: form.memberId || null,
@@ -89,23 +91,21 @@ export default function ChoresPanel() {
         due_date,
         stars: form.stars,
       })
-      .catch(() => {});
-    setShowAdd(false);
+      ;
+    setShowAdd(false); loadAll();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
 
-  const activeChores = chores.filter((c) => !c.done);
-  const doneChores = chores.filter((c) => c.done);
+  const activeChores = chores.filter((c) => !c.done && (!compact || !c.routine_group));
+  const doneChores = chores.filter((c) => c.done && (!compact || !c.routine_group));
 
   function renderChoreItem(chore) {
     return (
       <li
         key={chore.id}
         className={`chore-item ${chore.done ? 'chore-item-done' : ''}`}
-        onClick={() => toggle(chore.id)}
       >
-        <span className="chore-checkbox" style={{ borderColor: chore.member_color }}>
-          {chore.done ? '✔' : ''}
-        </span>
+        <input type="checkbox" className="chore-checkbox" style={{ borderColor: chore.member_color }} checked={Boolean(chore.done)} disabled={busy} onChange={() => toggle(chore.id)} aria-label={`Fullført: ${chore.title}`} />
         <div className="chore-info">
           <span className="chore-title">{chore.title}</span>
           <span className="chore-meta">
@@ -217,24 +217,13 @@ export default function ChoresPanel() {
               ))}
             </div>
 
-            <button type="submit" className="btn btn-accent">
+            <button type="submit" className="btn btn-accent" disabled={busy}>
               Legg til
             </button>
           </form>
         )}
 
-        {stars.length > 0 && (
-          <div className="stars-row">
-            {stars.map((m) => (
-              <div key={m.id} className="star-chip" style={{ borderColor: m.color }}>
-                <span>{m.avatar}</span>
-                <span className="star-chip-name">{m.name}</span>
-                <span className="star-chip-stars">⭐ {m.stars_this_week}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
+        {error && <p role="alert">{error}</p>}
         {activeChores.length === 0 && doneChores.length === 0 && (
           <div className="empty-hint">Ingen gjøremål registrert</div>
         )}

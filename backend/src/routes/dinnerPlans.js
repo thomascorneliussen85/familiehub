@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { combineIngredients } from '../services/ingredients.js';
+import { archiveDeletion } from '../services/undoService.js';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { generateWeekPlan, generateRecipeDetails } from '../services/dinnerSuggestionService.js';
@@ -101,8 +103,9 @@ router.post('/', (req, res) => {
   if (!date || !title) {
     return res.status(400).json({ error: 'Dato og tittel er påkrevd' });
   }
-  const ingredientsJson = JSON.stringify(ingredients || []);
-  const instructionsJson = JSON.stringify(instructions || []);
+  const previous = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').get(req.familyId, date);
+  const ingredientsJson = ingredients === null && previous ? previous.ingredients_json : JSON.stringify(ingredients || []);
+  const instructionsJson = instructions === null && previous ? previous.instructions_json : JSON.stringify(instructions || []);
   db.prepare(
     `INSERT INTO dinner_plans (family_id, date, title, emoji, notes, description, ingredients_json, instructions_json, photo_url, source)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -115,7 +118,7 @@ router.post('/', (req, res) => {
        instructions_json = excluded.instructions_json,
        photo_url = excluded.photo_url,
        source = excluded.source`
-  ).run(req.familyId, date, title, emoji || null, notes || null, description, ingredientsJson, instructionsJson, photo_url, source);
+  ).run(req.familyId, date, title, emoji || null, Object.hasOwn(req.body, 'notes') ? notes || null : previous?.notes || null, Object.hasOwn(req.body, 'description') ? description : previous?.description || null, ingredientsJson, instructionsJson, Object.hasOwn(req.body, 'photo_url') ? photo_url : previous?.photo_url || null, Object.hasOwn(req.body, 'source') ? source : previous?.source || source);
 
   const plan = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').get(req.familyId, date);
   req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', serializePlan(plan));
@@ -212,18 +215,7 @@ router.get('/shopping-suggestions', (req, res) => {
     .prepare('SELECT ingredients_json FROM dinner_plans WHERE family_id = ? AND date >= ? AND date <= ?')
     .all(req.familyId, from, to);
 
-  const seen = new Set();
-  const suggestions = [];
-  for (const row of rows) {
-    const ingredients = JSON.parse(row.ingredients_json || '[]');
-    for (const text of ingredients) {
-      const key = text.trim().toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      suggestions.push(text.trim());
-    }
-  }
-  res.json(suggestions);
+  res.json(combineIngredients(rows.flatMap(row => JSON.parse(row.ingredients_json || '[]'))));
 });
 
 // Legger valgte ingrediens-forslag til handlelisten, samme mønster som
@@ -231,12 +223,12 @@ router.get('/shopping-suggestions', (req, res) => {
 // (case-insensitivt) i stedet for å lage duplikater.
 router.post('/add-ingredients-to-shopping', (req, res) => {
   const { items } = req.body || {};
-  if (!Array.isArray(items) || items.length === 0) {
+  if (!Array.isArray(items) || items.length === 0 || items.length > 200 || items.some(item => typeof item !== 'string' || item.length > 300)) {
     return res.status(400).json({ error: 'items er påkrevd' });
   }
   const existing = new Set(
     db
-      .prepare('SELECT name FROM shopping_items WHERE family_id = ?')
+      .prepare('SELECT name FROM shopping_items WHERE family_id = ? AND checked = 0')
       .all(req.familyId)
       .map((r) => r.name.trim().toLowerCase())
   );
@@ -249,6 +241,7 @@ router.post('/add-ingredients-to-shopping', (req, res) => {
       const name = String(raw || '').trim();
       if (!name || existing.has(name.toLowerCase())) return;
       insert.run(req.familyId, name, maxPos + 1 + added + i);
+      existing.add(name.toLowerCase());
       added += 1;
     });
   })();
@@ -289,9 +282,10 @@ router.delete('/library/:id', (req, res) => {
 });
 
 router.delete('/:date', (req, res) => {
-  db.prepare('DELETE FROM dinner_plans WHERE family_id = ? AND date = ?').run(req.familyId, req.params.date);
+  const rows = db.prepare('SELECT * FROM dinner_plans WHERE family_id = ? AND date = ?').all(req.familyId, req.params.date);
+  const undo = archiveDeletion(req, 'dinner_plans', rows, () => db.prepare('DELETE FROM dinner_plans WHERE family_id = ? AND date = ?').run(req.familyId, req.params.date));
   req.app.get('io').to(`family:${req.familyId}`).emit('dinner-plans:update', { date: req.params.date, deleted: true });
-  res.status(204).end();
+  res.json(undo);
 });
 
 export default router;

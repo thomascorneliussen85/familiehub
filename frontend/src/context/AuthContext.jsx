@@ -32,6 +32,16 @@ export function AuthProvider({ children }) {
     return () => setUnauthorizedHandler(() => {});
   }, []);
 
+  useEffect(() => {
+    function disconnected(reason) {
+      if (reason === 'io server disconnect') {
+        api.get('/auth/me').then(() => socket.connect()).catch(() => setUser(null));
+      }
+    }
+    socket.on('disconnect', disconnected);
+    return () => socket.off('disconnect', disconnected);
+  }, []);
+
   async function login(email, password) {
     const data = await api.post('/auth/login', { email, password });
     setUser(data);

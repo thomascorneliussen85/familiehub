@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { archiveDeletion } from '../services/undoService.js';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 
@@ -26,7 +27,7 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const { name } = req.body;
-  if (!name || !name.trim()) return res.status(400).json({ error: 'Varenavn er påkrevd' });
+  if (typeof name !== 'string' || !name.trim() || name.length > 300) return res.status(400).json({ error: 'Varenavn er påkrevd' });
   const maxPos = db.prepare('SELECT COALESCE(MAX(position), 0) AS m FROM shopping_items WHERE family_id = ?').get(req.familyId).m;
   db.prepare('INSERT INTO shopping_items (family_id, name, position) VALUES (?, ?, ?)').run(
     req.familyId,
@@ -51,15 +52,17 @@ router.patch('/:id/toggle', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM shopping_items WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  const rows = db.prepare('SELECT * FROM shopping_items WHERE id = ? AND family_id = ?').all(req.params.id, req.familyId);
+  const undo = archiveDeletion(req, 'shopping_items', rows, () => db.prepare('DELETE FROM shopping_items WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId));
   broadcast(req);
-  res.status(204).end();
+  res.json(undo);
 });
 
 router.delete('/', (req, res) => {
-  db.prepare('DELETE FROM shopping_items WHERE checked = 1 AND family_id = ?').run(req.familyId);
+  const rows = db.prepare('SELECT * FROM shopping_items WHERE checked = 1 AND family_id = ?').all(req.familyId);
+  const undo = archiveDeletion(req, 'shopping_items', rows, () => db.prepare('DELETE FROM shopping_items WHERE checked = 1 AND family_id = ?').run(req.familyId));
   broadcast(req);
-  res.status(204).end();
+  res.json(undo);
 });
 
 router.get('/quick-items', (req, res) => {

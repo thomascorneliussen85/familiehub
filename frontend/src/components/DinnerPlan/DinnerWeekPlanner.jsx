@@ -4,6 +4,7 @@ import { socket } from '../../lib/socket';
 import DinnerLibraryModal from './DinnerLibraryModal';
 import DinnerRecipeModal from './DinnerRecipeModal';
 import './DinnerWeekPlanner.css';
+import { scaleIngredient } from '../../lib/groceries';
 
 const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 
@@ -49,6 +50,9 @@ export default function DinnerWeekPlanner() {
   const [checked, setChecked] = useState(new Set());
   const [addingIngredients, setAddingIngredients] = useState(false);
   const [addedMessage, setAddedMessage] = useState('');
+  const [baseServings, setBaseServings] = useState(4);
+  const [servings, setServings] = useState(4);
+  const [saving, setSaving] = useState(false);
 
   const thisWeekStart = useMemo(() => startOfWeek(new Date()), []);
   const weekStart = useMemo(() => addDays(thisWeekStart, weekOffset * 7), [thisWeekStart, weekOffset]);
@@ -66,7 +70,7 @@ export default function DinnerWeekPlanner() {
         });
         setPlans(byDate);
       })
-      .catch(() => {});
+      .catch(() => setPlanError('Kunne ikke hente middagsplanen.'));
   }
 
   function loadSuggestions() {
@@ -132,7 +136,8 @@ export default function DinnerWeekPlanner() {
       .split('\n')
       .map((s) => s.trim())
       .filter(Boolean);
-    await api
+    if (saving) return; setSaving(true);
+    try { await api
       .post('/dinner-plans', {
         date: editingDate,
         title,
@@ -141,17 +146,16 @@ export default function DinnerWeekPlanner() {
         ingredients,
         instructions,
       })
-      .catch(() => {});
-    setEditingDate(null);
-    loadPlans();
-    loadSuggestions();
+      ;
+    setEditingDate(null); loadPlans(); loadSuggestions();
+    } catch (err) { setPlanError(err.message); } finally { setSaving(false); }
   }
 
   async function selectFromLibrary(recipe) {
     const date = libraryFor;
     setLibraryFor(null);
     setEditingDate(null);
-    await api.post('/dinner-plans', { date, title: recipe.title, emoji: recipe.emoji || '🍽️' }).catch(() => {});
+    await api.post('/dinner-plans', { date, title: recipe.title, emoji: recipe.emoji || '🍽️', ingredients: [], instructions: [], description: null, photo_url: null }).catch(() => {});
     loadPlans();
     loadSuggestions();
   }
@@ -175,7 +179,7 @@ export default function DinnerWeekPlanner() {
   }
 
   async function addSelectedToShopping() {
-    const items = Array.from(checked);
+    const items = Array.from(checked).map(item => scaleIngredient(item, servings / baseServings));
     if (items.length === 0) return;
     setAddingIngredients(true);
     setAddedMessage('');
@@ -328,11 +332,13 @@ export default function DinnerWeekPlanner() {
                 {checked.size === suggestions.length ? 'Fjern alle' : 'Velg alle'}
               </button>
             </div>
+            <div className="servings-row"><label>Oppskriftene er til <input type="number" min="1" max="30" value={baseServings} onChange={e => setBaseServings(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} /> personer</label><label>Vi lager til <input type="number" min="1" max="30" value={servings} onChange={e => setServings(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} /> personer</label></div>
+            <p className="empty-hint">Like ingredienser med kompatible enheter er summert. Kontroller porsjonsgrunnlaget og fjern varer dere har. Ved ulike porsjonsgrunnlag: bruk handleknappen i hver oppskrift.</p>
             <div className="dinner-planner-suggestions-list">
               {suggestions.map((text) => (
                 <label key={text} className="dinner-planner-suggestion-item">
                   <input type="checkbox" checked={checked.has(text)} onChange={() => toggleSuggestion(text)} />
-                  <span>{text}</span>
+                  <span>{scaleIngredient(text, servings / baseServings)}</span>
                 </label>
               ))}
             </div>

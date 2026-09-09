@@ -19,21 +19,26 @@ function formatCountdown(ms) {
 
 export default function NextEventBanner() {
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [now, setNow] = useState(new Date());
 
   function loadEvents() {
     const today = startOfDay(new Date());
     const from = today.toISOString();
     const to = new Date(new Date(today).setDate(today.getDate() + 2)).toISOString();
-    api.get(`/calendar/events?from=${from}&to=${to}`).then(setEvents).catch(() => {});
+    api.get(`/calendar/events?from=${from}&to=${to}`).then(data => { setEvents(data); setError(false); }).catch(() => setError(true)).finally(() => setLoading(false));
   }
 
   useEffect(() => {
     loadEvents();
     socket.on('calendar:update', loadEvents);
-    const id = setInterval(() => setNow(new Date()), 15000);
+    socket.on('connect', loadEvents);
+    let day = new Date().toLocaleDateString('sv-SE');
+    const id = setInterval(() => { const current = new Date(); setNow(current); if (current.toLocaleDateString('sv-SE') !== day) { day = current.toLocaleDateString('sv-SE'); loadEvents(); } }, 15000);
     return () => {
       socket.off('calendar:update', loadEvents);
+      socket.off('connect', loadEvents);
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,6 +58,7 @@ export default function NextEventBanner() {
 
   const target = upcomingToday || firstTomorrow;
 
+  if (loading || error) return <div className="next-event-banner next-event-banner-empty"><span className="next-event-empty-text">{loading ? 'Henter neste avtale…' : 'Kunne ikke hente neste avtale.'}</span>{error && <button className="btn" onClick={loadEvents}>Prøv igjen</button>}</div>;
   if (!target) {
     return (
       <div className="next-event-banner next-event-banner-empty">

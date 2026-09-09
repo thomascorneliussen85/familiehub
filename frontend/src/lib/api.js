@@ -11,7 +11,7 @@ export function triggerUnauthorized() {
   onUnauthorized();
 }
 
-async function request(path, options = {}) {
+async function rawRequest(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -32,6 +32,21 @@ async function request(path, options = {}) {
   }
   if (res.status === 204) return null;
   return res.json();
+}
+
+async function request(path, options = {}) {
+  const mutation = options.method && options.method !== 'GET';
+  const notify = detail => window.dispatchEvent(new CustomEvent('hub:save', { detail }));
+  if (mutation) notify({ phase: 'start' });
+  try {
+    const result = await rawRequest(path, options);
+    if (mutation) notify({ phase: 'done', undoToken: result?.undoToken,
+      label: path.startsWith('/calendar') ? 'Avtale' : path.startsWith('/dinner') ? 'Middag' : path.startsWith('/chores') ? 'Gjøremål' : 'Varer' });
+    return result;
+  } catch (error) {
+    if (mutation) notify({ phase: 'error', error: `Kunne ikke bekrefte lagring: ${error.message}. Kontroller innholdet før du prøver igjen.` });
+    throw error;
+  }
 }
 
 export const api = {

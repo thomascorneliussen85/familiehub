@@ -14,6 +14,7 @@ function dueDateToAllDayRange(dateStr) {
 export default function ScanHomeworkModal({ items, onClose }) {
   const { members } = useFamilyMembers();
   const [rows, setRows] = useState(items.map((i) => ({ ...i, included: true })));
+  const [requestId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,18 +31,14 @@ export default function ScanHomeworkModal({ items, onClose }) {
     setSaving(true);
     setError('');
     try {
-      for (const row of toSave) {
-        const { start_at, end_at } = dueDateToAllDayRange(row.due_date);
-        await api.post('/calendar/events', {
-          title: row.title.trim(),
-          member_id: row.member_id || null,
-          start_at,
-          end_at,
-          all_day: true,
-          recurrence: 'once',
-          source: 'homework',
-        });
-      }
+      await api.post('/calendar/events/import', {
+        requestId,
+        events: toSave.map(row => ({
+          title: row.title.trim(), member_id: row.member_id || null,
+          ...dueDateToAllDayRange(row.due_date), all_day: true, source: 'homework',
+          recurrence: 'once', time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        })),
+      });
       onClose();
     } catch (err) {
       setError(err.message);

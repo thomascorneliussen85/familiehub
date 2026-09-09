@@ -167,6 +167,7 @@ router.delete('/users/:id', requireAuth, requireFamilyPin, (req, res) => {
     return res.status(400).json({ error: 'Kan ikke slette den siste innloggingen for familien' });
   }
   const result = db.prepare('DELETE FROM users WHERE id = ? AND family_id = ?').run(req.params.id, req.familyId);
+  if (result.changes) req.app.get('io').in(`user:${req.params.id}`).disconnectSockets(true);
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Fant ikke innloggingen' });
   }
@@ -256,7 +257,8 @@ router.post('/join-requests/:id/respond', requireAuth, requireFamilyPin, (req, r
     const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(request.email);
     if (existingUser) {
       const oldFamilyId = existingUser.family_id;
-      db.prepare('UPDATE users SET family_id = ? WHERE id = ?').run(req.familyId, existingUser.id);
+      db.prepare('UPDATE users SET family_id = ?, session_version = session_version + 1 WHERE id = ?').run(req.familyId, existingUser.id);
+      req.app.get('io').in(`user:${existingUser.id}`).disconnectSockets(true);
       const remaining = db.prepare('SELECT COUNT(*) AS c FROM users WHERE family_id = ?').get(oldFamilyId).c;
       // Fjern den gamle familien hvis den nå står helt tom (ingen kan
       // lenger logge inn på den uansett) – unngår en foreldreløs familie
