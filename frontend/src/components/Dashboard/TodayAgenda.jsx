@@ -5,6 +5,7 @@ import { usePanelNavigation } from '../../context/PanelNavigationContext';
 import { useFamilyMembers } from '../../context/FamilyMembersContext';
 import PackingChecklist from '../Calendar/PackingChecklist';
 import CalendarEventModal from '../Calendar/CalendarEventModal';
+import WeekBoard from './WeekBoard';
 
 function dateKey(date) {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -28,6 +29,7 @@ export default function TodayAgenda() {
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const [modal, setModal] = useState(null);
+  const [view, setView] = useState('week');
   const monday = new Date(selected);
   monday.setHours(0, 0, 0, 0);
   monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
@@ -104,12 +106,28 @@ export default function TodayAgenda() {
   }
 
   return (
-    <section className="panel today-agenda" aria-label="Dagens oversikt">
+    <section className={`panel today-agenda ${view === 'week' ? 'week-agenda' : ''}`} aria-label={view === 'week' ? 'Ukens oversikt' : 'Dagens oversikt'}>
       <div className="panel-header">
-        <h2 className="panel-title">{today ? 'Dagens oversikt' : selected.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'short' })}</h2>
+        <h2 className="panel-title">{view === 'week' ? 'Uken vår' : today ? 'Dagens oversikt' : selected.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'short' })}</h2>
+        <div className="agenda-view-switch" aria-label="Kalendervisning">
+          <button aria-pressed={view === 'week'} onClick={() => setView('week')}>Uke</button>
+          <button aria-pressed={view === 'day'} onClick={() => setView('day')}>Dag</button>
+        </div>
         <button className="agenda-link" onClick={() => openPanel('calendar')}>Hele kalenderen →</button>
       </div>
       <div className="panel-body">
+        {view === 'week' ? <>
+          <div className="week-toolbar">
+            <span className="week-range">{days[0].toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' })} – {days[6].toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <div className="agenda-week-nav">
+              <button aria-label="Forrige uke" onClick={() => stepWeek(-1)}>‹</button>
+              <button onClick={() => setSelected(new Date())}>Denne uken</button>
+              <button aria-label="Neste uke" onClick={() => stepWeek(1)}>›</button>
+            </div>
+          </div>
+          <div className="week-legend" aria-label="Familiens farger">{members.map(member => <span key={member.id} style={{ '--member-color': member.color }}><i aria-hidden="true" />{member.name}</span>)}</div>
+          {loading ? <p role="status">Henter ukens avtaler…</p> : error ? <div role="alert">{error} <button className="agenda-link" onClick={() => setRevision(n => n + 1)}>Prøv igjen</button></div> : <WeekBoard days={days} events={events} now={now} onOpenEvent={event => setModal({ event })} onSelectDay={day => { setSelected(day); setView('day'); }} onAdd={day => setModal({ defaultDate: day })} />}
+        </> : <>
         <div className="agenda-week-nav">
           <button aria-label="Forrige uke" onClick={() => stepWeek(-1)}>‹</button>
           <button onClick={() => setSelected(new Date())}>I dag</button>
@@ -131,6 +149,7 @@ export default function TodayAgenda() {
             {past.length > 0 && <details className="agenda-past"><summary>Tidligere i dag ({past.length})</summary>{past.map(renderEvent)}</details>}
           </>}
         </div>
+        </>}
         {updated && <p className="agenda-updated">Hentet fra hubben kl. {updated.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</p>}
         {(connections.length > 0 || syncError) && <details className="calendar-sync-details"><summary>Tilkoblede kalendere · synkroniseringsstatus</summary>
           {syncError ? <p>Kunne ikke hente status.</p> : connections.map(connection => <p key={connection.id}>{connection.member_name} · {connection.provider}: {connection.last_synced_at ? new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(connection.last_synced_at) ? connection.last_synced_at : connection.last_synced_at.replace(' ', 'T') + 'Z').toLocaleString('nb-NO') : 'Aldri synkronisert'}</p>)}
@@ -139,7 +158,7 @@ export default function TodayAgenda() {
         {today && now.getHours() >= 18 && !loading && !error && <section className="tomorrow-preparation"><h3>Husk til i morgen</h3>
           {tomorrowEvents.length === 0 ? <p>Ingen avtaler registrert i morgen.</p> : tomorrowEvents.map(event => <div key={`${event.id}:${event.start_at}`}><p><strong>{event.title}</strong> · {event.all_day ? 'Hele dagen' : new Date(event.start_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</p><p>Kjører: {person(event.driver_id)} · Henter: {person(event.pickup_id)}</p>{event.bring_list && <PackingChecklist event={event} date={tomorrow.toLocaleDateString('sv-SE')} />}</div>)}
         </section>}
-        <button className="agenda-add" onClick={() => setModal({ defaultDate: start })}>+ Legg til avtale</button>
+        {view === 'day' && <button className="agenda-add" onClick={() => setModal({ defaultDate: start })}>+ Legg til avtale</button>}
       </div>
       {modal && <CalendarEventModal {...modal} onClose={() => setModal(null)} onSaved={() => setRevision(n => n + 1)} />}
     </section>

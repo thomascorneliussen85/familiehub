@@ -1,0 +1,54 @@
+.dashboard-daily-grid:has(.week-agenda) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dashboard-daily-grid:has(.week-agenda) > .today-agenda { grid-column: 1 / -1; }
+.dashboard-daily-grid:has(.week-agenda) > .dashboard-daily-side { display: contents; }
+.dashboard-daily-grid:has(.week-agenda) > .dashboard-shopping-wide { grid-column: auto; }
+.today-agenda.week-agenda .panel-header { align-items: center; gap: 12px; }
+.agenda-view-switch { display: flex; padding: 4px; border-radius: 10px; background: var(--panel-bg-alt); }
+.agenda-view-switch button { min-height: 36px; padding: 7px 14px; background: none; color: var(--text-dim); border: 0; border-radius: 7px; }
+.agenda-view-switch button[aria-pressed='true'] { background: var(--panel-bg); color: var(--text); box-shadow: 0 1px 4px #0001; }
+.week-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.week-range { color: var(--text-dim); font-size: 14px; }
+.week-toolbar .agenda-week-nav { gap: 8px; }
+.week-toolbar .agenda-week-nav button { color: var(--text); border: 1px solid var(--panel-border); border-radius: 9px; padding: 7px 12px; }
+.week-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; font-size: 12px; color: var(--text-dim); }
+.week-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.week-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--member-color); }
+.week-board { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+.week-day { min-width: 0; display: flex; flex-direction: column; background: var(--panel-bg-alt); border: 1px solid var(--panel-border); border-radius: 13px; overflow: hidden; }
+.week-day-weekend { background: var(--panel-bg); }
+.week-day-today { border: 2px solid var(--accent); }
+.week-day-heading { width: 100%; display: grid; gap: 4px; justify-items: start; padding: 13px 12px; text-align: left; border: 0; border-bottom: 1px solid var(--panel-border); background: none; color: var(--text); }
+.week-day-heading > span { text-transform: capitalize; font-size: 13px; font-weight: 600; }
+.week-day-heading strong { font-size: 26px; font-weight: 500; line-height: 1.1; }
+.week-day-heading small { font-size: 11px; color: var(--text-dim); }
+.week-day-today .week-day-heading { background: var(--accent); color: var(--on-accent); }
+.week-day-today .week-day-heading small { color: inherit; }
+.week-day-events { padding: 8px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.week-event { width: 100%; text-align: left; display: grid; gap: 7px; border: 1px solid var(--panel-border); border-left: 4px solid var(--member-color); border-radius: 8px; background: var(--panel-bg); color: var(--text); padding: 10px 8px; overflow-wrap: anywhere; }
+.week-event strong { font-size: 13px; font-weight: 600; line-height: 1.4; }
+.week-event-time { font-size: 12px; font-weight: 600; }
+.week-event-member { font-size: 11px; color: var(--text-dim); }
+.week-event-past { background: transparent; }
+.week-event-past .week-event-time { color: var(--text-dim); }
+.week-day-empty { font-size: 12px; color: var(--text-dim); padding: 16px 0; text-align: center; }
+.week-day-add, .week-show-more { min-height: 38px; background: transparent; color: var(--accent); border: 0; font-size: 12px; padding: 7px; }
+.week-day-add { border-top: 1px solid var(--panel-border); }
+.today-agenda.week-agenda .agenda-updated { margin-top: 14px; }
+@media (min-width:1500px) { .week-event strong { font-size: 15px; } .week-event { padding: 12px; } }
+@media (max-width:1050px) {
+  .week-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dashboard-daily-grid:has(.week-agenda) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-daily-grid:has(.week-agenda) > .dashboard-shopping-wide { grid-column: 1 / -1; }
+}
+@media (max-width:600px) {
+  .week-board { grid-template-columns: minmax(0, 1fr); }
+  .week-day-heading { grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; }
+  .week-day-heading strong { font-size: 22px; }
+  .week-day-events { gap: 6px; }
+  .week-event { grid-template-columns: 68px minmax(0, 1fr); column-gap: 8px; }
+  .week-event strong { font-size: 15px; }
+  .week-event-member { grid-column: 2; }
+  .week-day-empty { padding: 0; text-align: left; margin: 4px; }
+  .dashboard-daily-grid:has(.week-agenda) { grid-template-columns: minmax(0, 1fr); }
+  .week-range { font-size: 12px; }
+}
