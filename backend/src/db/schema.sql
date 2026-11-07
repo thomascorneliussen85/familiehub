@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS family_members (
   role        TEXT NOT NULL DEFAULT 'voksen', -- 'voksen' | 'barn'
   color       TEXT NOT NULL DEFAULT '#7c9cff',
   avatar      TEXT,                            -- emoji eller initial
+  photo_url   TEXT,                            -- bilde til barnas oppgaveside
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS chores (
   recurrence   TEXT NOT NULL DEFAULT 'once', -- 'once' | 'daily' | 'weekly:mon' | 'weekly:tue' ...
   due_date     TEXT,                          -- kun relevant for 'once'
   stars        INTEGER NOT NULL DEFAULT 1,
+  reward_text  TEXT,                          -- belønning som leses opp når oppgaven fullføres
   active       INTEGER NOT NULL DEFAULT 1,
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -43,6 +45,17 @@ CREATE TABLE IF NOT EXISTS chore_completions (
   stars_awarded  INTEGER NOT NULL DEFAULT 1,
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(chore_id, completed_on)
+);
+
+-- Ekstra belønning når et barn når et gitt antall stjerner samme dag
+CREATE TABLE IF NOT EXISTS bonus_rewards (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id      INTEGER REFERENCES family_members(id) ON DELETE CASCADE, -- NULL = gjelder alle barn
+  stars_required INTEGER NOT NULL,
+  title          TEXT NOT NULL,
+  emoji          TEXT NOT NULL DEFAULT '🎁',
+  active         INTEGER NOT NULL DEFAULT 1,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS shopping_items (

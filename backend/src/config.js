@@ -58,4 +58,8 @@ export const config = {
     dir: path.resolve(backendRoot, process.env.PHOTOS_DIR || '../photos'),
     idleMinutes: num(process.env.PHOTO_MODE_IDLE_MINUTES, 5),
   },
+
+  avatars: {
+    dir: path.resolve(backendRoot, process.env.AVATARS_DIR || './data/avatars'),
+  },
 };

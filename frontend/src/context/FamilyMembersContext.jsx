@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
+import { socket } from '../lib/socket';
 
 const FamilyMembersContext = createContext({ members: [], refresh: () => {} });
 
@@ -12,6 +13,8 @@ export function FamilyMembersProvider({ children }) {
 
   useEffect(() => {
     refresh();
+    socket.on('family-members:update', refresh);
+    return () => socket.off('family-members:update', refresh);
   }, [refresh]);
 
   return (

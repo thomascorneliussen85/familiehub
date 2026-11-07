@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/photos': { target: 'http://localhost:4000', changeOrigin: true },
+      '/avatars': { target: 'http://localhost:4000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:4000', changeOrigin: true, ws: true },
     },
   },

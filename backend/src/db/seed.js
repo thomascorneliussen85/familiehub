@@ -24,6 +24,7 @@ const seedAll = db.transaction(() => {
     DELETE FROM smart_plugs;
     DELETE FROM gps_positions;
     DELETE FROM messages;
+    DELETE FROM bonus_rewards;
     DELETE FROM family_members;
   `);
 
@@ -47,14 +48,20 @@ const seedAll = db.transaction(() => {
   insertEvent.run(null, 'Familiemiddag', isoAt(5, 16, 0), isoAt(5, 17, 0), 0, 'Hjemme');
 
   const insertChore = db.prepare(
-    `INSERT INTO chores (member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?)`
+    `INSERT INTO chores (member_id, title, recurrence, due_date, stars, reward_text) VALUES (?, ?, ?, ?, ?, ?)`
   );
-  const choreRydde = insertChore.run(adelia, 'Rydde rommet', 'weekly:mon', null, 2).lastInsertRowid;
-  insertChore.run(adelia, 'Dekke bord', 'daily', null, 1);
-  insertChore.run(adelia, 'Mate katten', 'daily', null, 1);
-  insertChore.run(mor, 'Vaske bad', 'weekly:sat', null, 1);
-  insertChore.run(far, 'Vaske bil', 'weekly:sun', null, 1);
-  insertChore.run(adelia, 'Lekser', 'daily', null, 2);
+  const choreRydde = insertChore.run(adelia, 'Rydde rommet', 'weekly:mon', null, 2, 'Du får velge kveldsfilm! 🎬').lastInsertRowid;
+  insertChore.run(adelia, 'Dekke bord', 'daily', null, 1, null);
+  insertChore.run(adelia, 'Mate katten', 'daily', null, 1, null);
+  insertChore.run(mor, 'Vaske bad', 'weekly:sat', null, 1, null);
+  insertChore.run(far, 'Vaske bil', 'weekly:sun', null, 1, null);
+  insertChore.run(adelia, 'Lekser', 'daily', null, 2, 'Du får litt ekstra skjermtid! 📱');
+
+  const insertBonus = db.prepare(
+    `INSERT INTO bonus_rewards (member_id, stars_required, title, emoji) VALUES (?, ?, ?, ?)`
+  );
+  insertBonus.run(adelia, 3, 'Ekstra godteri', '🍬');
+  insertBonus.run(null, 5, 'Filmkveld for hele familien', '🎬');
 
   const insertCompletion = db.prepare(
     `INSERT INTO chore_completions (chore_id, completed_on, stars_awarded) VALUES (?, ?, ?)`

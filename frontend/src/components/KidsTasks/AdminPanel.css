@@ -1,0 +1,241 @@
+.admin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(5, 6, 10, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 32px);
+}
+
+/* ---- Voksen-sjekk ---- */
+.admin-gate-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  padding: 32px;
+  width: min(90vw, 360px);
+  text-align: center;
+}
+.admin-gate-shake {
+  animation: admin-shake 0.4s ease;
+}
+.admin-gate-lock {
+  font-size: 40px;
+}
+.admin-gate-card h2 {
+  margin: 8px 0 4px;
+  font-size: 20px;
+}
+.admin-gate-card p {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 12px 0;
+}
+.admin-gate-choices {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.admin-gate-choice {
+  min-width: 64px;
+  font-size: 20px;
+}
+.admin-gate-cancel {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@keyframes admin-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* ---- Hovedpanel ---- */
+.admin-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  width: min(96vw, 920px);
+  height: min(92vh, 820px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.admin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+}
+.admin-panel-header h2 {
+  font-size: 20px;
+}
+.admin-close-btn {
+  border: none;
+  background: var(--panel-bg-alt);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.admin-section h3 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+.admin-section-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
+.admin-child-list,
+.admin-task-list,
+.admin-reward-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.admin-child-row,
+.admin-task-row,
+.admin-reward-row,
+.admin-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--panel-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.admin-add-row {
+  background: none;
+  border: 1px dashed var(--panel-border);
+  margin-top: 4px;
+}
+
+.admin-input {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  min-height: 42px;
+  flex: 1;
+  min-width: 120px;
+}
+.admin-input-narrow {
+  flex: none;
+  width: 64px;
+  min-width: 64px;
+}
+.admin-input-emoji {
+  flex: none;
+  width: 56px;
+  min-width: 56px;
+  text-align: center;
+  font-size: 18px;
+}
+.admin-color-input {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  padding: 2px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: none;
+}
+
+.admin-photo-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  flex: none;
+}
+.admin-photo-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--panel-border);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+.admin-photo-upload-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-decoration: underline;
+}
+
+.admin-delete-btn {
+  flex: none;
+  border: none;
+  background: rgba(255, 107, 107, 0.14);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.admin-task-member {
+  flex: none;
+  font-size: 20px;
+}
+
+.admin-reward-emoji {
+  font-size: 22px;
+  flex: none;
+}
+.admin-reward-title {
+  flex: 1;
+  min-width: 140px;
+  font-weight: 600;
+}
+.admin-reward-meta {
+  color: var(--text-dim);
+  font-size: 13px;
+  flex: none;
+}
+
+.admin-empty-hint {
+  color: var(--text-faint);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .admin-input {
+    min-width: 100%;
+  }
+}

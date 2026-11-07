@@ -8,6 +8,9 @@ backend/data/*.db-journal
 backend/data/*.db-wal
 backend/data/*.db-shm
 
+# Opplastede bilder av familiemedlemmer (lokalt innhold, ikke del av repo)
+backend/data/avatars/
+
 # Bilder til fotoramme (lokalt innhold, ikke del av repo)
 photos/*
 !photos/.gitkeep
