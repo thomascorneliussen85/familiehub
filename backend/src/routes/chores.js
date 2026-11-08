@@ -58,14 +58,14 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { member_id = null, title, recurrence = 'once', due_date = null, stars = 1 } = req.body;
+  const { member_id = null, title, recurrence = 'once', due_date = null, stars = 1, reward_text = null } = req.body;
   if (typeof title !== 'string' || !title.trim()) return res.status(400).json({ error: 'Tittel er påkrevd' });
   if (member_id != null && !db.prepare('SELECT id FROM family_members WHERE id = ? AND family_id = ?').get(member_id, req.familyId)) return res.status(400).json({ error: 'Ugyldig familiemedlem' });
   const info = db
     .prepare(
-      'INSERT INTO chores (family_id, member_id, title, recurrence, due_date, stars) VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO chores (family_id, member_id, title, recurrence, due_date, stars, reward_text) VALUES (?, ?, ?, ?, ?, ?, ?)'
     )
-    .run(req.familyId, member_id, title, recurrence, due_date, stars);
+    .run(req.familyId, member_id, title, recurrence, due_date, stars, reward_text?.trim() || null);
   req.app.get('io').to(`family:${req.familyId}`).emit('chores:update');
   res.status(201).json({ id: info.lastInsertRowid });
 });

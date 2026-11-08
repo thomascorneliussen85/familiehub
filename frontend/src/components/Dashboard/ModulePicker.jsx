@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const GROUPS = {
   Familie: ['messages', 'kids', 'rewards', 'gps', 'telemedicine'],
-  Hjem: ['dinner-planner', 'weatherbus', 'smarthome', 'powerprice', 'timer', 'cameras'],
+  Hjem: ['dinner-planner', 'weatherbus', 'smarthome', 'powerprice', 'timer', 'cameras', 'declutter'],
   Fritid: ['play-outside', 'coloring'],
   Trening: ['garmin', 'strava'],
 };

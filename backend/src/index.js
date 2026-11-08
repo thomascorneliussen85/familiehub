@@ -50,6 +50,7 @@ import localFriendsRouter from './routes/localFriends.js';
 import pushRouter from './routes/push.js';
 import shellyWebhookRouter from './routes/shellyWebhook.js';
 import shellyDevicesRouter from './routes/shellyDevices.js';
+import declutterRouter from './routes/declutter.js';
 import financeImportRouter from './routes/financeImport.js';
 import financeRouter from './routes/finance.js';
 import financeAiRouter from './routes/financeAi.js';
@@ -117,6 +118,7 @@ function serveFamilyFile(baseDir) {
 app.get('/photos/:familyId/:filename', requireAuth, serveFamilyFile(config.photos.dir));
 app.get('/reward-images/:familyId/:filename', requireAuth, serveFamilyFile(config.rewardsImagesDir));
 app.get('/coloring-sheets/:familyId/:filename', requireAuth, serveFamilyFile(config.coloringSheetsDir));
+app.get('/family-photos/:familyId/:filename', requireAuth, serveFamilyFile(config.familyPhotosDir));
 
 const backendRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
@@ -184,6 +186,7 @@ app.use('/api/local-friends', localFriendsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/shelly-webhook', shellyWebhookRouter);
 app.use('/api/shelly-devices', shellyDevicesRouter);
+app.use('/api/declutter', declutterRouter);
 app.use('/api/finance-import', financeImportRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/finance-ai', financeAiRouter);

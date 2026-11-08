@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const ROLE_LABEL = { voksen: 'Voksen', barn: 'Barn' };
 
-const emptyForm = { name: '', role: 'voksen', avatar: '🙂', color: '#7c9cff' };
+const emptyForm = { name: '', role: 'voksen', avatar: '🙂', color: '#7c9cff', photoFile: null, photoPreview: null };
 const emptyLoginForm = { email: '', password: '' };
 
 function FamilyNameSection({ adminApi }) {
@@ -186,7 +186,19 @@ export default function FamilyMembersTab({ adminApi }) {
   function startEdit(member) {
     setEditingId(member.id);
     setAdding(false);
-    setForm({ name: member.name, role: member.role, avatar: member.avatar || '🙂', color: member.color });
+    setForm({
+      name: member.name,
+      role: member.role,
+      avatar: member.avatar || '🙂',
+      color: member.color,
+      photoFile: null,
+      photoPreview: member.photo_url || null,
+    });
+  }
+
+  function pickPhoto(file) {
+    if (!file) return;
+    setForm((f) => ({ ...f, photoFile: file, photoPreview: URL.createObjectURL(file) }));
   }
 
   function startAdd() {
@@ -201,14 +213,24 @@ export default function FamilyMembersTab({ adminApi }) {
     setError('');
   }
 
+  function buildFormData() {
+    const fd = new FormData();
+    fd.append('name', form.name);
+    fd.append('role', form.role);
+    fd.append('avatar', form.avatar);
+    fd.append('color', form.color);
+    if (form.photoFile) fd.append('photo', form.photoFile);
+    return fd;
+  }
+
   async function save() {
     if (!form.name.trim()) return;
     setError('');
     try {
       if (editingId) {
-        await adminApi.patch(`/family-members/${editingId}`, form);
+        await adminApi.patchForm(`/family-members/${editingId}`, buildFormData());
       } else {
-        await adminApi.post('/family-members', form);
+        await adminApi.postForm('/family-members', buildFormData());
       }
       refresh();
       cancel();
@@ -232,8 +254,17 @@ export default function FamilyMembersTab({ adminApi }) {
       <div className="settings-locations-list">
         {members.map((m) => (
           <div key={m.id} className="settings-location-item">
-            <span>
-              {m.avatar} {m.name}{' '}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {m.photo_url ? (
+                <img
+                  src={m.photo_url}
+                  alt=""
+                  style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                m.avatar
+              )}
+              {m.name}{' '}
               <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>· {ROLE_LABEL[m.role] || m.role}</span>
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -264,6 +295,48 @@ export default function FamilyMembersTab({ adminApi }) {
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               autoFocus
             />
+          </div>
+          <div className="dinner-edit-row" style={{ alignItems: 'center' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                color: 'var(--text-dim)',
+                fontSize: 13,
+              }}
+            >
+              {form.photoPreview ? (
+                <img
+                  src={form.photoPreview}
+                  alt=""
+                  style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <span
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'var(--panel-bg-alt)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 18,
+                  }}
+                >
+                  {form.avatar}
+                </span>
+              )}
+              Velg bilde (vises på barnas side)
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => pickPhoto(e.target.files?.[0])}
+              />
+            </label>
           </div>
           <div className="dinner-edit-row">
             <select
