@@ -1,0 +1,23 @@
+.declutter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.declutter-intro {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 0;
+}
+.declutter-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.declutter-scan-btn {
+  flex: 1;
+  min-width: 140px;
+}
+.declutter-error {
+  color: var(--danger);
+  font-size: 14px;
+}

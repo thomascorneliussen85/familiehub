@@ -13,6 +13,7 @@ import PlayOutsidePanel from '../PlayOutside/PlayOutsidePanel';
 import TelemedicinePanel from '../Telemedicine/TelemedicinePanel';
 import RewardsPanel from '../Rewards/RewardsPanel';
 import KidsPage from '../Kids/KidsPage';
+import DeclutterPanel from '../Declutter/DeclutterPanel';
 import ColoringBookPanel from '../ColoringBook/ColoringBookPanel';
 import ShoppingPanel from '../Shopping/ShoppingPanel';
 import ChoresPanel from '../Chores/ChoresPanel';
@@ -70,6 +71,7 @@ const MORE_PANELS = [
   { key: 'rewards', icon: '🏆', label: 'Belønninger', Component: RewardsPanel },
   { key: 'kids', icon: '🧒', label: 'Barn', Component: KidsPage },
   { key: 'coloring', icon: '🎨', label: 'Fargelegging', Component: ColoringBookPanel },
+  { key: 'declutter', icon: '🧹', label: 'Rydde opp', Component: DeclutterPanel },
 ];
 
 const ALL_PANELS = { ...CORE_PANELS, ...Object.fromEntries(MORE_PANELS.map((p) => [p.key, p])) };
