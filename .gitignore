@@ -25,6 +25,9 @@ photos/*
 # Opplastede belønningsbilder (lokalt innhold, ikke del av repo)
 backend/data/reward-images/
 
+# Opplastede bilder av familiemedlemmer (lokalt innhold, ikke del av repo)
+backend/data/family-photos/
+
 # Lokalt TLS-sertifikat for https-tilgang på hjemmenettverket (maskinspesifikt,
 # genereres med certs/generate.sh – se certs/README.md)
 certs/*.pem

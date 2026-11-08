@@ -117,6 +117,7 @@ function serveFamilyFile(baseDir) {
 app.get('/photos/:familyId/:filename', requireAuth, serveFamilyFile(config.photos.dir));
 app.get('/reward-images/:familyId/:filename', requireAuth, serveFamilyFile(config.rewardsImagesDir));
 app.get('/coloring-sheets/:familyId/:filename', requireAuth, serveFamilyFile(config.coloringSheetsDir));
+app.get('/family-photos/:familyId/:filename', requireAuth, serveFamilyFile(config.familyPhotosDir));
 
 const backendRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 

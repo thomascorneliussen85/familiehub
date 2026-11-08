@@ -125,6 +125,10 @@ export const config = {
   // per-familie-mappe-mønster som rewardsImagesDir over.
   coloringSheetsDir: path.resolve(backendRoot, process.env.COLORING_SHEETS_DIR || 'data/coloring-sheets'),
 
+  // Familiemedlemmers egne bilder (vises i stedet for emoji på barnas side) –
+  // samme per-familie-mappe-mønster som rewardsImagesDir over.
+  familyPhotosDir: path.resolve(backendRoot, process.env.FAMILY_PHOTOS_DIR || 'data/family-photos'),
+
   brief: {
     defaultRssFeeds: (process.env.BRIEF_RSS_FEEDS || 'https://www.nrk.no/toppsaker.rss')
       .split(',')

@@ -204,6 +204,16 @@ const choresColumns = db.prepare('PRAGMA table_info(chores)').all().map((c) => c
 if (!choresColumns.includes('is_homework')) {
   db.exec('ALTER TABLE chores ADD COLUMN is_homework INTEGER NOT NULL DEFAULT 0');
 }
+// Migrering: chores kan finnes fra før barnas gøy-modus, uten reward_text-kolonnen.
+if (!choresColumns.includes('reward_text')) {
+  db.exec('ALTER TABLE chores ADD COLUMN reward_text TEXT');
+}
+
+// Migrering: family_members kan finnes fra før barnas gøy-modus, uten photo-kolonnen.
+const familyMembersPhotoColumns = db.prepare('PRAGMA table_info(family_members)').all().map((c) => c.name);
+if (!familyMembersPhotoColumns.includes('photo')) {
+  db.exec('ALTER TABLE family_members ADD COLUMN photo TEXT');
+}
 
 // Migrering: garmin_activities kan finnes fra før, uten de nye detalj-kolonnene
 // for treningscoach-siden (lagt til senere).

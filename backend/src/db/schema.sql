@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS family_members (
   role        TEXT NOT NULL DEFAULT 'voksen', -- 'voksen' | 'barn'
   color       TEXT NOT NULL DEFAULT '#7c9cff',
   avatar      TEXT,                            -- emoji eller initial
+  photo       TEXT,                            -- filnavn for eget bilde (se familyPhotosDir), vises i stedet for emoji på barnas side
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -86,6 +87,7 @@ CREATE TABLE IF NOT EXISTS chores (
   recurrence   TEXT NOT NULL DEFAULT 'once', -- 'once' | 'daily' | 'weekly:mon' | 'weekly:tue' ...
   due_date     TEXT,                          -- kun relevant for 'once'
   stars        INTEGER NOT NULL DEFAULT 1,
+  reward_text  TEXT,                          -- valgfri belønningstekst, lest opp på barnas side når gjøremålet fullføres
   active       INTEGER NOT NULL DEFAULT 1,
   is_homework  INTEGER NOT NULL DEFAULT 0,    -- satt av lekseskanneren, brukes til å vise HomeworkBanner
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))

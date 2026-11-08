@@ -432,3 +432,254 @@
   font-size: 18px;
   text-align: center;
 }
+.kids-celebration-bonus .kids-celebration-emoji {
+  font-size: 76px;
+  animation: kids-fun-pop 0.5s ease;
+}
+.kids-celebration-bonus .kids-celebration-text {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--warm);
+}
+
+/* ---- Gøy-modus ---- */
+.kids-mode-toggle {
+  border: none;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.kids-mode-toggle:active {
+  transform: scale(0.96);
+}
+
+.panel-kids-fun .panel-body {
+  padding: 0;
+}
+.kids-fun-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.kids-fun-picker {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+  overflow-y: auto;
+}
+.kids-fun-picker-title {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+}
+.kids-fun-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: clamp(14px, 2.4vw, 26px);
+  justify-items: center;
+  width: 100%;
+  max-width: 760px;
+}
+.kids-fun-picker-card {
+  --kid-color: var(--accent);
+  width: min(38vw, 220px);
+  border-radius: 28px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--kid-color) 26%, var(--panel-bg)) 0%, var(--panel-bg) 85%);
+  border: 3px solid var(--kid-color);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s ease;
+}
+.kids-fun-picker-card:active {
+  transform: scale(0.95);
+}
+.kids-fun-picker-name {
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 800;
+}
+.kids-fun-picker-stars {
+  font-size: 15px;
+  color: var(--warm);
+  font-weight: 700;
+}
+
+.kids-fun-photo {
+  width: clamp(84px, 14vw, 140px);
+  height: clamp(84px, 14vw, 140px);
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--panel-bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(38px, 6vw, 64px);
+  border: 4px solid var(--kid-color, var(--accent));
+}
+.kids-fun-photo-lg {
+  width: clamp(72px, 9vw, 104px);
+  height: clamp(72px, 9vw, 104px);
+  font-size: clamp(32px, 5vw, 48px);
+}
+.kids-fun-photo-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.kids-fun-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.kids-fun-detail-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.kids-fun-back {
+  border: none;
+  border-radius: 999px;
+  background: var(--panel-bg-alt);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.kids-fun-name {
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 800;
+}
+.kids-fun-balance {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--warm);
+  font-size: 15px;
+}
+
+.kids-fun-task-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 6px 20px 14px;
+  align-content: start;
+}
+.kids-fun-task-card {
+  display: flex;
+  align-items: stretch;
+  border-radius: 20px;
+  background: var(--panel-bg-alt);
+  border: 2px solid var(--panel-border);
+  overflow: hidden;
+  min-height: 76px;
+}
+.kids-fun-task-card-done {
+  opacity: 0.55;
+}
+.kids-fun-task-main {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 14px 16px;
+  font-size: clamp(16px, 2vw, 19px);
+  font-weight: 700;
+  cursor: pointer;
+}
+.kids-fun-task-card-done .kids-fun-task-main {
+  text-decoration: line-through;
+}
+.kids-fun-task-star-btn {
+  flex-shrink: 0;
+  width: clamp(64px, 9vw, 88px);
+  border: none;
+  border-left: 2px solid var(--panel-border);
+  background: rgba(193, 80, 46, 0.1);
+  color: var(--warm);
+  font-size: clamp(13px, 1.6vw, 17px);
+  cursor: pointer;
+}
+.kids-fun-task-card-done .kids-fun-task-star-btn {
+  background: rgba(75, 138, 99, 0.14);
+  color: var(--success);
+  font-size: 24px;
+}
+.kids-fun-task-star-btn:active {
+  transform: scale(0.92);
+}
+
+.kids-fun-rewards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 20px 18px;
+  flex-shrink: 0;
+}
+.kids-fun-reward-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--panel-bg-alt);
+  border: 2px solid var(--panel-border);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0.6;
+}
+.kids-fun-reward-chip-unlocked {
+  opacity: 1;
+  border-color: var(--success);
+  background: rgba(75, 138, 99, 0.14);
+}
+.kids-fun-reward-chip img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.kids-fun-reward-cost {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+@keyframes kids-fun-pop {
+  0% {
+    transform: scale(0.3) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
